@@ -1,8 +1,8 @@
 import logging
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .services import extract_text_from_file
 from .utils import extract_metadata
@@ -19,7 +19,6 @@ class OCRExtractAPIView(APIView):
 
     def post(self, request):
         files = request.FILES.getlist("files")
-        print("➡ backend/ocr/views.py:22 files:", files)
 
         if not files:
             return Response(
@@ -35,7 +34,6 @@ class OCRExtractAPIView(APIView):
 
             try:
                 raw_text = extract_text_from_file(file_obj)
-                print("➡ backend/ocr/views.py:37 raw_text:", raw_text)
 
                 metadata = extract_metadata(raw_text)
 

@@ -1,12 +1,13 @@
+import io
 import logging
+import uuid
+from pathlib import Path
+
 import cv2
 import numpy as np
 import pytesseract
-from PIL import Image
 from pdf2image import convert_from_bytes
-import io
-from pathlib import Path
-import uuid
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,6 @@ def correct_orientation(image: Image.Image) -> Image.Image:
     if rotation == 0:
         return image
 
-    print("➡ backend/ocr/services.py:36 rotation:", rotation)
     if rotation == 90:
         rotated = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
     elif rotation == 180:

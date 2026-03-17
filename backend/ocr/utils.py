@@ -1,46 +1,78 @@
-import re
 import logging
-from typing import Dict, Any, List
+import re
+from typing import Any, Dict, List
+
 from dateutil.parser import parse
 
 logger = logging.getLogger(__name__)
 
-METADATA_FIELDS = [
-    "crvs.head.husband",
-    "crvs.head.wife",
-    "crvs.identifier.houseType",
-    "crvs.identifier.otherHouseType",
-    "crvs.identifier.houseNumber",
-    "crvs.identifier.houseFamilyKey",
-    "crvs.family.member",
-    "crvs.family.count",
-    "crvs.date.registration",
-    "crvs.document.status",
-    "crvs.birth.childName",
-    "crvs.birth.gender",
-    "crvs.birth.dateOfBirth",
-    "crvs.birth.placeOfBirth",
-    "crvs.birth.childCitizenship",
-    "crvs.birth.motherCitizenship",
-    "crvs.birth.fatherCitizenship",
-    "crvs.birth.motherName",
-    "crvs.birth.fatherName",
-    "crvs.birth.registeredDate",
-    "crvs.birth.certificateIssuedDate",
-    "crvs.marriage.husbandName",
-    "crvs.marriage.wifeName",
-    "crvs.marriage.date",
-    "crvs.divorce.courtApprovalDate",
-    "crvs.divorce.courtCaseNumber",
-    "crvs.death.personName",
-    "crvs.death.dateOfBirth",
-    "crvs.death.dateOfDeath",
-    "crvs.death.placeOfDeath",
-    "crvs.death.citizenship",
-    "crvs.death.motherName",
-    "crvs.death.reason",
-    "crvs.death.certificateIssuedDate",
-    "crvs.death.gender",
+DOCUMENT_TYPE_FIELD = "crvs.documentType"
+
+METADATA_GROUPS = {
+    "family_registry": [
+        "crvs.head.husband",
+        "crvs.head.wife",
+        "crvs.identifier.houseType",
+        "crvs.identifier.otherHouseType",
+        "crvs.identifier.houseNumber",
+        "crvs.identifier.houseFamilyKey",
+        "crvs.family.member",
+        "crvs.family.count",
+        "crvs.date.registration",
+        "crvs.document.status",
+    ],
+    "birth": [
+        "crvs.birth.childName",
+        "crvs.birth.gender",
+        "crvs.birth.dateOfBirth",
+        "crvs.birth.placeOfBirth",
+        "crvs.birth.childCitizenship",
+        "crvs.birth.motherCitizenship",
+        "crvs.birth.fatherCitizenship",
+        "crvs.birth.motherName",
+        "crvs.birth.fatherName",
+        "crvs.birth.registeredDate",
+        "crvs.birth.certificateIssuedDate",
+    ],
+    "marriage_divorce": [
+        "crvs.marriage.husbandName",
+        "crvs.marriage.wifeName",
+        "crvs.marriage.date",
+        "crvs.divorce.courtApprovalDate",
+        "crvs.divorce.courtCaseNumber",
+    ],
+    "death": [
+        "crvs.death.personName",
+        "crvs.death.dateOfBirth",
+        "crvs.death.dateOfDeath",
+        "crvs.death.placeOfDeath",
+        "crvs.death.citizenship",
+        "crvs.death.motherName",
+        "crvs.death.reason",
+        "crvs.death.certificateIssuedDate",
+        "crvs.death.gender",
+    ],
+}
+
+DOCUMENT_TYPE_LABELS = {
+    "birth": "Birth Certificate",
+    "death": "Death Certificate",
+    "marriage": "Marriage Certificate",
+    "divorce": "Divorce Certificate",
+    "family_registry": "Family Registry",
+    "unknown": "Other",
+}
+
+DOC_TYPE_TO_GROUP = {
+    "birth": "birth",
+    "death": "death",
+    "marriage": "marriage_divorce",
+    "divorce": "marriage_divorce",
+    "family_registry": "family_registry",
+}
+
+ALL_METADATA_FIELDS: List[str] = [
+    field for group_fields in METADATA_GROUPS.values() for field in group_fields
 ]
 
 MAX_DIMENSION = 4000
@@ -66,12 +98,56 @@ def parse_date_candidate(candidate: str):
         return None
 
 
+def infer_document_type(text: str) -> str:
+    """Infer the CRVS document type from OCR text."""
+    lowered = text.lower()
+
+    def contains_any(needles: List[str]) -> bool:
+        return any(needle in lowered for needle in needles)
+
+    if contains_any(["divorce", "dissolution", "ፍቺ", "ፍች"]):
+        return "divorce"
+    if contains_any(["marriage", "married", "wedding", "ጋብቻ", "ሙሽራ"]):
+        return "marriage"
+    if contains_any(["birth", "born", "newborn", "ልደት", "የትውልድ", "የተወለደ"]):
+        return "birth"
+    if contains_any(["death", "deceased", "died", "ሞት", "የሞቱ", "ሟች", "ሟቹ"]):
+        return "death"
+    if contains_any(
+        [
+            "family registry",
+            "family register",
+            "household",
+            "family record",
+            "ቤተሰብ",
+            "ቤተ ሰብ",
+            "የቤተሰብ",
+            "ቤት መዝገብ",
+            "የነዋሪዎች መመዝገቢያ ቅጽ",
+            "የነዋሪዎች መመዝገቢያ ቅፅ",
+            "የቤተሰብ ቅጽ",
+            "የቤተሰብ ቅፅ",
+        ]
+    ):
+        return "family_registry"
+
+    return "unknown"
+
+
 def extract_metadata(text: str) -> Dict[str, Any]:
     """
     Extract structured metadata from Raw OCR text via regex and keyword matching.
+    Only return metadata fields for the inferred document type.
     """
+    doc_type = infer_document_type(text)
+    group_key = DOC_TYPE_TO_GROUP.get(doc_type)
+    if doc_type == "unknown":
+        fields = ALL_METADATA_FIELDS
+    else:
+        fields = METADATA_GROUPS.get(group_key, [])
+
     metadata: Dict[str, Any] = {}
-    for field in METADATA_FIELDS:
+    for field in fields:
         metadata[field] = extract_field_crvs(field, text)
 
     return metadata
