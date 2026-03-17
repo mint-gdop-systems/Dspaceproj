@@ -987,6 +987,19 @@ const MetadataEditor = () => {
 	const extractOcrMetadataForFiles = async (uploadedFiles) => {
 		if (uploadedFiles.length === 0) return;
 
+		const shouldRunOcr = (file) => {
+			const isImage = file.type.startsWith("image/");
+			const isPdf = file.type.includes("pdf");
+			if (!isImage && !isPdf) return false;
+
+			const name = (file.name || "").toLowerCase();
+			return /(main|ocr)/i.test(name);
+		};
+
+		const ocrEligibleFiles = uploadedFiles.filter(shouldRunOcr);
+
+		if (ocrEligibleFiles.length === 0) return;
+
 		setOcrLoadingCount((prev) => prev + 1);
 
 		try {
