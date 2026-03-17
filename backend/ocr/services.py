@@ -89,7 +89,11 @@ def perform_ocr_on_image(image: Image.Image) -> str:
         preprocessed = preprocess_image(image)
 
         # pytesseract can take numpy array directly
-        text = pytesseract.image_to_string(preprocessed, lang="amh+eng")
+        text = pytesseract.image_to_string(
+            preprocessed,
+            lang="amh+eng",
+            config="--psm 11",
+        )
         return text
     except Exception as e:
         logger.error(f"OCR Error during image processing: {e}")
