@@ -168,6 +168,11 @@ const Home = () => {
                         judge_number: getVal("legal.judge.number"),
                         location: getVal("legal.location"),
                         case_level: getVal("legal.case.level"),
+                        plaintiff: getVal("legal.case.plaintiff"),
+                        defendant: getVal("legal.case.defendant"),
+                        shelf_number: getVal("legal.physical.shelfNumber"),
+                        row_number: getVal("legal.physical.rowNumber"),
+                        rfid: getVal("legal.physical.rfid"),
                     };
                 });
 
@@ -437,24 +442,22 @@ const Home = () => {
                             return {
                                 id: item._embedded?.indexableObject?.uuid,
                                 title: getVal("dc.title") || item._embedded?.indexableObject?.name,
-                                authors: getValList("dc.contributor.author"),
-                                year: getVal("dc.date.issued")?.substring(0, 4),
-                                publisher: getVal("dc.publisher"),
                                 source: "dspace",
                                 collection_name: collectionName,
-                                description: getVal("dc.description") || getVal("dc.description.abstract"),
-                                abstract: getVal("dc.description.abstract"),
                                 external_id: item._embedded?.indexableObject?.handle || item._embedded?.indexableObject?.uuid,
-                                resource_type: getVal("dc.type"),
                                 language: getVal("dc.language"),
-                                citation: getVal("dc.identifier.citation"),
-                                sponsors: getVal("dc.description.sponsorship"),
-                                series: getVal("dc.relation.ispartofseries"),
-                                reportNo: getVal("dc.identifier.other") || getVal("dc.identifier.govdoc"),
-                                isbn: getVal("dc.identifier.isbn"),
-                                issn: getVal("dc.identifier.issn"),
-                                subjects: getValList("dc.subject"),
-                                format: getVal("dc.format"),
+                                bench_session: getVal("legal.bench.session"),
+                                complaint_number: getVal("legal.case.complaintNumber"),
+                                file_number: getVal("legal.case.fileNumber"),
+                                case_document_type: getVal("legal.document.type"),
+                                judge_number: getVal("legal.judge.number"),
+                                location: getVal("legal.location"),
+                                case_level: getVal("legal.case.level"),
+                                plaintiff: getVal("legal.case.plaintiff"),
+                                defendant: getVal("legal.case.defendant"),
+                                shelf_number: getVal("legal.physical.shelfNumber"),
+                                row_number: getVal("legal.physical.rowNumber"),
+                                rfid: getVal("legal.physical.rfid"),
                             };
                         });
 
@@ -539,12 +542,6 @@ const Home = () => {
                     const lang = resource.language === 'en' ? 'English' :
                         resource.language === 'am' ? 'Amharic' : resource.language;
                     resourceValue = lang;
-                } else if (category === 'author') {
-                    // Provide loose matching for authors
-                    const authors = (resource.authors || "").toLowerCase();
-                    const match = selectedValues.some(val => authors.includes(val.toLowerCase()));
-                    if (!match) return false;
-                    continue; // Skip the equality check below for authors
                 } else if (category === 'publisher') {
                     resourceValue = resource.publisher || 'Unknown';
                 } else if (category === 'bench_session') {

@@ -220,13 +220,11 @@ const MetadataTreeFilter = ({ resources, onFilterChange, selectedFilters = {}, o
                 <div className="border-b border-dashed border-gray-200 my-2 mx-2"></div>
                 <TreeNode label="የክስ አይነት" category="collection" items={filterOptions.collection} />
                 <div className="border-b border-dashed border-gray-200 my-2 mx-2"></div>
-                <TreeNode label="የሰነድ አይነት" category="type" items={filterOptions.type} />
-                <div className="border-b border-dashed border-gray-200 my-2 mx-2"></div>
                 <TreeNode label="አመት" category="year" items={filterOptions.year} />
                 <div className="border-b border-dashed border-gray-200 my-2 mx-2"></div>
-                <TreeNode label="ቋንቋ" category="language" items={filterOptions.language} />
-                <div className="border-b border-dashed border-gray-200 my-2 mx-2"></div>
-                <TreeNode label="ተከሳሽ እና ክሳሽ" category="author" items={filterOptions.author} />
+                {/* <TreeNode label="ቋንቋ" category="language" items={filterOptions.language} />
+                <div className="border-b border-dashed border-gray-200 my-2 mx-2"></div> */}
+                <TreeNode label="የክስ ደረጃ" category="case_level" items={filterOptions.case_level} />
                 <div className="border-b border-dashed border-gray-200 my-2 mx-2"></div>
                 <TreeNode label="ዳኛ" category="publisher" items={filterOptions.publisher} />
             </div>

@@ -75,19 +75,10 @@ const MetadataEditor = () => {
     const [collectionId, setCollectionId] = useState("");
     const [authors, setAuthors] = useState([""]);
     const [title, setTitle] = useState("");
-    const [otherTitles, setOtherTitles] = useState([""]);
     const [dateOfIssue, setDateOfIssue] = useState("");
     const [publisher, setPublisher] = useState("");
-    // const [citation, setCitation] = useState("");
-    // const [seriesReportNo, setSeriesReportNo] = useState([""]);
-    // const [accessionNumber, setAccessionNumber] = useState("");
     const [publicationDate, setPublicationDate] = useState("");
-    // const [identifiers, setIdentifiers] = useState([{ type: "ISSN", value: "" }]);
-    const [type, setType] = useState("");
     const [language, setLanguage] = useState("en_US");
-    const [subjectKeywords, setSubjectKeywords] = useState([""]);
-    const [abstractText, setAbstractText] = useState("");
-    const [sponsors, setSponsors] = useState("");
     const [description, setDescription] = useState("");
 
     // New Legal/Case fields
@@ -99,6 +90,11 @@ const MetadataEditor = () => {
     const [location, setLocation] = useState("");
     const [caseLevel, setCaseLevel] = useState("");
     const [caseType, setCaseType] = useState("");
+    const [plaintiff, setPlaintiff] = useState("");
+    const [defendant, setDefendant] = useState("");
+    const [shelfNumber, setShelfNumber] = useState("");
+    const [rowNumber, setRowNumber] = useState("");
+    const [rfid, setRfid] = useState("");
 
     const [confirmLicense, setConfirmLicense] = useState(false);
 
@@ -172,12 +168,11 @@ const MetadataEditor = () => {
         if (
             !title ||
             !dateOfIssue ||
-            !type ||
             !confirmLicense ||
             !collectionId
         ) {
             alert(
-                "Please fill all mandatory fields: Title, Date of Issue, Type, Collection, and confirm the license."
+                "Please fill all mandatory fields: Title, Date of Issue, Collection, and confirm the license."
             );
             return;
         }
@@ -207,18 +202,11 @@ const MetadataEditor = () => {
             const metadata = {
                 title: title,
                 author: authors.filter(a => a.trim()),
-                otherTitles: otherTitles.filter(t => t.trim()),
                 description: description,
-                subjectKeywords: subjectKeywords.filter(k => k.trim()),
-                type: type,
                 language: language,
-                // reportNo: accessionNumber,
-                sponsors: sponsors,
                 dateIssued: dateOfIssue,
                 publisher: publisher,
-                // citation: citation,
-                // series: seriesReportNo.filter(s => s.trim()),
-                abstract: abstractText,
+                publicationDate: publicationDate,
                 // Legal/Case fields
                 benchSession,
                 complaintNumber,
@@ -228,13 +216,16 @@ const MetadataEditor = () => {
                 location,
                 caseLevel,
                 caseType,
+                plaintiff,
+                defendant,
+                shelfNumber,
+                rowNumber,
+                rfid,
             };
 
             await dspaceService.updateMetadata(workspaceItemId, metadata);
-            // If we're here, metadata update succeeded because it would have thrown otherwise
 
             // 3. Upload files
-            // Sort files so Primary is first (if selected), otherwise keeping order
             const filesToUpload = [...files].sort((a, b) => {
                 if (a.id === primaryFileId) return -1;
                 if (b.id === primaryFileId) return 1;
@@ -267,13 +258,8 @@ const MetadataEditor = () => {
             setTitle("");
             setAuthors([""]);
             setDescription("");
-            setSubjectKeywords([""]);
-            setAbstractText("");
             setPublisher("");
-            // setCitation("");
-            // setAccessionNumber("");
-            // setSeriesReportNo([""]);
-            setSponsors("");
+            setPublicationDate("");
             setDateOfIssue("");
             setBenchSession("");
             setComplaintNumber("");
@@ -283,6 +269,11 @@ const MetadataEditor = () => {
             setLocation("");
             setCaseLevel("");
             setCaseType("");
+            setPlaintiff("");
+            setDefendant("");
+            setShelfNumber("");
+            setRowNumber("");
+            setRfid("");
             setConfirmLicense(false);
         } catch (e) {
             console.error("Critical upload error:", e);
@@ -315,16 +306,6 @@ const MetadataEditor = () => {
     const zoomIn = () => setScale((prev) => Math.min(prev + 0.25, 3.0));
     const zoomOut = () => setScale((prev) => Math.max(prev - 0.25, 0.5));
 
-    /* const handleIdentifierChange = (index, field, value) => {
-        const newIdentifiers = [...identifiers];
-        newIdentifiers[index][field] = value;
-        setIdentifiers(newIdentifiers);
-    };
-    const addIdentifier = () =>
-        setIdentifiers([...identifiers, { type: "ISSN", value: "" }]);
-    const removeIdentifier = (index) =>
-        setIdentifiers(identifiers.filter((_, i) => i !== index)); */
-
     return (
         <div className="flex flex-col h-screen bg-gray-50">
             {/* Top Bar */}
@@ -353,8 +334,7 @@ const MetadataEditor = () => {
                                     {selectedFile ? selectedFile.name : "Select File"}
                                 </span>
                                 <ChevronDown
-                                    className={`w-3 h-3 ml-1.5 text-gray-500 transition-transform ${showFileDropdown ? "rotate-180" : ""
-                                        }`}
+                                    className={`w-3 h-3 ml-1.5 text-gray-500 transition-transform ${showFileDropdown ? "rotate-180" : ""}`}
                                 />
                             </button>
                             {showFileDropdown && (
@@ -434,7 +414,6 @@ const MetadataEditor = () => {
                                 }}
                                 className="space-y-6"
                             >
-                                {/* Form fields here - keeping it brief for the rest */}
                                 <div>
                                     <label
                                         htmlFor="collection"
@@ -460,7 +439,6 @@ const MetadataEditor = () => {
                                     </select>
                                 </div>
 
-
                                 <RepeatableField
                                     label="Author(s)"
                                     values={authors}
@@ -471,7 +449,6 @@ const MetadataEditor = () => {
                                     <label htmlFor="title" className="block text-sm font-medium text-gray-700">Title *</label>
                                     <input id="title" type="text" value={title} onChange={(e) => setTitle(e.target.value)} required className="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
                                 </div>
-                                <RepeatableField label="Other Titles" values={otherTitles} setValues={setOtherTitles} placeholder="Enter other title" />
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Date of Issue *</label>
                                     <input type="date" value={dateOfIssue} onChange={(e) => setDateOfIssue(e.target.value)} required className="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
@@ -480,41 +457,20 @@ const MetadataEditor = () => {
                                     <label htmlFor="publisher" className="block text-sm font-medium text-gray-700">Publisher</label>
                                     <input id="publisher" type="text" value={publisher} onChange={(e) => setPublisher(e.target.value)} className="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
                                 </div>
-
-                                { /* <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Accession Number / Barcode</label>
-                                    <input type="text" value={accessionNumber} onChange={(e) => setAccessionNumber(e.target.value)} placeholder="Enter accession number or barcode" className="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
-                                </div> */ }
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Publication Date</label>
                                     <input type="date" value={publicationDate} onChange={(e) => setPublicationDate(e.target.value)} className="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
                                 </div>
 
                                 <div>
-                                    <label htmlFor="type" className="block text-sm font-medium text-gray-700">Type *</label>
-                                    <select id="type" value={type} onChange={(e) => setType(e.target.value)} required className="mt-1 block w-full p-2 border border-gray-300 rounded-md">
-                                        <option value="" disabled>Select a type</option>
-                                        {["Article", "Learning Object", "Legal Case", "Image", "Image, 3-D", "Musical Score", "Plan or blueprint", "Preprint", "Presentation", "Recording acoustical", "Recording musical", "Recording oral", "Technical Report", "Thesis", "Video", "Working Paper"].map((t) => (<option key={t} value={t}>{t}</option>))}
-                                    </select>
-                                </div>
-                                <div>
                                     <label htmlFor="language" className="block text-sm font-medium text-gray-700">Language</label>
                                     <select id="language" value={language} onChange={(e) => setLanguage(e.target.value)} className="mt-1 block w-full p-2 border border-gray-300 rounded-md">
                                         {[{ label: "English (United States)", value: "en_US" }, { label: "English", value: "en" }, { label: "Spanish", value: "es" }, { label: "Italian", value: "it" }, { label: "Chinese", value: "zh" }, { label: "Turkish", value: "tr" }].map((l) => (<option key={l.value} value={l.value}>{l.label}</option>))}
                                     </select>
                                 </div>
-                                <RepeatableField label="Subject Keywords" values={subjectKeywords} setValues={setSubjectKeywords} placeholder="Enter keyword" />
-                                <div>
-                                    <label htmlFor="abstract" className="block text-sm font-medium text-gray-700">Abstract</label>
-                                    <textarea id="abstract" value={abstractText} onChange={(e) => setAbstractText(e.target.value)} rows="3" className="mt-1 block w-full p-2 border border-gray-300 rounded-md"></textarea>
-                                </div>
                                 <div>
                                     <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
                                     <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows="3" className="mt-1 block w-full p-2 border border-gray-300 rounded-md"></textarea>
-                                </div>
-                                <div>
-                                    <label htmlFor="sponsors" className="block text-sm font-medium text-gray-700">Sponsors</label>
-                                    <textarea id="sponsors" value={sponsors} onChange={(e) => setSponsors(e.target.value)} rows="2" placeholder="Enter sponsor details (optional)" className="mt-1 block w-full p-2 border border-gray-300 rounded-md"></textarea>
                                 </div>
 
                                 <div className="border-t border-gray-200 pt-6">
@@ -545,6 +501,14 @@ const MetadataEditor = () => {
                                             <input id="judgeNumber" type="text" value={judgeNumber} onChange={(e) => setJudgeNumber(e.target.value)} className="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
                                         </div>
                                         <div>
+                                            <label htmlFor="plaintiff" className="block text-sm font-medium text-gray-700">ከሳሽ (Plaintiff)</label>
+                                            <input id="plaintiff" type="text" value={plaintiff} onChange={(e) => setPlaintiff(e.target.value)} className="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
+                                        </div>
+                                        <div>
+                                            <label htmlFor="defendant" className="block text-sm font-medium text-gray-700">ተከሳሽ (Defendant)</label>
+                                            <input id="defendant" type="text" value={defendant} onChange={(e) => setDefendant(e.target.value)} className="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
+                                        </div>
+                                        <div>
                                             <label htmlFor="caseLevel" className="block text-sm font-medium text-gray-700">Case Level</label>
                                             <select
                                                 id="caseLevel"
@@ -571,6 +535,24 @@ const MetadataEditor = () => {
                                                     <option key={t} value={t}>{t}</option>
                                                 ))}
                                             </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-gray-200 pt-6">
+                                    <h3 className="text-md font-semibold text-gray-800 mb-4">Physical Storage Information</h3>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div>
+                                            <label htmlFor="shelfNumber" className="block text-sm font-medium text-gray-700">መደርደሪያ ቍጥር (Shelf No)</label>
+                                            <input id="shelfNumber" type="text" value={shelfNumber} onChange={(e) => setShelfNumber(e.target.value)} className="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
+                                        </div>
+                                        <div>
+                                            <label htmlFor="rowNumber" className="block text-sm font-medium text-gray-700">ረድፍ ቍጥር (Row No)</label>
+                                            <input id="rowNumber" type="text" value={rowNumber} onChange={(e) => setRowNumber(e.target.value)} className="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
+                                        </div>
+                                        <div>
+                                            <label htmlFor="rfid" className="block text-sm font-medium text-gray-700">ራፊድ (RFID)</label>
+                                            <input id="rfid" type="text" value={rfid} onChange={(e) => setRfid(e.target.value)} className="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
                                         </div>
                                     </div>
                                 </div>
@@ -679,7 +661,11 @@ const MetadataEditor = () => {
                                 </div>
                             </>
                         ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-gray-500"><Eye size={48} className="mb-4" /><h3 className="text-lg font-semibold">Preview</h3><p>Select a file to preview.</p></div>
+                            <div className="h-full flex flex-col items-center justify-center text-gray-500">
+                                <Eye size={48} className="mb-4" />
+                                <h3 className="text-lg font-semibold">Preview</h3>
+                                <p>Select a file to preview.</p>
+                            </div>
                         )}
                     </div>
                 </div>

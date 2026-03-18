@@ -128,17 +128,16 @@ const ResourceTable = ({ resources, loading, onCatalogClick }) => {
                                 ርዕስ
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                ጸሐፊ
+                                የቅሬታ ቁጥር
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                አሳታሚ
-                            </th>
-
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                የወጣበት ቀን
+                                የፋይል ቁጥር
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                ጥቅስ
+                                ከሳሽ
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                ተከሳሽ
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 የችሎት አይነት
@@ -149,8 +148,6 @@ const ResourceTable = ({ resources, loading, onCatalogClick }) => {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 ደረጃ
                             </th>
-
-
                             <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 ተግባራት
                             </th>
@@ -171,17 +168,16 @@ const ResourceTable = ({ resources, loading, onCatalogClick }) => {
 
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-700">
-                                    {resource.authors || resource.author || "—"}
+                                    {resource.complaint_number || "—"}
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-700">
-                                    {resource.publisher || "—"}
-                                </td>
-
-                                <td className="px-6 py-4 text-sm text-gray-700">
-                                    {resource.year || "—"}
+                                    {resource.file_number || "—"}
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-700">
-                                    {resource.citation || "—"}
+                                    {resource.plaintiff || "—"}
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-700">
+                                    {resource.defendant || "—"}
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-700">
                                     {resource.bench_session || "—"}

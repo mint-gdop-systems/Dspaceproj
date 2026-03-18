@@ -218,28 +218,18 @@ class DSpaceService {
 
         add("dc.title", metadata.title);
         add("dc.contributor.author", author);
-        add("dc.title.alternative", metadata.otherTitles);
-        add("dc.subject", metadata.subjectKeywords);
-        add("dc.description.abstract", metadata.abstract || metadata.description);
-        add("dc.description.sponsorship", metadata.sponsors);
-        add("dc.description", metadata.customField);
-        add("dc.publisher", metadata.publisher);
-        add("dc.identifier.citation", metadata.citation);
-        add("dc.relation.ispartofseries", metadata.series);
-        add("dc.identifier.other", metadata.reportNo);
-        add("dc.date.issued", dateIssued);
         add("dc.language.iso", metadata.language);
-        add("dc.identifier.isbn", metadata.isbn);
-        add("dc.identifier.issn", metadata.issn);
-        add("dc.rights", metadata.rights);
-        add("dc.identifier.uri", metadata.uri);
-        add("dc.type", metadata.type);
         // .....................
         add("legal.bench.session", metadata.benchSession);
         add("legal.case.complaintNumber", metadata.complaintNumber);
         add("legal.case.fileNumber", metadata.fileNumber);
         add("legal.case.type", metadata.caseType);
         add("legal.case.level", metadata.caseLevel);
+        add("legal.case.plaintiff", metadata.plaintiff);
+        add("legal.case.defendant", metadata.defendant);
+        add("legal.physical.shelfNumber", metadata.shelfNumber);
+        add("legal.physical.rowNumber", metadata.rowNumber);
+        add("legal.physical.rfid", metadata.rfid);
         add("legal.document.type", metadata.documentType);
         add("legal.judge.number", metadata.judgeNumber);
         add("legal.location", metadata.location);
@@ -340,31 +330,25 @@ class DSpaceService {
 
             const metadataUpdates = [];
             const author = metadata.author || [];
-            const subjectKeywords = metadata.subjectKeywords || [];
-            const otherTitles = metadata.otherTitles || [];
             const dateIssued = metadata.dateIssued || metadata.publicationDate || "";
 
             const dcFields = {
                 "dc.title": metadata.title,
                 "dc.contributor.author": author,
-                "dc.title.alternative": otherTitles,
-                "dc.subject": subjectKeywords,
-                "dc.description.abstract": metadata.abstract,
                 "dc.description": metadata.description,
-                "dc.description.sponsorship": metadata.sponsors,
                 "dc.publisher": metadata.publisher,
-                // "dc.identifier.citation": metadata.citation,
-                // "dc.identifier.govdoc": metadata.reportNo,
-                // "dc.identifier.other": metadata.reportNo,
-                // "dc.relation.ispartofseries": metadata.series,
                 "dc.date.issued": dateIssued,
                 "dc.language.iso": metadata.language,
-                "dc.type": metadata.type,
                 "legal.bench.session": metadata.benchSession,
                 "legal.case.complaintNumber": metadata.complaintNumber,
                 "legal.case.fileNumber": metadata.fileNumber,
                 "legal.case.type": metadata.caseType,
                 "legal.case.level": metadata.caseLevel,
+                "legal.case.plaintiff": metadata.plaintiff,
+                "legal.case.defendant": metadata.defendant,
+                "legal.physical.shelfNumber": metadata.shelfNumber,
+                "legal.physical.rowNumber": metadata.rowNumber,
+                "legal.physical.rfid": metadata.rfid,
                 "legal.document.type": metadata.documentType,
                 "legal.judge.number": metadata.judgeNumber,
                 "legal.location": metadata.location,
@@ -388,10 +372,7 @@ class DSpaceService {
             if (metadataUpdates.length === 0) return true;
 
             const FIELD_SECTION_MAP = {
-                "dc.subject": "traditionalpagetwo",
-                "dc.description.abstract": "traditionalpagetwo",
                 "dc.description": "traditionalpagetwo",
-                "dc.description.sponsorship": "traditionalpagetwo",
             };
 
             const fieldExists = (sections, section, field) =>
