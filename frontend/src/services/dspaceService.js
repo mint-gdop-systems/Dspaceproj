@@ -530,32 +530,6 @@ class DSpaceService {
         }
     }
 
-    async acceptWorkspaceLicense(workspaceItemId) {
-        try {
-            const headers = this.getCsrfHeaders({
-                "Content-Type": "application/json-patch+json",
-                Accept: "application/json",
-            });
-            const token = this.getStoredToken();
-            if (token) {
-                headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
-            }
-
-            const response = await fetch(
-                `${DSPACE_API_URL}/submission/workspaceitems/${workspaceItemId}`,
-                {
-                    method: "PATCH",
-                    credentials: "include",
-                    headers: headers,
-                    body: JSON.stringify([{ op: "replace", path: "/sections/license/granted", value: true }]),
-                }
-            );
-
-            return response.ok;
-        } catch (error) {
-            return false;
-        }
-    }
 
     async submitWorkspaceItem(workspaceItemId) {
         try {

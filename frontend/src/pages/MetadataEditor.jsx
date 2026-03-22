@@ -96,7 +96,6 @@ const MetadataEditor = () => {
     const [rowNumber, setRowNumber] = useState("");
     const [rfid, setRfid] = useState("");
 
-    const [confirmLicense, setConfirmLicense] = useState(false);
 
     // PDF viewer states
     const [numPages, setNumPages] = useState(null);
@@ -168,11 +167,10 @@ const MetadataEditor = () => {
         if (
             !title ||
             !dateOfIssue ||
-            !confirmLicense ||
             !collectionId
         ) {
             alert(
-                "Please fill all mandatory fields: Title, Date of Issue, Collection, and confirm the license."
+                "Please fill all mandatory fields: Title, Date of Issue, and Collection."
             );
             return;
         }
@@ -243,10 +241,7 @@ const MetadataEditor = () => {
                 }
             }
 
-            // 4. Accept license
-            await dspaceService.acceptWorkspaceLicense(workspaceItemId);
-
-            // 5. Submit to workflow
+            // 4. Submit to workflow
             await dspaceService.submitWorkspaceItem(workspaceItem);
 
             alert("Upload successful! Item submitted to workflow.");
@@ -274,7 +269,6 @@ const MetadataEditor = () => {
             setShelfNumber("");
             setRowNumber("");
             setRfid("");
-            setConfirmLicense(false);
         } catch (e) {
             console.error("Critical upload error:", e);
             alert(`Upload failed: ${e.message}`);
@@ -616,11 +610,6 @@ const MetadataEditor = () => {
                                     ) : (
                                         <p className="text-sm text-gray-500 italic">No files selected.</p>
                                     )}
-                                </div>
-
-                                <div className="flex items-center">
-                                    <input id="license" type="checkbox" checked={confirmLicense} onChange={(e) => setConfirmLicense(e.target.checked)} required className="h-4 w-4 text-blue-600 border-gray-300 rounded" />
-                                    <label htmlFor="license" className="ml-2 block text-sm text-gray-900">I confirm the license above</label>
                                 </div>
                             </form>
                         ) : (
