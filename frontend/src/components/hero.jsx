@@ -24,11 +24,15 @@ import { useAuth } from "@/contexts/auth-context";
 import dspaceService from "@/services/dspaceService";
 import { ORG_NAME } from "@/utils/constants";
 
+const PAGE_SIZE = 20;
+
 const Hero = () => {
 	const { user } = useAuth();
 	const [collections, setCollections] = useState([]);
 	const [selectedIndex, setSelectedIndex] = useState(0);
 	const [loading, setLoading] = useState(true);
+	const [pageInfo, setPageInfo] = useState({ number: 0, totalElements: 0, totalPages: 1 });
+	const [loadingMore, setLoadingMore] = useState(false);
 
 	useEffect(() => {
 		let mounted = true;
@@ -37,6 +41,7 @@ const Hero = () => {
 			if (mounted) {
 				setCollections([]);
 				setLoading(false);
+				setPageInfo({ number: 0, totalElements: 0, totalPages: 1 });
 			}
 			return;
 		}
@@ -44,15 +49,18 @@ const Hero = () => {
 		const load = async () => {
 			setLoading(true);
 			try {
-				const res = await dspaceService.fetchCollectionStats();
-				const list = res || [];
+				const res = await dspaceService.fetchCollectionStats(0, PAGE_SIZE);
 				if (mounted) {
-					setCollections(list);
+					setCollections(res?.collectionstatses || []);
+					setPageInfo(res?.page || { number: 0, totalElements: 0, totalPages: 1 });
 					setSelectedIndex(0);
 				}
 			} catch (err) {
 				console.warn("Hero: could not load collection stats", err);
-				if (mounted) setCollections([]);
+				if (mounted) {
+					setCollections([]);
+					setPageInfo({ number: 0, totalElements: 0, totalPages: 1 });
+				}
 			} finally {
 				if (mounted) setLoading(false);
 			}
@@ -63,6 +71,23 @@ const Hero = () => {
 			mounted = false;
 		};
 	}, [user]);
+
+	const loadMore = async () => {
+		if (loadingMore || pageInfo.number + 1 >= pageInfo.totalPages) return;
+		setLoadingMore(true);
+		try {
+			const nextPage = pageInfo.number + 1;
+			const res = await dspaceService.fetchCollectionStats(nextPage, PAGE_SIZE);
+			const newCollections = res?.collectionstatses || [];
+			const newPageInfo = res?.page || { number: nextPage, size: PAGE_SIZE, totalElements: pageInfo.totalElements, totalPages: pageInfo.totalPages };
+			setCollections((prev) => [...prev, ...newCollections]);
+			setPageInfo(newPageInfo);
+		} catch (err) {
+			console.warn("Hero: could not load more collections", err);
+		} finally {
+			setLoadingMore(false);
+		}
+	};
 
 	const selected = collections[selectedIndex] || null;
 
@@ -125,13 +150,26 @@ const Hero = () => {
 						<SelectTrigger className="mb-4 hover:bg-transparent! bg-transparent! border-none text-primary-foreground/50 hover:text-primary-foreground p-0 hover:[&>svg]:text-primary-foreground [&>svg]:text-primary-foreground/50 focus:ring-0 shadow-none">
 							<SelectValue placeholder="Select a collection" />
 						</SelectTrigger>
-						<SelectContent className="p-2">
+						<SelectContent className="p-2 max-h-60 overflow-y-auto">
 							{collections.map((c, i) => (
 								<SelectItem key={c.collectionId || i} value={String(i)}>
 									{c.collectionName || `Collection ${i + 1}`}
 									{c.entityType ? ` (${c.entityType})` : ""}
 								</SelectItem>
 							))}
+							{pageInfo.number + 1 < pageInfo.totalPages && (
+								<div className="p-2 text-center">
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={loadMore}
+										disabled={loadingMore}
+										className="w-full"
+									>
+										{loadingMore ? "Loading..." : "Load more"}
+									</Button>
+								</div>
+							)}
 						</SelectContent>
 					</Select>
 				) : (
@@ -153,9 +191,9 @@ const Hero = () => {
 						<>
 							<DashboardCard
 								label="Woredas"
-								value={collections.length}
+								value={pageInfo.totalElements}
 								icon={<MapPinIcon size={20} />}
-								subtitle="Woredas you have access to"
+								subtitle="Collections you have access to"
 							/>
 
 							<DashboardCard

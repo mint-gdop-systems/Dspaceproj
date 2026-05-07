@@ -797,19 +797,23 @@ class DSpaceService {
 		}
 	}
 
-	async fetchCollectionStats() {
+	async fetchCollectionStats(page = 0, size = 20) {
 		try {
 			const headers = this.getCsrfHeaders({ Accept: "application/json" });
-			const response = await fetch(
-				`${DSPACE_API_URL}/statistics/collectionstats`,
-				{
-					credentials: "include",
-					headers: headers,
-				},
-			);
+			const url = new URL(`${window.location.origin}${DSPACE_API_URL}/statistics/collectionstats`);
+			url.searchParams.set("page", String(page));
+			url.searchParams.set("size", String(size));
+
+			const response = await fetch(url.toString(), {
+				credentials: "include",
+				headers: headers,
+			});
 			if (response.ok) {
 				const data = await response.json();
-				return data._embedded.collectionstatses;
+				return {
+					collectionstatses: data._embedded?.collectionstatses || [],
+					page: data.page || { number: 0, size, totalPages: 1, totalElements: 0 },
+				};
 			}
 			throw new Error(`Failed to fetch collection stats: ${response.status}`);
 		} catch (error) {
