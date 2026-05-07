@@ -1492,7 +1492,7 @@ const MetadataEditor = () => {
 				{/* Left Panel - Metadata Form */}
 				<div className="w-1/2 overflow-y-auto p-6 border-r border-border">
 					<div className="max-w-2xl mx-auto h-full">
-						{selectedFile ? (
+						{files.length > 0 ? (
 							<form
 								onSubmit={(e) => {
 									e.preventDefault();
@@ -1802,8 +1802,13 @@ const MetadataEditor = () => {
 																					(f) => f.id !== file.id,
 																				);
 																				setFiles(newFiles);
-																				if (selectedFileId === file.id)
-																					setSelectedFileId(null);
+																				if (selectedFileId === file.id) {
+																					if (newFiles.length > 0) {
+																						setSelectedFileId(newFiles[0].id);
+																					} else {
+																						setSelectedFileId(null);
+																					}
+																				}
 																			}
 																		}}
 																	>
@@ -2061,7 +2066,7 @@ const MetadataEditor = () => {
 															</h4>
 															<div className="space-y-2 max-h-40 overflow-y-auto pr-1">
 																{splitNames.map((name, idx) => (
-																	<div key={crypto.randomUUID()}>
+																	<div key={idx}>
 																		<label
 																			htmlFor={`splitName-${idx}`}
 																			className="block text-[10px] text-gray-500 mb-0.5"
@@ -2187,7 +2192,13 @@ const MetadataEditor = () => {
 										/>
 									) : (
 										<div className="text-center text-gray-500 pt-16">
-											Unsupported file type for preview.
+											<div>
+												<FileText size={48} className="mx-auto mb-4" />
+												<h3 className="text-lg font-semibold">Preview Not Available</h3>
+												<p className="mt-1">
+													Unsupported file type for preview.
+												</p>
+											</div>
 										</div>
 									)}
 								</div>
