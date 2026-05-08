@@ -125,6 +125,7 @@ CORS_ALLOW_HEADERS = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://10.0.0.158:3000",
 ]
 
 CORS_ALLOW_HEADERS = [
@@ -143,6 +144,7 @@ CORS_ALLOW_HEADERS = [
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://10.0.0.158:3000",
 ]
 
 # Custom User Model
