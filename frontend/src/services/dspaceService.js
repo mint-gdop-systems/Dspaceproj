@@ -763,17 +763,35 @@ class DSpaceService {
 				dsoType: "item",
 				embed: "bundles,owningCollection/parentCommunity",
 			});
+			const queryParts = [];
 
 			Object.entries(filters).forEach(([key, filter]) => {
 				if (filter?.value) {
-					const value = filter.value;
+					const value = String(filter.value).trim();
 					const operator = filter.operator || "contains";
+
+					if (!value) return;
+
+					if (operator === "contains") {
+						queryParts.push(`${key}:${value}*`);
+						return;
+					}
+
+					if (operator === "notcontains") {
+						queryParts.push(`-${key}:${value}*`);
+						return;
+					}
+
 					params.append(`f.${key}`, `${value},${operator}`);
 				}
 			});
 
+			if (queryParts.length > 0) {
+				params.append("query", queryParts.join(" AND "));
+			}
+
 			const headers = this.getCsrfHeaders({ Accept: "application/json" });
-			const url = `${DSPACE_API_URL}/discover/search/objects?${params}`;
+			const url = `${DSPACE_API_URL}/discover/search/objects?${params.toString().replace(/\*/g, "%2A")}`;
 			const response = await fetch(url, {
 				credentials: "include",
 				headers: headers,
