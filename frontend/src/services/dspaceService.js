@@ -894,6 +894,23 @@ class DSpaceService {
 		}
 	}
 
+	async getBitstreamContent(bitstreamUuid) {
+		const headers = this.getCsrfHeaders({});
+		const response = await fetch(
+			`${DSPACE_API_URL}/core/bitstreams/${bitstreamUuid}/content`,
+			{
+				credentials: "include",
+				headers,
+			},
+		);
+
+		if (!response.ok) {
+			throw new Error(`Failed to fetch bitstream content: ${response.status}`);
+		}
+
+		return await response.blob();
+	}
+
 	async fetchCollectionStats(page = 0, size = 20) {
 		try {
 			const headers = this.getCsrfHeaders({ Accept: "application/json" });

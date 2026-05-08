@@ -5,7 +5,7 @@ import {
 	FileTextIcon,
 	XIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { pdfjs } from "react-pdf";
 import { useAuth } from "@/contexts/auth-context";
 import { houseTypeOptions } from "../utils/constants";
@@ -124,7 +124,7 @@ export default function ResourceTable() {
 							getValList("crvs.birth.childName") ||
 							getValList("crvs.death.personName") ||
 							(getValList("crvs.marriage.husbandName") &&
-							getValList("crvs.marriage.wifeName")
+								getValList("crvs.marriage.wifeName")
 								? `${getValList("crvs.marriage.husbandName")} & ${getValList("crvs.marriage.wifeName")}`
 								: getValList("crvs.marriage.husbandName")) ||
 							"",
@@ -234,10 +234,67 @@ export default function ResourceTable() {
 	const [bundledBitstreams, setBundledBitstreams] = useState(null);
 	const [selectedBitstream, setSelectedBitstream] = useState(null);
 	const [activePreviewBitstream, setActivePreviewBitstream] = useState(null);
+	const [bitstreamContentUrls, setBitstreamContentUrls] = useState({});
+	const [loadingBitstreamContent, setLoadingBitstreamContent] = useState({});
+	const bitstreamContentUrlsRef = useRef({});
+	const loadingBitstreamContentRef = useRef({});
 
 	const allBitstreams = primaryBitstream
 		? [primaryBitstream, ...(bundledBitstreams || [])]
 		: bundledBitstreams || [];
+
+	const releaseBitstreamContentUrls = useCallback(() => {
+		Object.values(bitstreamContentUrlsRef.current).forEach((url) => {
+			URL.revokeObjectURL(url);
+		});
+		bitstreamContentUrlsRef.current = {};
+		loadingBitstreamContentRef.current = {};
+		setBitstreamContentUrls({});
+		setLoadingBitstreamContent({});
+	}, []);
+
+	const closePreview = useCallback(() => {
+		setShowPreviewModal(false);
+		setPrimaryBitstream(null);
+		setBundledBitstreams(null);
+		setSelectedBitstream(null);
+		setActivePreviewBitstream(null);
+		releaseBitstreamContentUrls();
+	}, [releaseBitstreamContentUrls]);
+
+	const ensureBitstreamContentUrl = useCallback(async (bitstream) => {
+		const bitstreamUuid = bitstream?.uuid;
+		if (
+			!bitstreamUuid ||
+			bitstreamContentUrlsRef.current[bitstreamUuid] ||
+			loadingBitstreamContentRef.current[bitstreamUuid]
+		) {
+			return;
+		}
+
+		loadingBitstreamContentRef.current = {
+			...loadingBitstreamContentRef.current,
+			[bitstreamUuid]: true,
+		};
+		setLoadingBitstreamContent({ ...loadingBitstreamContentRef.current });
+
+		try {
+			const blob = await dspaceService.getBitstreamContent(bitstreamUuid);
+			const objectUrl = URL.createObjectURL(blob);
+			bitstreamContentUrlsRef.current = {
+				...bitstreamContentUrlsRef.current,
+				[bitstreamUuid]: objectUrl,
+			};
+			setBitstreamContentUrls({ ...bitstreamContentUrlsRef.current });
+		} catch (error) {
+			console.warn("Failed to fetch bitstream content", error);
+		} finally {
+			const { [bitstreamUuid]: _finished, ...remainingLoading } =
+				loadingBitstreamContentRef.current;
+			loadingBitstreamContentRef.current = remainingLoading;
+			setLoadingBitstreamContent(remainingLoading);
+		}
+	}, []);
 
 	const isImage = (b) => {
 		if (!b?.name) return false;
@@ -308,6 +365,74 @@ export default function ResourceTable() {
 		}
 	}, [showPreviewModal, primaryBitstream]);
 
+	useEffect(() => {
+		if (!showPreviewModal) return;
+
+		[activePreviewBitstream, primaryBitstream, selectedBitstream].forEach(
+			(bitstream) => {
+				ensureBitstreamContentUrl(bitstream);
+			},
+		);
+	}, [
+		activePreviewBitstream,
+		ensureBitstreamContentUrl,
+		primaryBitstream,
+		selectedBitstream,
+		showPreviewModal,
+	]);
+
+	useEffect(() => {
+		return releaseBitstreamContentUrls;
+	}, [releaseBitstreamContentUrls]);
+
+	const activePreviewUrl = activePreviewBitstream?.uuid
+		? bitstreamContentUrls[activePreviewBitstream.uuid]
+		: null;
+	const primaryBitstreamUrl = primaryBitstream?.uuid
+		? bitstreamContentUrls[primaryBitstream.uuid]
+		: null;
+	const selectedBitstreamUrl = selectedBitstream?.uuid
+		? bitstreamContentUrls[selectedBitstream.uuid]
+		: null;
+
+	const renderBitstreamPreview = (bitstream, contentUrl, emptyMessage) => {
+		if (!bitstream) {
+			return <div className="text-muted-foreground">{emptyMessage}</div>;
+		}
+
+		const needsContent = isImage(bitstream) || isPdf(bitstream);
+		if (needsContent && !contentUrl) {
+			return (
+				<div className="text-sm text-muted-foreground">
+					{loadingBitstreamContent[bitstream.uuid]
+						? "Loading file..."
+						: "File preview is not available"}
+				</div>
+			);
+		}
+
+		if (isImage(bitstream)) {
+			return (
+				<img
+					src={contentUrl}
+					alt={bitstream?.name}
+					className="max-h-[70vh] max-w-full object-contain rounded-md shadow-sm"
+				/>
+			);
+		}
+
+		if (isPdf(bitstream)) {
+			return <PdfPreview fileUrl={contentUrl} />;
+		}
+
+		return (
+			<div className="text-sm text-muted-foreground">
+				<div className="font-medium mb-1">{bitstream?.name}</div>
+				<div className="text-xs">Type: {bitstream?.format || "Unknown"}</div>
+			</div>
+		);
+	};
+
 	return (
 		<Tabs value={activeTab} onValueChange={handleTabChange}>
 			<div className="flex justify-between items-center mb-6">
@@ -369,22 +494,22 @@ export default function ResourceTable() {
 										columnFilters.houseType?.value ||
 										columnFilters.husband?.value ||
 										columnFilters.wife?.value) && (
-										<Button
-											type="button"
-											onClick={() =>
-												onColumnFilterChange({
-													houseType: { value: "", operator: "equals" },
-													houseNumber: { value: "", operator: "contains" },
-													husband: { value: "", operator: "contains" },
-													wife: { value: "", operator: "contains" },
-												})
-											}
-											variant="destructive"
-											size="sm"
-										>
-											<XIcon /> Clear Filters
-										</Button>
-									)}
+											<Button
+												type="button"
+												onClick={() =>
+													onColumnFilterChange({
+														houseType: { value: "", operator: "equals" },
+														houseNumber: { value: "", operator: "contains" },
+														husband: { value: "", operator: "contains" },
+														wife: { value: "", operator: "contains" },
+													})
+												}
+												variant="destructive"
+												size="sm"
+											>
+												<XIcon /> Clear Filters
+											</Button>
+										)}
 								</div>
 								<div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
 									{/* Shared Identifier Filter */}
@@ -688,16 +813,12 @@ export default function ResourceTable() {
 									aria-modal="true"
 									onClick={(e) => {
 										if (e.target === e.currentTarget) {
-											setShowPreviewModal(false);
-											setPrimaryBitstream(null);
-											setBundledBitstreams([]);
+											closePreview();
 										}
 									}}
 									onKeyDown={(e) => {
 										if (e.key === "Escape") {
-											setShowPreviewModal(false);
-											setPrimaryBitstream(null);
-											setBundledBitstreams([]);
+											closePreview();
 										}
 									}}
 								>
@@ -726,31 +847,31 @@ export default function ResourceTable() {
 																		{activePreviewBitstream?.metadata?.[
 																			"crvs.documentType"
 																		]?.[0]?.value && (
-																			<span>
-																				<span className="font-medium">
-																					Type:
-																				</span>{" "}
-																				{
-																					activePreviewBitstream.metadata[
-																						"crvs.documentType"
-																					][0].value
-																				}
-																			</span>
-																		)}
+																				<span>
+																					<span className="font-medium">
+																						Type:
+																					</span>{" "}
+																					{
+																						activePreviewBitstream.metadata[
+																							"crvs.documentType"
+																						][0].value
+																					}
+																				</span>
+																			)}
 																		{activePreviewBitstream?.metadata?.[
 																			"crvs.document.status"
 																		]?.[0]?.value && (
-																			<span>
-																				<span className="font-medium">
-																					Status:
-																				</span>{" "}
-																				{
-																					activePreviewBitstream.metadata[
-																						"crvs.document.status"
-																					][0].value
-																				}
-																			</span>
-																		)}
+																				<span>
+																					<span className="font-medium">
+																						Status:
+																					</span>{" "}
+																					{
+																						activePreviewBitstream.metadata[
+																							"crvs.document.status"
+																						][0].value
+																					}
+																				</span>
+																			)}
 																		{activePreviewBitstream?.sizeBytes && (
 																			<span>
 																				<span className="font-medium">
@@ -786,11 +907,12 @@ export default function ResourceTable() {
 															))}
 														</select>
 													</div>
-													{activePreviewBitstream && (
+													{activePreviewBitstream && activePreviewUrl && (
 														<a
-															href={`/api/resources/dspace-bitstream/${activePreviewBitstream.uuid}`}
+															href={activePreviewUrl}
 															target="_blank"
 															rel="noopener noreferrer"
+															download={activePreviewBitstream.name}
 															className="p-1.5 rounded hover:bg-white/20 transition-colors"
 															title="Download"
 														>
@@ -801,32 +923,10 @@ export default function ResourceTable() {
 											</div>
 											<div className="flex-1 overflow-auto p-4 bg-white flex flex-col">
 												<div className="flex-1 overflow-auto flex items-center justify-center">
-													{activePreviewBitstream ? (
-														isImage(activePreviewBitstream) ? (
-															<img
-																src={`/api/resources/dspace-bitstream/${activePreviewBitstream?.uuid}`}
-																alt={activePreviewBitstream?.name}
-																className="max-h-[70vh] max-w-full object-contain rounded-md shadow-sm"
-															/>
-														) : isPdf(activePreviewBitstream) ? (
-															<PdfPreview
-																fileUrl={`/api/resources/dspace-bitstream/${activePreviewBitstream?.uuid}`}
-															/>
-														) : (
-															<div className="text-sm text-muted-foreground">
-																<div className="font-medium mb-1">
-																	{activePreviewBitstream?.name}
-																</div>
-																<div className="text-xs">
-																	Type:{" "}
-																	{activePreviewBitstream?.format || "Unknown"}
-																</div>
-															</div>
-														)
-													) : (
-														<div className="text-muted-foreground">
-															No file selected
-														</div>
+													{renderBitstreamPreview(
+														activePreviewBitstream,
+														activePreviewUrl,
+														"No file selected",
 													)}
 												</div>
 											</div>
@@ -841,11 +941,12 @@ export default function ResourceTable() {
 														<h2 className="text-lg font-semibold truncate text-ellipsis line-clamp-1">
 															{primaryBitstream?.name || "Preview"}
 														</h2>
-														{primaryBitstream && (
+														{primaryBitstream && primaryBitstreamUrl && (
 															<a
-																href={`/api/resources/dspace-bitstream/${primaryBitstream.uuid}`}
+																href={primaryBitstreamUrl}
 																target="_blank"
 																rel="noopener noreferrer"
+																download={primaryBitstream.name}
 																className="p-1.5 rounded hover:bg-white/20 transition-colors"
 																title="Download"
 															>
@@ -857,27 +958,27 @@ export default function ResourceTable() {
 														{primaryBitstream?.metadata?.[
 															"crvs.documentType"
 														]?.[0]?.value && (
-															<span>
-																<span className="font-medium">Type:</span>{" "}
-																{
-																	primaryBitstream.metadata[
-																		"crvs.documentType"
-																	][0].value
-																}
-															</span>
-														)}
+																<span>
+																	<span className="font-medium">Type:</span>{" "}
+																	{
+																		primaryBitstream.metadata[
+																			"crvs.documentType"
+																		][0].value
+																	}
+																</span>
+															)}
 														{primaryBitstream?.metadata?.[
 															"crvs.document.status"
 														]?.[0]?.value && (
-															<span>
-																<span className="font-medium">Status:</span>{" "}
-																{
-																	primaryBitstream.metadata[
-																		"crvs.document.status"
-																	][0].value
-																}
-															</span>
-														)}
+																<span>
+																	<span className="font-medium">Status:</span>{" "}
+																	{
+																		primaryBitstream.metadata[
+																			"crvs.document.status"
+																		][0].value
+																	}
+																</span>
+															)}
 														{primaryBitstream?.sizeBytes && (
 															<span>
 																<span className="font-medium">Size:</span>{" "}
@@ -889,32 +990,10 @@ export default function ResourceTable() {
 												</div>
 												<div className="flex-1 overflow-auto bg-white flex flex-col">
 													<div className="flex-1 overflow-auto flex items-center justify-center">
-														{primaryBitstream ? (
-															isImage(primaryBitstream) ? (
-																<img
-																	src={`/api/resources/dspace-bitstream/${primaryBitstream?.uuid}`}
-																	alt={primaryBitstream?.name}
-																	className="max-h-[70vh] max-w-full object-contain rounded-md shadow-sm"
-																/>
-															) : isPdf(primaryBitstream) ? (
-																<PdfPreview
-																	fileUrl={`/api/resources/dspace-bitstream/${primaryBitstream?.uuid}`}
-																/>
-															) : (
-																<div className="text-sm text-muted-foreground">
-																	<div className="font-medium mb-1">
-																		{primaryBitstream?.name}
-																	</div>
-																	<div className="text-xs">
-																		Type:{" "}
-																		{primaryBitstream?.format || "Unknown"}
-																	</div>
-																</div>
-															)
-														) : (
-															<div className="text-muted-foreground">
-																Primary file not found
-															</div>
+														{renderBitstreamPreview(
+															primaryBitstream,
+															primaryBitstreamUrl,
+															"Primary file not found",
 														)}
 													</div>
 												</div>
@@ -935,7 +1014,7 @@ export default function ResourceTable() {
 																		<h2 className="text-lg font-semibold truncate text-ellipsis line-clamp-1">
 																			{bundledBitstreams?.length > 0
 																				? selectedBitstream?.name ||
-																					primaryBitstream?.name
+																				primaryBitstream?.name
 																				: "No Additional Files"}
 																		</h2>
 																		{bundledBitstreams?.length > 0 && (
@@ -943,31 +1022,31 @@ export default function ResourceTable() {
 																				{selectedBitstream?.metadata?.[
 																					"crvs.documentType"
 																				]?.[0]?.value && (
-																					<span>
-																						<span className="font-medium">
-																							Type:
-																						</span>{" "}
-																						{
-																							selectedBitstream.metadata[
-																								"crvs.documentType"
-																							][0].value
-																						}
-																					</span>
-																				)}
+																						<span>
+																							<span className="font-medium">
+																								Type:
+																							</span>{" "}
+																							{
+																								selectedBitstream.metadata[
+																									"crvs.documentType"
+																								][0].value
+																							}
+																						</span>
+																					)}
 																				{selectedBitstream?.metadata?.[
 																					"crvs.document.status"
 																				]?.[0]?.value && (
-																					<span>
-																						<span className="font-medium">
-																							Status:
-																						</span>{" "}
-																						{
-																							selectedBitstream.metadata[
-																								"crvs.document.status"
-																							][0].value
-																						}
-																					</span>
-																				)}
+																						<span>
+																							<span className="font-medium">
+																								Status:
+																							</span>{" "}
+																							{
+																								selectedBitstream.metadata[
+																									"crvs.document.status"
+																								][0].value
+																							}
+																						</span>
+																					)}
 																				{selectedBitstream?.sizeBytes && (
 																					<span>
 																						<span className="font-medium">
@@ -1005,11 +1084,13 @@ export default function ResourceTable() {
 															)}
 														</div>
 														{bundledBitstreams?.length > 0 &&
-															selectedBitstream && (
+															selectedBitstream &&
+															selectedBitstreamUrl && (
 																<a
-																	href={`/api/resources/dspace-bitstream/${selectedBitstream.uuid}`}
+																	href={selectedBitstreamUrl}
 																	target="_blank"
 																	rel="noopener noreferrer"
+																	download={selectedBitstream.name}
 																	className="p-1.5 rounded hover:bg-white/20 transition-colors mt-0.5"
 																	title="Download"
 																>
@@ -1021,26 +1102,10 @@ export default function ResourceTable() {
 												<div className="flex-1 overflow-auto bg-white flex flex-col">
 													<div className="flex-1 overflow-auto flex items-center justify-center">
 														{bundledBitstreams?.length > 0 ? (
-															isImage(selectedBitstream) ? (
-																<img
-																	src={`/api/resources/dspace-bitstream/${selectedBitstream?.uuid}`}
-																	alt={selectedBitstream?.name}
-																	className="max-h-[70vh] max-w-full object-contain rounded-md shadow-sm"
-																/>
-															) : isPdf(selectedBitstream) ? (
-																<PdfPreview
-																	fileUrl={`/api/resources/dspace-bitstream/${selectedBitstream?.uuid}`}
-																/>
-															) : (
-																<div className="text-sm text-muted-foreground">
-																	<div className="font-medium mb-1">
-																		{selectedBitstream?.name}
-																	</div>
-																	<div className="text-xs">
-																		Type:{" "}
-																		{selectedBitstream?.format || "Unknown"}
-																	</div>
-																</div>
+															renderBitstreamPreview(
+																selectedBitstream,
+																selectedBitstreamUrl,
+																"No additional files",
 															)
 														) : (
 															<div className="text-muted-foreground">
@@ -1055,11 +1120,7 @@ export default function ResourceTable() {
 										{/* Close Button */}
 										<button
 											type="button"
-											onClick={() => {
-												setShowPreviewModal(false);
-												setPrimaryBitstream(null);
-												setBundledBitstreams([]);
-											}}
+											onClick={closePreview}
 											className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white text-lg font-bold flex items-center justify-center transition-colors"
 										>
 											×
