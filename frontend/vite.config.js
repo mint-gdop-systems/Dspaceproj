@@ -42,6 +42,11 @@ export default defineConfig(({ mode }) => {
 					changeOrigin: true,
 					secure: false,
 				},
+				"/media": {
+					target: "http://10.0.0.158:8000",
+					changeOrigin: true,
+					secure: false,
+				},
 			},
 		},
 	};
