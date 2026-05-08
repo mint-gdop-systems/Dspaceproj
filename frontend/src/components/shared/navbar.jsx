@@ -1,4 +1,9 @@
-import { HomeIcon, LogInIcon, LogOutIcon, UploadIcon } from "lucide-react";
+import {
+	HomeIcon,
+	LogInIcon,
+	LogOutIcon,
+	UploadIcon
+} from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
@@ -13,6 +18,9 @@ const Navbar = () => {
 	const location = useLocation();
 	const { user, logout } = useAuth();
 	const navigate = useNavigate();
+	const displayName = user?.name || user?.username || user?.email || "User";
+	const displayEmail =
+		user?.email && user.email !== displayName ? user.email : null;
 
 	return (
 		<nav className="bg-primary text-primary-foreground">
@@ -51,10 +59,24 @@ const Navbar = () => {
 				{/* Buttons */}
 				<div className="flex items-center gap-2">
 					{user ? (
-						<Button variant="secondary" onClick={logout}>
-							<LogOutIcon />
-							Log Out
-						</Button>
+						<>
+							<div className="hidden min-w-0 items-center gap-2 text-right sm:flex">
+								<div className="min-w-0 leading-tight">
+									<div className="max-w-44 truncate text-sm font-medium">
+										{displayName}
+									</div>
+									{displayEmail ? (
+										<div className="max-w-44 truncate text-xs text-primary-foreground/70">
+											{displayEmail}
+										</div>
+									) : null}
+								</div>
+							</div>
+							<Button variant="secondary" onClick={logout}>
+								<LogOutIcon />
+								Log Out
+							</Button>
+						</>
 					) : (
 						<Button variant="secondary" onClick={() => navigate("/signin")}>
 							<LogInIcon />

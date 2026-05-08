@@ -4,6 +4,7 @@ import {
 	useCallback,
 	useContext,
 	useEffect,
+	useRef,
 	useState,
 } from "react";
 import dspaceService, {
@@ -18,18 +19,83 @@ axios.defaults.xsrfHeaderName = "X-CSRFToken";
 axios.defaults.withCredentials = true;
 
 const AuthContext = createContext();
+const SESSION_CHECK_INTERVAL = 60 * 1000;
+const ACTIVE_SESSION_WINDOW = 5 * 60 * 1000;
+const REFRESH_BEFORE_EXPIRY = 10 * 60 * 1000;
+
+const defaultAuthContext = {
+	user: null,
+	token: null,
+	djangoToken: null,
+	login: async () => {
+		throw new Error("AuthProvider is not mounted.");
+	},
+	logout: async () => { },
+	loading: true,
+};
+
+const getMetadataValue = (metadata, field) => {
+	const values = metadata?.[field];
+	return Array.isArray(values) ? values[0]?.value : null;
+};
+
+const buildUserInfo = (status, fallback = {}) => {
+	const eperson = status?._embedded?.eperson || status?.eperson || {};
+	const firstName =
+		eperson.firstName ||
+		getMetadataValue(eperson.metadata, "eperson.firstname");
+	const lastName =
+		eperson.lastName || getMetadataValue(eperson.metadata, "eperson.lastname");
+	const fullName =
+		eperson.name ||
+		[firstName, lastName].filter(Boolean).join(" ").trim() ||
+		fallback.name ||
+		fallback.username ||
+		eperson.email ||
+		status?.email ||
+		fallback.email ||
+		"User";
+	const email = eperson.email || status?.email || fallback.email || "";
+
+	return {
+		...fallback,
+		...status,
+		...eperson,
+		id: eperson.id || eperson.uuid || status?.id || status?.uuid || fallback.id,
+		uuid: eperson.uuid || status?.uuid || fallback.uuid,
+		name: fullName,
+		username: fullName,
+		email,
+		authenticated: true,
+	};
+};
+
+const isSameUser = (current, next) => {
+	if (!current || !next) return current === next;
+
+	return (
+		current.authenticated === next.authenticated &&
+		current.id === next.id &&
+		current.uuid === next.uuid &&
+		current.name === next.name &&
+		current.username === next.username &&
+		current.email === next.email
+	);
+};
 
 export { AuthContext };
 
 export const useAuth = () => {
 	const context = useContext(AuthContext);
 	if (!context) {
-		throw new Error("useAuth must be used within an AuthProvider");
+		return defaultAuthContext;
 	}
 	return context;
 };
 
 export const AuthProvider = ({ children }) => {
+	const lastActivityRef = useRef(Date.now());
+	const currentUserRef = useRef(null);
 	const [user, setUser] = useState(() => {
 		try {
 			const savedUser = getCookie("dspaceUser");
@@ -39,6 +105,11 @@ export const AuthProvider = ({ children }) => {
 		}
 	});
 	const [loading, setLoading] = useState(!user);
+	const hasUser = Boolean(user);
+
+	useEffect(() => {
+		currentUserRef.current = user;
+	}, [user]);
 
 	const deleteAuthCookies = useCallback(() => {
 		[
@@ -53,6 +124,26 @@ export const AuthProvider = ({ children }) => {
 		].forEach(deleteCookie);
 	}, []);
 
+	const clearAuthState = useCallback(() => {
+		dspaceService.isAuthenticated = false;
+		dspaceService.authToken = null;
+		deleteAuthCookies();
+		setUser(null);
+	}, [deleteAuthCookies]);
+
+	const saveAuthenticatedUser = useCallback((status, fallback = {}) => {
+		if (dspaceService.authToken) {
+			setCookie("dspaceAuthToken", dspaceService.authToken);
+		}
+
+		const userInfo = buildUserInfo(status, fallback);
+		setUser((currentUser) =>
+			isSameUser(currentUser, userInfo) ? currentUser : userInfo,
+		);
+		setCookie("dspaceUser", JSON.stringify(userInfo));
+		return userInfo;
+	}, []);
+
 	const checkAuth = useCallback(async () => {
 		try {
 			const storedToken = getCookie("dspaceAuthToken");
@@ -63,49 +154,93 @@ export const AuthProvider = ({ children }) => {
 
 				const status = await dspaceService.checkAuthStatus();
 				if (status.authenticated) {
-					const userInfo = {
-						username: status.email || "User",
-						authenticated: true,
-						id: status.id || status.uuid,
-						...status,
-					};
-					setUser(userInfo);
-					setCookie("dspaceUser", JSON.stringify(userInfo));
+					saveAuthenticatedUser(status, currentUserRef.current || {});
 				} else {
-					deleteAuthCookies();
-					setUser(null);
+					clearAuthState();
 				}
 			} else {
-				setUser(null);
-				deleteCookie("dspaceUser");
+				clearAuthState();
 			}
 		} catch (error) {
 			console.error("Auth check failed", error);
-			deleteAuthCookies();
-			setUser(null);
+			clearAuthState();
 		} finally {
 			setLoading(false);
 		}
-	}, [deleteAuthCookies]);
+	}, [clearAuthState, saveAuthenticatedUser]);
+
+	const refreshSession = useCallback(async () => {
+		try {
+			const status = await dspaceService.refreshAuthentication();
+			if (status.authenticated) {
+				saveAuthenticatedUser(status, currentUserRef.current || {});
+				return true;
+			}
+		} catch (error) {
+			console.error("Session refresh failed", error);
+		}
+
+		clearAuthState();
+		return false;
+	}, [clearAuthState, saveAuthenticatedUser]);
 
 	useEffect(() => {
 		checkAuth();
 	}, [checkAuth]);
 
-	// Keep-alive heartbeat: checks auth status every 2 minutes
-	// to prevent session timeout while user is active
 	useEffect(() => {
-		if (!user) return;
+		const updateActivity = () => {
+			lastActivityRef.current = Date.now();
+		};
+		const activityEvents = [
+			"click",
+			"keydown",
+			"mousemove",
+			"scroll",
+			"touchstart",
+			"visibilitychange",
+		];
 
+		activityEvents.forEach((eventName) => {
+			window.addEventListener(eventName, updateActivity, { passive: true });
+		});
+
+		return () => {
+			activityEvents.forEach((eventName) => {
+				window.removeEventListener(eventName, updateActivity);
+			});
+		};
+	}, []);
+
+	// Refresh while the user is active. If the JWT expires anyway, clear local
+	// auth state so protected screens are closed immediately.
+	useEffect(() => {
+		if (!hasUser) return;
+
+		const verifySession = async () => {
+			if (dspaceService.isTokenExpired()) {
+				clearAuthState();
+				return;
+			}
+
+			const userIsActive =
+				Date.now() - lastActivityRef.current <= ACTIVE_SESSION_WINDOW;
+			if (userIsActive && dspaceService.isTokenExpired(REFRESH_BEFORE_EXPIRY)) {
+				await refreshSession();
+				return;
+			}
+
+			await checkAuth();
+		};
+
+		verifySession();
 		const heartbeatInterval = setInterval(
-			() => {
-				checkAuth();
-			},
-			2 * 60 * 1000, // 2 minutes
+			verifySession,
+			SESSION_CHECK_INTERVAL,
 		);
 
 		return () => clearInterval(heartbeatInterval);
-	}, [user, checkAuth]);
+	}, [checkAuth, clearAuthState, hasUser, refreshSession]);
 
 	const login = async (email, password) => {
 		try {
@@ -140,14 +275,16 @@ export const AuthProvider = ({ children }) => {
 					// We continue anyway as DSpace is the primary source
 				}
 
-				// Set user immediately after successful login
-				const userInfo = {
-					username: email.split("@")[0] || "User",
+				const fallbackUser = {
 					email: email,
+					username: email.split("@")[0] || "User",
 					authenticated: true,
 				};
-				setUser(userInfo);
-				setCookie("dspaceUser", JSON.stringify(userInfo));
+				const status = await dspaceService.checkAuthStatus();
+				saveAuthenticatedUser(
+					status.authenticated ? status : result,
+					fallbackUser,
+				);
 
 				return { success: true };
 			} else {
@@ -162,12 +299,10 @@ export const AuthProvider = ({ children }) => {
 	const logout = async () => {
 		try {
 			await dspaceService.logout();
-			deleteAuthCookies();
-			setUser(null);
+			clearAuthState();
 		} catch (error) {
 			console.error("Logout error:", error);
-			deleteAuthCookies();
-			setUser(null);
+			clearAuthState();
 		}
 	};
 

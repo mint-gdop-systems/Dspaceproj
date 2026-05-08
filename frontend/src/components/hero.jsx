@@ -28,16 +28,21 @@ const PAGE_SIZE = 20;
 
 const Hero = () => {
 	const { user } = useAuth();
+	const userKey = user?.uuid || user?.id || user?.email || "";
 	const [collections, setCollections] = useState([]);
 	const [selectedIndex, setSelectedIndex] = useState(0);
 	const [loading, setLoading] = useState(true);
-	const [pageInfo, setPageInfo] = useState({ number: 0, totalElements: 0, totalPages: 1 });
+	const [pageInfo, setPageInfo] = useState({
+		number: 0,
+		totalElements: 0,
+		totalPages: 1,
+	});
 	const [loadingMore, setLoadingMore] = useState(false);
 
 	useEffect(() => {
 		let mounted = true;
 
-		if (!user) {
+		if (!userKey) {
 			if (mounted) {
 				setCollections([]);
 				setLoading(false);
@@ -52,7 +57,9 @@ const Hero = () => {
 				const res = await dspaceService.fetchCollectionStats(0, PAGE_SIZE);
 				if (mounted) {
 					setCollections(res?.collectionstatses || []);
-					setPageInfo(res?.page || { number: 0, totalElements: 0, totalPages: 1 });
+					setPageInfo(
+						res?.page || { number: 0, totalElements: 0, totalPages: 1 },
+					);
 					setSelectedIndex(0);
 				}
 			} catch (err) {
@@ -70,7 +77,7 @@ const Hero = () => {
 		return () => {
 			mounted = false;
 		};
-	}, [user]);
+	}, [userKey]);
 
 	const loadMore = async () => {
 		if (loadingMore || pageInfo.number + 1 >= pageInfo.totalPages) return;
@@ -79,7 +86,12 @@ const Hero = () => {
 			const nextPage = pageInfo.number + 1;
 			const res = await dspaceService.fetchCollectionStats(nextPage, PAGE_SIZE);
 			const newCollections = res?.collectionstatses || [];
-			const newPageInfo = res?.page || { number: nextPage, size: PAGE_SIZE, totalElements: pageInfo.totalElements, totalPages: pageInfo.totalPages };
+			const newPageInfo = res?.page || {
+				number: nextPage,
+				size: PAGE_SIZE,
+				totalElements: pageInfo.totalElements,
+				totalPages: pageInfo.totalPages,
+			};
 			setCollections((prev) => [...prev, ...newCollections]);
 			setPageInfo(newPageInfo);
 		} catch (err) {

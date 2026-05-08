@@ -1,8 +1,46 @@
 const DSPACE_API_URL = "/api/dspace";
 
+const extractBearerToken = (token) => {
+	if (!token) return null;
+	return token.startsWith("Bearer ") ? token.slice("Bearer ".length) : token;
+};
+
+const readTokenExpiration = (token) => {
+	const bearerToken = extractBearerToken(token);
+	if (!bearerToken) return null;
+
+	const [, payload] = bearerToken.split(".");
+	if (!payload) return null;
+
+	try {
+		const normalizedPayload = payload
+			.replace(/-/g, "+")
+			.replace(/_/g, "/")
+			.padEnd(Math.ceil(payload.length / 4) * 4, "=");
+		const decodedPayload = atob(normalizedPayload);
+		const data = JSON.parse(decodedPayload);
+		return typeof data.exp === "number" ? data.exp * 1000 : null;
+	} catch {
+		return null;
+	}
+};
+
+const getCookieExpiration = (value, days) => {
+	if (typeof days === "number") {
+		return new Date(Date.now() + days * 864e5);
+	}
+
+	const tokenExpiration = readTokenExpiration(value);
+	if (tokenExpiration) {
+		return new Date(tokenExpiration);
+	}
+
+	return new Date(Date.now() + 7 * 864e5);
+};
+
 // Cookie Helpers
-export const setCookie = (name, value, days = 7) => {
-	const expires = new Date(Date.now() + days * 864e5).toUTCString();
+export const setCookie = (name, value, days) => {
+	const expires = getCookieExpiration(value, days).toUTCString();
 	document.cookie = `${name}=${encodeURIComponent(
 		value,
 	)}; expires=${expires}; path=/; SameSite=Lax`;
@@ -112,6 +150,18 @@ class DSpaceService {
 		return headers;
 	}
 
+	updateAuthTokenFromResponse(response) {
+		const authHeader =
+			response.headers.get("Authorization") ||
+			response.headers.get("authorization");
+		if (authHeader) {
+			this.authToken = authHeader;
+			this.isAuthenticated = true;
+		}
+
+		return authHeader;
+	}
+
 	async login(username, password) {
 		try {
 			if (!(await this.getCsrfToken())) {
@@ -142,12 +192,7 @@ class DSpaceService {
 				this.csrfToken = newToken;
 			}
 
-			const authHeader =
-				response.headers.get("Authorization") ||
-				response.headers.get("authorization");
-			if (authHeader) {
-				this.authToken = authHeader;
-			}
+			this.updateAuthTokenFromResponse(response);
 
 			if (response.status === 200) {
 				this.isAuthenticated = true;
@@ -183,6 +228,39 @@ class DSpaceService {
 		} catch {
 			return { authenticated: false };
 		}
+	}
+
+	async refreshAuthentication() {
+		const currentToken = this.getStoredToken();
+		if (!currentToken) {
+			this.isAuthenticated = false;
+			return { authenticated: false };
+		}
+
+		if (!(await this.getCsrfToken())) {
+			return { authenticated: false };
+		}
+
+		const headers = this.getCsrfHeaders({ Accept: "application/json" });
+		const response = await fetch(`${DSPACE_API_URL}/authn/login`, {
+			method: "POST",
+			credentials: "include",
+			headers,
+		});
+
+		this.updateAuthTokenFromResponse(response);
+
+		if (!response.ok || !this.authToken) {
+			this.isAuthenticated = false;
+			return { authenticated: false };
+		}
+
+		const status = await this.checkAuthStatus();
+		return {
+			...status,
+			authenticated: status.authenticated !== false,
+			refreshed: true,
+		};
 	}
 
 	async getCollections() {
@@ -297,6 +375,15 @@ class DSpaceService {
 		return null;
 	}
 
+	getTokenExpiration() {
+		return readTokenExpiration(this.getStoredToken());
+	}
+
+	isTokenExpired(bufferMs = 0) {
+		const expiresAt = this.getTokenExpiration();
+		return expiresAt ? Date.now() + bufferMs >= expiresAt : false;
+	}
+
 	buildMetadataListFromForm(metadata) {
 		const out = [];
 		const add = (key, raw) => {
@@ -377,28 +464,24 @@ class DSpaceService {
 	}
 
 	async createWorkspaceItem(collectionId) {
-		try {
-			const headers = this.getCsrfHeaders({
-				Accept: "application/json",
-				"Content-Type": "application/json",
-			});
+		const headers = this.getCsrfHeaders({
+			Accept: "application/json",
+			"Content-Type": "application/json",
+		});
 
-			const response = await fetch(
-				`${DSPACE_API_URL}/submission/workspaceitems?owningCollection=${collectionId}`,
-				{
-					method: "POST",
-					headers: headers,
-					credentials: "include",
-				},
-			);
+		const response = await fetch(
+			`${DSPACE_API_URL}/submission/workspaceitems?owningCollection=${collectionId}`,
+			{
+				method: "POST",
+				headers: headers,
+				credentials: "include",
+			},
+		);
 
-			if (response.ok || response.status === 201) {
-				return await response.json();
-			}
-			throw new Error(`Workspace item creation failed: ${response.status}`);
-		} catch (error) {
-			throw error;
+		if (response.ok || response.status === 201) {
+			return await response.json();
 		}
+		throw new Error(`Workspace item creation failed: ${response.status}`);
 	}
 
 	async updateMetadata(
@@ -648,32 +731,28 @@ class DSpaceService {
 	}
 
 	async submitWorkspaceItem(workspaceItemId) {
-		try {
-			const headers = this.getCsrfHeaders({
-				Accept: "application/json",
-				"Content-Type": "text/uri-list",
-			});
+		const headers = this.getCsrfHeaders({
+			Accept: "application/json",
+			"Content-Type": "text/uri-list",
+		});
 
-			const id =
-				typeof workspaceItemId === "object"
-					? workspaceItemId.id || workspaceItemId.uuid
-					: workspaceItemId;
-			const workspaceUri = `${window.location.protocol}//${window.location.host}/server/api/submission/workspaceitems/${id}`;
+		const id =
+			typeof workspaceItemId === "object"
+				? workspaceItemId.id || workspaceItemId.uuid
+				: workspaceItemId;
+		const workspaceUri = `${window.location.protocol}//${window.location.host}/server/api/submission/workspaceitems/${id}`;
 
-			const response = await fetch(`${DSPACE_API_URL}/workflow/workflowitems`, {
-				method: "POST",
-				credentials: "include",
-				headers: headers,
-				body: workspaceUri,
-			});
+		const response = await fetch(`${DSPACE_API_URL}/workflow/workflowitems`, {
+			method: "POST",
+			credentials: "include",
+			headers: headers,
+			body: workspaceUri,
+		});
 
-			if (response.ok || response.status === 201 || response.status === 202) {
-				return await response.json().catch(() => ({ id: workspaceItemId }));
-			}
-			throw new Error(`Submission failed: ${response.status}`);
-		} catch (error) {
-			throw error;
+		if (response.ok || response.status === 201 || response.status === 202) {
+			return await response.json().catch(() => ({ id: workspaceItemId }));
 		}
+		throw new Error(`Submission failed: ${response.status}`);
 	}
 
 	async searchItems(filters = {}, page = 0, size = 10) {
@@ -800,7 +879,9 @@ class DSpaceService {
 	async fetchCollectionStats(page = 0, size = 20) {
 		try {
 			const headers = this.getCsrfHeaders({ Accept: "application/json" });
-			const url = new URL(`${window.location.origin}${DSPACE_API_URL}/statistics/collectionstats`);
+			const url = new URL(
+				`${window.location.origin}${DSPACE_API_URL}/statistics/collectionstats`,
+			);
 			url.searchParams.set("page", String(page));
 			url.searchParams.set("size", String(size));
 
@@ -812,7 +893,12 @@ class DSpaceService {
 				const data = await response.json();
 				return {
 					collectionstatses: data._embedded?.collectionstatses || [],
-					page: data.page || { number: 0, size, totalPages: 1, totalElements: 0 },
+					page: data.page || {
+						number: 0,
+						size,
+						totalPages: 1,
+						totalElements: 0,
+					},
 				};
 			}
 			throw new Error(`Failed to fetch collection stats: ${response.status}`);
