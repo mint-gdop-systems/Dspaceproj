@@ -706,6 +706,19 @@ const MetadataEditor = () => {
 		setSplitNames(newNames);
 	};
 
+	const getSameOriginMediaUrl = (url) => {
+		if (!url) return url;
+		try {
+			const parsedUrl = new URL(url, window.location.origin);
+			if (parsedUrl.pathname.startsWith("/media/")) {
+				return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
+			}
+			return parsedUrl.href;
+		} catch {
+			return url;
+		}
+	};
+
 	const handleSplitSubmit = async () => {
 		if (!selectedFile) return;
 		try {
@@ -729,7 +742,7 @@ const MetadataEditor = () => {
 				for (const fileData of data.files) {
 					try {
 						// Fetch the file blob to have a local File object
-						const res = await fetch(fileData.url);
+						const res = await fetch(getSameOriginMediaUrl(fileData.url));
 						const blob = await res.blob();
 
 						const newFileItem = {

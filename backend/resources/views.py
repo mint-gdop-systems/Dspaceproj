@@ -971,7 +971,7 @@ def pdf_split(request):
             with open(file_path, "wb") as f:
                 f.write(part.getvalue())
 
-            url = f"{request.scheme}://{request.get_host()}{settings.MEDIA_URL}{name}"
+            url = f"{settings.MEDIA_URL}{name}"
             response_files.append({"name": name, "url": url})
 
         return Response({"message": "Split successful", "files": response_files})

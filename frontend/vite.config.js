@@ -43,7 +43,7 @@ export default defineConfig(({ mode }) => {
 					secure: false,
 				},
 				"/media": {
-					target: "http://10.0.0.158:8000",
+					target: env.VITE_DJANGO_API_URL || "http://localhost:8000",
 					changeOrigin: true,
 					secure: false,
 				},
