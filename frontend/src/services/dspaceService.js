@@ -135,16 +135,20 @@ class DSpaceService {
 	}
 
 	getCsrfHeaders(additionalHeaders = {}) {
-		const headers = { ...additionalHeaders };
+		const headers = new Headers(additionalHeaders);
 		if (this.csrfToken) {
-			headers["X-XSRF-TOKEN"] = this.csrfToken;
+			headers.set("X-XSRF-TOKEN", this.csrfToken);
+			headers.set("DSPACE-XSRF-TOKEN", this.csrfToken);
+			headers.set("X-CSRF-TOKEN", this.csrfToken);
+			headers.set("X-CSRFToken", this.csrfToken);
 		}
 
 		const token = this.getStoredToken();
 		if (token) {
-			headers.Authorization = token.startsWith("Bearer ")
-				? token
-				: `Bearer ${token}`;
+			headers.set(
+				"Authorization",
+				token.startsWith("Bearer ") ? token : `Bearer ${token}`,
+			);
 		}
 
 		return headers;
@@ -156,6 +160,9 @@ class DSpaceService {
 			"DSPACE-XSRF-TOKEN",
 			"XSRF-TOKEN",
 			"X-XSRF-TOKEN",
+			"X-CSRF-TOKEN",
+			"X-CSRFToken",
+			"X-CSRF-TOKEN",
 			"dspace-xsrf-token",
 			"xsrf-token",
 			"x-xsrf-token",
@@ -197,21 +204,32 @@ class DSpaceService {
 
 	// Enhanced fetch wrapper that ensures CSRF token and updates it from responses
 	async fetchWithCsrf(url, options = {}) {
+		const requestOptions = { ...options };
+
+		const makeRequest = async () => {
+			const headers = this.getCsrfHeaders(requestOptions.headers || {});
+			const enhancedOptions = {
+				...requestOptions,
+				headers,
+				credentials: "include",
+			};
+
+			const response = await fetch(url, enhancedOptions);
+			this.updateCsrfTokenFromResponse(response);
+			return response;
+		};
+
 		// Ensure we have a CSRF token before making the request
 		await this.ensureCsrfToken();
 
-		// Add CSRF headers to the request
-		const headers = this.getCsrfHeaders(options.headers || {});
-		const enhancedOptions = {
-			...options,
-			headers,
-			credentials: "include",
-		};
+		let response = await makeRequest();
 
-		const response = await fetch(url, enhancedOptions);
-
-		// Always try to update CSRF token from response headers
-		this.updateCsrfTokenFromResponse(response);
+		if (response.status === 403) {
+			const refreshed = await this.getCsrfToken();
+			if (refreshed) {
+				response = await makeRequest();
+			}
+		}
 
 		return response;
 	}
@@ -230,19 +248,43 @@ class DSpaceService {
 
 	async login(username, password) {
 		try {
+			// Always fetch a fresh CSRF token for login
+			await this.getCsrfToken();
+
 			const formData = new URLSearchParams();
 			formData.append("user", username);
 			formData.append("password", password);
 
-			const response = await this.fetchWithCsrf(`${DSPACE_API_URL}/authn/login`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/x-www-form-urlencoded",
-					Accept: "application/json",
-				},
-				body: formData.toString(),
+			const headers = this.getCsrfHeaders({
+				"Content-Type": "application/x-www-form-urlencoded",
+				Accept: "application/json",
 			});
 
+			let response = await fetch(`${DSPACE_API_URL}/authn/login`, {
+				method: "POST",
+				headers: headers,
+				body: formData.toString(),
+				credentials: "include",
+			});
+
+			// If we get 403, try one more time with a fresh token
+			if (response.status === 403) {
+				console.log("Login failed with 403, retrying with fresh CSRF token...");
+				await this.getCsrfToken();
+				const retryHeaders = this.getCsrfHeaders({
+					"Content-Type": "application/x-www-form-urlencoded",
+					Accept: "application/json",
+				});
+
+				response = await fetch(`${DSPACE_API_URL}/authn/login`, {
+					method: "POST",
+					headers: retryHeaders,
+					body: formData.toString(),
+					credentials: "include",
+				});
+			}
+
+			this.updateCsrfTokenFromResponse(response);
 			this.updateAuthTokenFromResponse(response);
 
 			if (response.status === 200) {
