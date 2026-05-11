@@ -53,6 +53,8 @@ export default function ResourceTable() {
 		itemidentifier: { value: "", operator: "equals" },
 	});
 
+	const enableDownload = import.meta.env.VITE_ENABLE_FILE_DOWNLOAD === 'true';
+
 	const [pagination, setPagination] = useState({
 		number: 0,
 		size: 10,
@@ -907,7 +909,7 @@ export default function ResourceTable() {
 															))}
 														</select>
 													</div>
-													{activePreviewBitstream && activePreviewUrl && (
+													{enableDownload && activePreviewBitstream && activePreviewUrl && (
 														<a
 															href={activePreviewUrl}
 															target="_blank"
@@ -941,7 +943,7 @@ export default function ResourceTable() {
 														<h2 className="text-lg font-semibold truncate text-ellipsis line-clamp-1">
 															{primaryBitstream?.name || "Preview"}
 														</h2>
-														{primaryBitstream && primaryBitstreamUrl && (
+														{enableDownload && primaryBitstream && primaryBitstreamUrl && (
 															<a
 																href={primaryBitstreamUrl}
 																target="_blank"
@@ -1083,7 +1085,7 @@ export default function ResourceTable() {
 																</select>
 															)}
 														</div>
-														{bundledBitstreams?.length > 0 &&
+														{enableDownload && bundledBitstreams?.length > 0 &&
 															selectedBitstream &&
 															selectedBitstreamUrl && (
 																<a
