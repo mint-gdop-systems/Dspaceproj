@@ -150,6 +150,72 @@ class DSpaceService {
 		return headers;
 	}
 
+	// Extract CSRF token from response headers
+	updateCsrfTokenFromResponse(response) {
+		const headerNames = [
+			"DSPACE-XSRF-TOKEN",
+			"XSRF-TOKEN",
+			"X-XSRF-TOKEN",
+			"dspace-xsrf-token",
+			"xsrf-token",
+			"x-xsrf-token",
+		];
+
+		for (const headerName of headerNames) {
+			try {
+				const token = response.headers.get(headerName);
+				if (token) {
+					this.csrfToken = token;
+					break;
+				}
+			} catch {}
+		}
+	}
+
+	// Ensure CSRF token is available before making requests
+	async ensureCsrfToken() {
+		// First check if we already have a token
+		if (this.csrfToken) {
+			return true;
+		}
+
+		// Check for token in cookies
+		const token =
+			getCookie("DSPACE-XSRF-COOKIE") ||
+			getCookie("XSRF-TOKEN") ||
+			getCookie("DSPACE-XSRF-TOKEN") ||
+			getCookie("csrftoken");
+
+		if (token) {
+			this.csrfToken = token;
+			return true;
+		}
+
+		// Fetch new token if none found
+		return await this.getCsrfToken();
+	}
+
+	// Enhanced fetch wrapper that ensures CSRF token and updates it from responses
+	async fetchWithCsrf(url, options = {}) {
+		// Ensure we have a CSRF token before making the request
+		await this.ensureCsrfToken();
+
+		// Add CSRF headers to the request
+		const headers = this.getCsrfHeaders(options.headers || {});
+		const enhancedOptions = {
+			...options,
+			headers,
+			credentials: "include",
+		};
+
+		const response = await fetch(url, enhancedOptions);
+
+		// Always try to update CSRF token from response headers
+		this.updateCsrfTokenFromResponse(response);
+
+		return response;
+	}
+
 	updateAuthTokenFromResponse(response) {
 		const authHeader =
 			response.headers.get("Authorization") ||
@@ -164,33 +230,18 @@ class DSpaceService {
 
 	async login(username, password) {
 		try {
-			if (!(await this.getCsrfToken())) {
-				throw new Error("Failed to get CSRF token.");
-			}
-
 			const formData = new URLSearchParams();
 			formData.append("user", username);
 			formData.append("password", password);
 
-			const headers = this.getCsrfHeaders({
-				"Content-Type": "application/x-www-form-urlencoded",
-				Accept: "application/json",
-			});
-
-			const response = await fetch(`${DSPACE_API_URL}/authn/login`, {
+			const response = await this.fetchWithCsrf(`${DSPACE_API_URL}/authn/login`, {
 				method: "POST",
-				headers: headers,
+				headers: {
+					"Content-Type": "application/x-www-form-urlencoded",
+					Accept: "application/json",
+				},
 				body: formData.toString(),
-				credentials: "include",
 			});
-
-			const newToken =
-				response.headers.get("DSPACE-XSRF-TOKEN") ||
-				response.headers.get("XSRF-TOKEN") ||
-				response.headers.get("X-XSRF-TOKEN");
-			if (newToken) {
-				this.csrfToken = newToken;
-			}
 
 			this.updateAuthTokenFromResponse(response);
 
@@ -213,10 +264,8 @@ class DSpaceService {
 
 	async checkAuthStatus() {
 		try {
-			const headers = this.getCsrfHeaders({ Accept: "application/json" });
-			const response = await fetch(`${DSPACE_API_URL}/authn/status`, {
-				credentials: "include",
-				headers: headers,
+			const response = await this.fetchWithCsrf(`${DSPACE_API_URL}/authn/status`, {
+				headers: { Accept: "application/json" },
 			});
 
 			if (response.ok) {
@@ -237,15 +286,9 @@ class DSpaceService {
 			return { authenticated: false };
 		}
 
-		if (!(await this.getCsrfToken())) {
-			return { authenticated: false };
-		}
-
-		const headers = this.getCsrfHeaders({ Accept: "application/json" });
-		const response = await fetch(`${DSPACE_API_URL}/authn/login`, {
+		const response = await this.fetchWithCsrf(`${DSPACE_API_URL}/authn/login`, {
 			method: "POST",
-			credentials: "include",
-			headers,
+			headers: { Accept: "application/json" },
 		});
 
 		this.updateAuthTokenFromResponse(response);
@@ -265,10 +308,8 @@ class DSpaceService {
 
 	async getCollections() {
 		try {
-			const headers = this.getCsrfHeaders({ Accept: "application/json" });
-			const response = await fetch(`${DSPACE_API_URL}/core/collections`, {
-				credentials: "include",
-				headers: headers,
+			const response = await this.fetchWithCsrf(`${DSPACE_API_URL}/core/collections`, {
+				headers: { Accept: "application/json" },
 			});
 
 			if (response.ok) {
@@ -283,10 +324,8 @@ class DSpaceService {
 
 	async getOwningCollection(url) {
 		try {
-			const headers = this.getCsrfHeaders({ Accept: "application/json" });
-			const response = await fetch(`${DSPACE_API_URL}${url}`, {
-				credentials: "include",
-				headers: headers,
+			const response = await this.fetchWithCsrf(`${DSPACE_API_URL}${url}`, {
+				headers: { Accept: "application/json" },
 			});
 
 			if (response.ok) {
@@ -301,10 +340,8 @@ class DSpaceService {
 
 	async getParentCommunity(url) {
 		try {
-			const headers = this.getCsrfHeaders({ Accept: "application/json" });
-			const response = await fetch(`${DSPACE_API_URL}${url}`, {
-				credentials: "include",
-				headers: headers,
+			const response = await this.fetchWithCsrf(`${DSPACE_API_URL}${url}`, {
+				headers: { Accept: "application/json" },
 			});
 
 			if (response.ok) {
@@ -319,15 +356,13 @@ class DSpaceService {
 
 	async getSubmitAuthorizedCollections(page = 0, size = 20) {
 		try {
-			const headers = this.getCsrfHeaders({
-				Accept: "application/json",
-				"Content-Type": "application/json",
-			});
-			const response = await fetch(
+			const response = await this.fetchWithCsrf(
 				`${DSPACE_API_URL}/core/collections/search/findSubmitAuthorized?page=${page}&size=${size}&query=&embed=parentCommunity`,
 				{
-					headers: headers,
-					credentials: "include",
+					headers: {
+						Accept: "application/json",
+						"Content-Type": "application/json",
+					},
 				},
 			);
 
@@ -421,21 +456,18 @@ class DSpaceService {
 	}
 
 	async createItem(collectionId, metadata) {
-		const headers = this.getCsrfHeaders({
-			Accept: "application/json",
-			"Content-Type": "application/json",
-		});
-
 		const metadataList = this.buildMetadataListFromForm(metadata || {});
 		if (!metadataList.length) {
 			throw new Error("No metadata provided.");
 		}
 
 		const url1 = `${DSPACE_API_URL}/core/collections/${collectionId}/items`;
-		const res1 = await fetch(url1, {
+		const res1 = await this.fetchWithCsrf(url1, {
 			method: "POST",
-			headers,
-			credentials: "include",
+			headers: {
+				Accept: "application/json",
+				"Content-Type": "application/json",
+			},
 			body: JSON.stringify({ metadata: metadataList }),
 		});
 
@@ -445,10 +477,12 @@ class DSpaceService {
 
 		if (res1.status === 404 || res1.status === 405) {
 			const url2 = `${DSPACE_API_URL}/core/items`;
-			const res2 = await fetch(url2, {
+			const res2 = await this.fetchWithCsrf(url2, {
 				method: "POST",
-				headers,
-				credentials: "include",
+				headers: {
+					Accept: "application/json",
+					"Content-Type": "application/json",
+				},
 				body: JSON.stringify({
 					metadata: metadataList,
 					owningCollection: { uuid: collectionId },
@@ -464,17 +498,14 @@ class DSpaceService {
 	}
 
 	async createWorkspaceItem(collectionId) {
-		const headers = this.getCsrfHeaders({
-			Accept: "application/json",
-			"Content-Type": "application/json",
-		});
-
-		const response = await fetch(
+		const response = await this.fetchWithCsrf(
 			`${DSPACE_API_URL}/submission/workspaceitems?owningCollection=${collectionId}`,
 			{
 				method: "POST",
-				headers: headers,
-				credentials: "include",
+				headers: {
+					Accept: "application/json",
+					"Content-Type": "application/json",
+				},
 			},
 		);
 
@@ -535,11 +566,6 @@ class DSpaceService {
 		if (metadataUpdates.length === 0) return true;
 
 		try {
-			const baseHeaders = this.getCsrfHeaders({
-				"Content-Type": "application/json-patch+json",
-				Accept: "application/json",
-			});
-
 			const FIELD_SECTION_MAP = {
 				"crvs.family.count": "traditionalpagetwo",
 				"dc.description": "traditionalpagetwo",
@@ -585,12 +611,14 @@ class DSpaceService {
 				return { ...p, path: `/sections/${section}/${actualField}` };
 			});
 
-			const res = await fetch(
+			const res = await this.fetchWithCsrf(
 				`${DSPACE_API_URL}/submission/workspaceitems/${workspaceItemId}`,
 				{
 					method: "PATCH",
-					headers: baseHeaders,
-					credentials: "include",
+					headers: {
+						"Content-Type": "application/json-patch+json",
+						Accept: "application/json",
+					},
 					body: JSON.stringify(batch),
 				},
 			).catch(() => {});
@@ -608,14 +636,11 @@ class DSpaceService {
 			formData.append("file", file);
 			formData.append("name", file.name);
 
-			const headers = this.getCsrfHeaders({ Accept: "application/json" });
-
-			const response = await fetch(
+			const response = await this.fetchWithCsrf(
 				`${DSPACE_API_URL}/submission/workspaceitems/${workspaceItemId}`,
 				{
 					method: "POST",
-					credentials: "include",
-					headers: headers,
+					headers: { Accept: "application/json" },
 					body: formData,
 				},
 			);
@@ -647,11 +672,6 @@ class DSpaceService {
 
 	async updateBitstreamMetadata(bitstreamUuid, metadata) {
 		try {
-			const headers = this.getCsrfHeaders({
-				"Content-Type": "application/json-patch+json",
-				Accept: "application/json",
-			});
-
 			// Standard DSpace 7/8/9 BITSTREAM metadata update via PATCH
 			const patch = [];
 			if (metadata.documentType) {
@@ -687,10 +707,12 @@ class DSpaceService {
 
 			const url = `${DSPACE_API_URL}/core/bitstreams/${bitstreamUuid}`;
 
-			const response = await fetch(url, {
+			const response = await this.fetchWithCsrf(url, {
 				method: "PATCH",
-				credentials: "include",
-				headers: headers,
+				headers: {
+					"Content-Type": "application/json-patch+json",
+					Accept: "application/json",
+				},
 				body: JSON.stringify(patch),
 			});
 
@@ -708,17 +730,14 @@ class DSpaceService {
 
 	async acceptWorkspaceLicense(workspaceItemId) {
 		try {
-			const headers = this.getCsrfHeaders({
-				"Content-Type": "application/json-patch+json",
-				Accept: "application/json",
-			});
-
-			const response = await fetch(
+			const response = await this.fetchWithCsrf(
 				`${DSPACE_API_URL}/submission/workspaceitems/${workspaceItemId}`,
 				{
 					method: "PATCH",
-					credentials: "include",
-					headers: headers,
+					headers: {
+						"Content-Type": "application/json-patch+json",
+						Accept: "application/json",
+					},
 					body: JSON.stringify([
 						{ op: "replace", path: "/sections/license/granted", value: true },
 					]),
@@ -731,21 +750,18 @@ class DSpaceService {
 	}
 
 	async submitWorkspaceItem(workspaceItemId) {
-		const headers = this.getCsrfHeaders({
-			Accept: "application/json",
-			"Content-Type": "text/uri-list",
-		});
-
 		const id =
 			typeof workspaceItemId === "object"
 				? workspaceItemId.id || workspaceItemId.uuid
 				: workspaceItemId;
 		const workspaceUri = `${window.location.protocol}//${window.location.host}/server/api/submission/workspaceitems/${id}`;
 
-		const response = await fetch(`${DSPACE_API_URL}/workflow/workflowitems`, {
+		const response = await this.fetchWithCsrf(`${DSPACE_API_URL}/workflow/workflowitems`, {
 			method: "POST",
-			credentials: "include",
-			headers: headers,
+			headers: {
+				Accept: "application/json",
+				"Content-Type": "text/uri-list",
+			},
 			body: workspaceUri,
 		});
 
@@ -792,9 +808,8 @@ class DSpaceService {
 
 			const headers = this.getCsrfHeaders({ Accept: "application/json" });
 			const url = `${DSPACE_API_URL}/discover/search/objects?${params.toString().replace(/\*/g, "%2A")}`;
-			const response = await fetch(url, {
-				credentials: "include",
-				headers: headers,
+			const response = await this.fetchWithCsrf(url, {
+				headers: { Accept: "application/json" },
 			});
 
 			if (response.ok) {
@@ -823,12 +838,10 @@ class DSpaceService {
 
 	async getMySubmissions(userUuid) {
 		try {
-			const headers = this.getCsrfHeaders({ Accept: "application/json" });
-			const response = await fetch(
+			const response = await this.fetchWithCsrf(
 				`${DSPACE_API_URL}/submission/workspaceitems/search/findBySubmitter?uuid=${userUuid}`,
 				{
-					credentials: "include",
-					headers: headers,
+					headers: { Accept: "application/json" },
 				},
 			);
 
@@ -840,10 +853,8 @@ class DSpaceService {
 
 	async getItem(itemId) {
 		try {
-			const headers = this.getCsrfHeaders({ Accept: "application/json" });
-			const response = await fetch(`${DSPACE_API_URL}/core/items/${itemId}`, {
-				credentials: "include",
-				headers: headers,
+			const response = await this.fetchWithCsrf(`${DSPACE_API_URL}/core/items/${itemId}`, {
+				headers: { Accept: "application/json" },
 			});
 			return response.ok ? await response.json() : null;
 		} catch {
@@ -853,13 +864,11 @@ class DSpaceService {
 
 	async logout() {
 		try {
-			const headers = this.getCsrfHeaders({
-				"Content-Type": "application/x-www-form-urlencoded",
-			});
-			await fetch(`${DSPACE_API_URL}/authn/logout`, {
+			await this.fetchWithCsrf(`${DSPACE_API_URL}/authn/logout`, {
 				method: "POST",
-				credentials: "include",
-				headers: headers,
+				headers: {
+					"Content-Type": "application/x-www-form-urlencoded",
+				},
 			});
 		} catch {
 		} finally {
@@ -871,15 +880,12 @@ class DSpaceService {
 
 	async getBitstreams(bundleId) {
 		try {
-			const headers = this.getCsrfHeaders({ Accept: "application/json" });
 			const [primaryRes, bundledRes] = await Promise.all([
-				fetch(`${DSPACE_API_URL}/core/bundles/${bundleId}/primaryBitstream`, {
-					credentials: "include",
-					headers: headers,
+				this.fetchWithCsrf(`${DSPACE_API_URL}/core/bundles/${bundleId}/primaryBitstream`, {
+					headers: { Accept: "application/json" },
 				}),
-				fetch(`${DSPACE_API_URL}/core/bundles/${bundleId}/bitstreams`, {
-					credentials: "include",
-					headers: headers,
+				this.fetchWithCsrf(`${DSPACE_API_URL}/core/bundles/${bundleId}/bitstreams`, {
+					headers: { Accept: "application/json" },
 				}),
 			]);
 
@@ -895,13 +901,9 @@ class DSpaceService {
 	}
 
 	async getBitstreamContent(bitstreamUuid) {
-		const headers = this.getCsrfHeaders({});
-		const response = await fetch(
+		const response = await this.fetchWithCsrf(
 			`${DSPACE_API_URL}/core/bitstreams/${bitstreamUuid}/content`,
-			{
-				credentials: "include",
-				headers,
-			},
+			{},
 		);
 
 		if (!response.ok) {
@@ -913,16 +915,14 @@ class DSpaceService {
 
 	async fetchCollectionStats(page = 0, size = 20) {
 		try {
-			const headers = this.getCsrfHeaders({ Accept: "application/json" });
 			const url = new URL(
 				`${window.location.origin}${DSPACE_API_URL}/statistics/collectionstats`,
 			);
 			url.searchParams.set("page", String(page));
 			url.searchParams.set("size", String(size));
 
-			const response = await fetch(url.toString(), {
-				credentials: "include",
-				headers: headers,
+			const response = await this.fetchWithCsrf(url.toString(), {
+				headers: { Accept: "application/json" },
 			});
 			if (response.ok) {
 				const data = await response.json();
