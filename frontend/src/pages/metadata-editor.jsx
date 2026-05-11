@@ -407,26 +407,8 @@ const normalizeGenderValue = (value) => {
 };
 
 const applyOcrCandidatesToMetadata = (metadata, ocrCandidates, allowedKeys) => {
-	const nextMetadata = { ...metadata };
-
-	for (const [field, values] of Object.entries(ocrCandidates || {})) {
-		if (!allowedKeys.has(field) || values.length === 0) continue;
-
-		const fieldConfig = metadataFieldConfig.get(field);
-		const currentValue = nextMetadata[field];
-
-		if (!isBlankMetadataValue(currentValue)) continue;
-
-		let valToSet = values[0];
-		if (fieldConfig?.valuePairs === "gender_types") {
-			valToSet = normalizeGenderValue(valToSet);
-		}
-
-		nextMetadata[field] =
-			fieldConfig?.inputType === "repeatable-text" ? [valToSet] : valToSet;
-	}
-
-	return nextMetadata;
+	// No longer auto-populate OCR values - let users manually select from dropdown
+	return metadata;
 };
 
 const inferDocumentTypeFromOcr = (ocrDocumentType) => {
@@ -1131,7 +1113,7 @@ const MetadataEditor = () => {
 		onValueChange,
 	) => {
 		const candidates = ocrMetadataCandidates[metadataKey] || [];
-		if (candidates.length <= 1) return null;
+		if (candidates.length === 0) return null;
 
 		const normalizedCurrentValue = Array.isArray(currentValue)
 			? currentValue.find(
@@ -1142,28 +1124,32 @@ const MetadataEditor = () => {
 		const fieldConfig = metadataFieldConfig.get(metadataKey);
 		const selectedCandidateIndex = candidates.findIndex((c) => {
 			if (fieldConfig?.valuePairs === "gender_types") {
-				return normalizeGenderValue(c) === normalizedCurrentValue;
+				const normalized = normalizeGenderValue(c);
+				const current = normalizeGenderValue(normalizedCurrentValue);
+				return normalized === current;
 			}
 			return c === normalizedCurrentValue;
 		});
 
 		return (
 			<div className="mt-2 rounded-md border border-amber-200 bg-amber-50/60 p-2">
-				<p className="text-xs text-amber-900">
-					OCR found {candidates.length} possible values for this field.
-				</p>
+				<div className="flex items-center justify-between mb-2">
+					<p className="text-xs text-amber-900">
+						OCR found {candidates.length} possible value{candidates.length !== 1 ? 's' : ''}.
+					</p>
+				</div>
 				<Select
 					value={
 						selectedCandidateIndex >= 0
 							? String(selectedCandidateIndex)
 							: undefined
 					}
-					onValueChange={(value) =>
-						onValueChange(candidates[Number.parseInt(value, 10)])
-					}
+					onValueChange={(value) => {
+						onValueChange(candidates[Number.parseInt(value, 10)]);
+					}}
 				>
 					<SelectTrigger className="mt-2 w-full bg-background">
-						<SelectValue placeholder="Choose an OCR value" />
+						<SelectValue placeholder="Select an OCR value to populate this field" />
 					</SelectTrigger>
 					<SelectContent>
 						{candidates.map((candidate, index) => (

@@ -33,3 +33,6 @@ ql -U *
 sample_data/
 
 ocr_debug/
+
+# Compose overrides
+compose.override.yml
