@@ -168,6 +168,9 @@ const Home = () => {
                         judge_number: getVal("legal.judge.number"),
                         location: getVal("legal.location"),
                         case_level: getVal("legal.case.level"),
+                        case_type: getVal("legal.case.type"),
+                        primary_judge: getVal("legal.judge.primary"),
+                        registration_date: getVal("legal.date.registration"),
                         plaintiff: getVal("legal.case.plaintiff"),
                         defendant: getVal("legal.case.defendant"),
                         shelf_number: getVal("legal.physical.shelfNumber"),
@@ -299,8 +302,9 @@ const Home = () => {
 
     const handleCatalogClick = (resource) => {
         // Construct handle URL if external_id exists
+        const baseUrl = import.meta.env.DSPACE_FRONTEND_URL || "http://localhost:4000";
         const handleUrl = resource.external_id
-            ? `http://localhost:4000/handle/${resource.external_id}`
+            ? `${baseUrl}/handle/${resource.external_id}`
             : (resource.url || "");
 
         setCatalogData({
@@ -453,6 +457,9 @@ const Home = () => {
                                 judge_number: getVal("legal.judge.number"),
                                 location: getVal("legal.location"),
                                 case_level: getVal("legal.case.level"),
+                                case_type: getVal("legal.case.type"),
+                                primary_judge: getVal("legal.judge.primary"),
+                                registration_date: getVal("legal.date.registration"),
                                 plaintiff: getVal("legal.case.plaintiff"),
                                 defendant: getVal("legal.case.defendant"),
                                 shelf_number: getVal("legal.physical.shelfNumber"),
@@ -530,28 +537,16 @@ const Home = () => {
                 if (!selectedValues || selectedValues.length === 0) continue;
 
                 let resourceValue;
-                if (category === 'source') {
-                    resourceValue = resource.source_name || resource.source || 'Unknown';
-                } else if (category === 'collection') {
-                    resourceValue = resource.collection_name;
-                } else if (category === 'type') {
-                    resourceValue = resource.resource_type || 'Unknown';
-                } else if (category === 'year') {
-                    resourceValue = resource.year;
-                } else if (category === 'language') {
-                    const lang = resource.language === 'en' ? 'English' :
-                        resource.language === 'am' ? 'Amharic' : resource.language;
-                    resourceValue = lang;
-                } else if (category === 'publisher') {
-                    resourceValue = resource.publisher || 'Unknown';
-                } else if (category === 'bench_session') {
-                    resourceValue = resource.bench_session;
-                } else if (category === 'location') {
-                    resourceValue = resource.location;
-                } else if (category === 'case_document_type') {
-                    resourceValue = resource.case_document_type;
+                if (category === 'case_type') {
+                    resourceValue = resource.case_type;
                 } else if (category === 'case_level') {
                     resourceValue = resource.case_level;
+                } else if (category === 'primary_judge') {
+                    resourceValue = resource.primary_judge;
+                } else if (category === 'location') {
+                    resourceValue = resource.location;
+                } else if (category === 'registration_date') {
+                    resourceValue = resource.registration_date;
                 }
 
                 if (resourceValue === null || resourceValue === undefined) {

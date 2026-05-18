@@ -70,8 +70,9 @@ const ResourceTable = ({ resources, loading, onCatalogClick }) => {
         } else if (resource.source === "dspace") {
             const isHandle = resource.external_id && resource.external_id.includes("/");
             const path = isHandle ? "handle" : "items";
+            const baseUrl = import.meta.env.DSPACE_FRONTEND_URL || "http://localhost:4000";
             window.open(
-                `http://localhost:4000/${path}/${resource.external_id}`,
+                `${baseUrl}/${path}/${resource.external_id}`,
                 "_blank",
             );
         }

@@ -225,14 +225,19 @@ class DSpaceService {
         add("legal.case.fileNumber", metadata.fileNumber);
         add("legal.case.type", metadata.caseType);
         add("legal.case.level", metadata.caseLevel);
+        add("legal.case.status", metadata.caseStatus);
         add("legal.case.plaintiff", metadata.plaintiff);
         add("legal.case.defendant", metadata.defendant);
+        add("legal.case.representative", metadata.caseRepresentative);
+        add("legal.date.registration", metadata.registrationDate);
+        add("legal.judge.primary", metadata.primaryJudge);
+        add("legal.judge.number", metadata.judgeNumber);
+        add("legal.location", metadata.location);
+        add("legal.case.format", metadata.recordFormat);
         add("legal.physical.shelfNumber", metadata.shelfNumber);
         add("legal.physical.rowNumber", metadata.rowNumber);
         add("legal.physical.rfid", metadata.rfid);
         add("legal.document.type", metadata.documentType);
-        add("legal.judge.number", metadata.judgeNumber);
-        add("legal.location", metadata.location);
 
         return out;
     }
@@ -344,14 +349,19 @@ class DSpaceService {
                 "legal.case.fileNumber": metadata.fileNumber,
                 "legal.case.type": metadata.caseType,
                 "legal.case.level": metadata.caseLevel,
+                "legal.case.status": metadata.caseStatus,
                 "legal.case.plaintiff": metadata.plaintiff,
                 "legal.case.defendant": metadata.defendant,
+                "legal.case.representative": metadata.caseRepresentative,
+                "legal.date.registration": metadata.registrationDate,
+                "legal.judge.primary": metadata.primaryJudge,
+                "legal.judge.number": metadata.judgeNumber,
+                "legal.location": metadata.location,
+                "legal.case.format": metadata.recordFormat,
                 "legal.physical.shelfNumber": metadata.shelfNumber,
                 "legal.physical.rowNumber": metadata.rowNumber,
                 "legal.physical.rfid": metadata.rfid,
                 "legal.document.type": metadata.documentType,
-                "legal.judge.number": metadata.judgeNumber,
-                "legal.location": metadata.location,
             };
 
             for (const [field, raw] of Object.entries(dcFields)) {
@@ -489,7 +499,7 @@ class DSpaceService {
         }
     }
 
-    async updateBitstreamMetadata(bitstreamUuid, label) {
+    async updateBitstreamMetadata(bitstreamUuid, metadata) {
         try {
             const token = this.getStoredToken();
             const headers = this.getCsrfHeaders({
@@ -500,15 +510,28 @@ class DSpaceService {
                 headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
             }
 
-            // Standard DSpace 7/8/9 BITSTREAM metadata update via PATCH
-            // We use dc.description to store the 'label' since it's a standard field
-            const patch = [
-                {
-                    op: "add",
-                    path: "/metadata/dc.description",
-                    value: [{ value: label, language: null, authority: null, confidence: -1 }]
-                }
-            ];
+            const patch = [];
+            
+            if (metadata.title) {
+                patch.push({ op: "add", path: "/metadata/dc.title", value: [{ value: metadata.title, language: null, authority: null, confidence: -1 }] });
+            }
+            if (metadata.section) {
+                patch.push({ op: "add", path: "/metadata/legal.document.section", value: [{ value: metadata.section, language: null, authority: null, confidence: -1 }] });
+            }
+            if (metadata.type) {
+                patch.push({ op: "add", path: "/metadata/legal.document.type", value: [{ value: metadata.type, language: null, authority: null, confidence: -1 }] });
+            }
+            if (metadata.exhibitCode) {
+                patch.push({ op: "add", path: "/metadata/legal.document.exhibitCode", value: [{ value: metadata.exhibitCode, language: null, authority: null, confidence: -1 }] });
+            }
+            if (metadata.status) {
+                patch.push({ op: "add", path: "/metadata/legal.document.status", value: [{ value: metadata.status, language: null, authority: null, confidence: -1 }] });
+            }
+            if (metadata.description) {
+                patch.push({ op: "add", path: "/metadata/dc.description", value: [{ value: metadata.description, language: null, authority: null, confidence: -1 }] });
+            }
+
+            if (patch.length === 0) return true;
 
             const url = `${DSPACE_API_URL}/core/bitstreams/${bitstreamUuid}`;
             console.log(`DSpace 9: Patching bitstream metadata at ${url}`);

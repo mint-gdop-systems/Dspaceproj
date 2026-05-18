@@ -125,7 +125,3 @@ CSRF_TRUSTED_ORIGINS = [
 # Custom User Model
 AUTH_USER_MODEL = 'authentication.User'
 
-# External API URLs
-KOHA_API_URL = 'http://127.0.0.1:8085'
-DSPACE_API_URL = 'http://localhost:8080/server'
-VUFIND_API_URL = 'http://localhost:8090'
