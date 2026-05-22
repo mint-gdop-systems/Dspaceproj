@@ -611,6 +611,7 @@ class DSpaceService {
 			const FIELD_SECTION_MAP = {
 				"crvs.family.count": "traditionalpagetwo",
 				"dc.description": "traditionalpagetwo",
+				"crvs.vital.eventType": "vitalEventType",
 				"crvs.birth.childName": "birth",
 				"crvs.birth.gender": "birth",
 				"crvs.birth.dateOfBirth": "birth",

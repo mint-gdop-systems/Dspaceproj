@@ -302,9 +302,26 @@ const vitalEventSections = [
 	},
 ];
 
+const vitalEventTypeField = {
+	metadata: "crvs.vital.eventType",
+	label: "Vital Event Type",
+	inputType: "dropdown",
+	valuePairs: "vital_event_types",
+	required: true,
+};
+
+const vitalEventTypeOptions = ["Birth", "Marriage / Divorce", "Death"];
+
+const vitalEventTypeSectionMap = {
+	Birth: "birth",
+	"Marriage / Divorce": "marriageAndDivorce",
+	Death: "death",
+};
+
 const valuePairs = {
 	gender_types: genderOptions,
 	house_types: houseTypeOptions,
+	vital_event_types: vitalEventTypeOptions,
 };
 
 const getInitialHouseMetadata = () => ({
@@ -339,15 +356,20 @@ const houseMetadataKeys = new Set(
 );
 
 const vitalEventMetadataKeys = new Set(
-	vitalEventSections.flatMap((section) =>
-		section.fields.map((field) => field.metadata),
-	),
+	[
+		vitalEventTypeField.metadata,
+		...vitalEventSections.flatMap((section) =>
+			section.fields.map((field) => field.metadata),
+		),
+	],
 );
 
 const metadataFieldConfig = new Map(
-	[...houseSections, ...vitalEventSections].flatMap((section) =>
-		section.fields.map((field) => [field.metadata, field]),
-	),
+	[
+		...houseSections,
+		...vitalEventSections,
+		{ fields: [vitalEventTypeField] },
+	].flatMap((section) => section.fields.map((field) => [field.metadata, field])),
 );
 
 const dedupeStringValues = (values) => {
@@ -1066,6 +1088,21 @@ const MetadataEditor = () => {
 	const entityType = getEntityTypeFromCollection(selectedCollection);
 	const isVitalEventType = normalizeEntityType(entityType) === "vitalevent";
 	const isHouseType = !isVitalEventType;
+	const selectedVitalEventType =
+		vitalEventMetadata[vitalEventTypeField.metadata] || "";
+	const selectedVitalEventSection =
+		vitalEventTypeSectionMap[selectedVitalEventType] || null;
+	const visibleVitalEventSections = selectedVitalEventSection
+		? vitalEventSections.filter(
+			(section) => section.section === selectedVitalEventSection,
+		)
+		: [];
+	const visibleVitalEventMetadataKeys = new Set([
+		vitalEventTypeField.metadata,
+		...visibleVitalEventSections.flatMap((section) =>
+			section.fields.map((field) => field.metadata),
+		),
+	]);
 
 	const handleFileMetadataChange = (fileId, field, value) => {
 		setFiles((prev) =>
@@ -1174,11 +1211,12 @@ const MetadataEditor = () => {
 
 		if (
 			!collectionId ||
-			(isHouseType && !houseMetadata["crvs.identifier.houseNumber"])
+			(isHouseType && !houseMetadata["crvs.identifier.houseNumber"]) ||
+			(isVitalEventType && !selectedVitalEventType)
 		) {
 			const message = isHouseType
 				? "Please fill all mandatory fields: House Number, House Type and Collection"
-				: "Please select a collection.";
+				: "Please select a collection and vital event type.";
 			alert(message);
 			return;
 		}
@@ -1267,9 +1305,11 @@ const MetadataEditor = () => {
 			const processedHouseIdentifiers = processIdentifierList(houseIdentifiers);
 			const processedVitalEventIdentifiers = Object.entries(
 				vitalEventIdentifiers,
-			).flatMap(([section, list]) =>
-				processSectionIdentifierList(section, list),
-			);
+			)
+				.filter(([section]) => section === selectedVitalEventSection)
+				.flatMap(([section, list]) =>
+					processSectionIdentifierList(section, list),
+				);
 
 			const rawMetadata = isHouseType
 				? {
@@ -1281,7 +1321,11 @@ const MetadataEditor = () => {
 					...processedHouseIdentifiers,
 				}
 				: {
-					...vitalEventMetadata,
+					...Object.fromEntries(
+						Object.entries(vitalEventMetadata).filter(([field]) =>
+							visibleVitalEventMetadataKeys.has(field),
+						),
+					),
 				};
 
 			// Filter empty fields
@@ -1666,100 +1710,143 @@ const MetadataEditor = () => {
 											})}
 										</div>
 									))
-									: vitalEventSections.map((section) => (
-										<div key={section.section} className="space-y-3">
-											<h3 className="font-semibold">{section.title}</h3>
-											{section.fields.map((field) => (
-												<div key={field.metadata}>
-													<Label htmlFor={field.metadata}>
-														{field.label}
-													</Label>
-													{field.inputType === "dropdown" ? (
-														<Select
-															value={
-																vitalEventMetadata[field.metadata] ||
-																undefined
-															}
-															onValueChange={(value) =>
-																handleVitalEventFieldChange(
-																	field.metadata,
-																	value,
-																)
-															}
-														>
-															<SelectTrigger className="w-full">
-																<SelectValue
-																	placeholder={`Select ${field.label}`}
+									: (
+										<div className="space-y-5">
+											<div>
+												<Label htmlFor={vitalEventTypeField.metadata}>
+													{vitalEventTypeField.label}
+													<span className="text-destructive"> *</span>
+												</Label>
+												<Select
+													value={selectedVitalEventType || undefined}
+													onValueChange={(value) =>
+														handleVitalEventFieldChange(
+															vitalEventTypeField.metadata,
+															value,
+														)
+													}
+												>
+													<SelectTrigger className="w-full">
+														<SelectValue
+															placeholder={`Select ${vitalEventTypeField.label}`}
+														/>
+													</SelectTrigger>
+													<SelectContent>
+														{(
+															valuePairs[vitalEventTypeField.valuePairs] || []
+														).map((option) => (
+															<SelectItem key={option} value={option}>
+																{option}
+															</SelectItem>
+														))}
+													</SelectContent>
+												</Select>
+												{renderOcrCandidateSelector(
+													vitalEventTypeField.metadata,
+													selectedVitalEventType,
+													(value) =>
+														handleVitalEventFieldChange(
+															vitalEventTypeField.metadata,
+															value,
+														),
+												)}
+											</div>
+											{visibleVitalEventSections.map((section) => (
+												<div key={section.section} className="space-y-3">
+													<h3 className="font-semibold">{section.title}</h3>
+													{section.fields.map((field) => (
+														<div key={field.metadata}>
+															<Label htmlFor={field.metadata}>
+																{field.label}
+															</Label>
+															{field.inputType === "dropdown" ? (
+																<Select
+																	value={
+																		vitalEventMetadata[field.metadata] ||
+																		undefined
+																	}
+																	onValueChange={(value) =>
+																		handleVitalEventFieldChange(
+																			field.metadata,
+																			value,
+																		)
+																	}
+																>
+																	<SelectTrigger className="w-full">
+																		<SelectValue
+																			placeholder={`Select ${field.label}`}
+																		/>
+																	</SelectTrigger>
+																	<SelectContent>
+																		{(valuePairs[field.valuePairs] || []).map(
+																			(option) => (
+																				<SelectItem key={option} value={option}>
+																					{option}
+																				</SelectItem>
+																			),
+																		)}
+																	</SelectContent>
+																</Select>
+															) : field.inputType === "textarea" ? (
+																<Textarea
+																	id={field.metadata}
+																	value={vitalEventMetadata[field.metadata] || ""}
+																	onChange={(e) =>
+																		handleVitalEventFieldChange(
+																			field.metadata,
+																			e.target.value,
+																		)
+																	}
+																	rows="3"
 																/>
-															</SelectTrigger>
-															<SelectContent>
-																{(valuePairs[field.valuePairs] || []).map(
-																	(option) => (
-																		<SelectItem key={option} value={option}>
-																			{option}
-																		</SelectItem>
-																	),
-																)}
-															</SelectContent>
-														</Select>
-													) : field.inputType === "textarea" ? (
-														<Textarea
-															id={field.metadata}
-															value={vitalEventMetadata[field.metadata] || ""}
-															onChange={(e) =>
-																handleVitalEventFieldChange(
-																	field.metadata,
-																	e.target.value,
-																)
-															}
-															rows="3"
-														/>
-													) : (
-														<Input
-															id={field.metadata}
-															type={field.inputType}
-															value={vitalEventMetadata[field.metadata] || ""}
-															onChange={(e) =>
-																handleVitalEventFieldChange(
-																	field.metadata,
-																	e.target.value,
-																)
-															}
-														/>
-													)}
-													{renderOcrCandidateSelector(
-														field.metadata,
-														vitalEventMetadata[field.metadata] || "",
-														(value) =>
-															handleVitalEventFieldChange(
+															) : (
+																<Input
+																	id={field.metadata}
+																	type={field.inputType}
+																	value={vitalEventMetadata[field.metadata] || ""}
+																	onChange={(e) =>
+																		handleVitalEventFieldChange(
+																			field.metadata,
+																			e.target.value,
+																		)
+																	}
+																/>
+															)}
+															{renderOcrCandidateSelector(
 																field.metadata,
+																vitalEventMetadata[field.metadata] || "",
+																(value) =>
+																	handleVitalEventFieldChange(
+																		field.metadata,
+																		value,
+																	),
+															)}
+														</div>
+													))}
+													<IdentifiersField
+														label={`${section.title} Identifiers`}
+														identifiers={
+															vitalEventIdentifiers[section.section] || [
+																{ type: "filenumber", value: "" },
+															]
+														}
+														onChange={(index, field, value) =>
+															handleVitalIdentifierChange(
+																section.section,
+																index,
+																field,
 																value,
-															),
-													)}
+															)
+														}
+														onAdd={() => addVitalIdentifier(section.section)}
+														onRemove={(index) =>
+															removeVitalIdentifier(section.section, index)
+														}
+													/>
 												</div>
 											))}
-											<IdentifiersField
-												label={`${section.title} Identifiers`}
-												identifiers={
-													vitalEventIdentifiers[section.section] || [
-														{ type: "filenumber", value: "" },
-													]
-												}
-												onChange={(index, field, value) =>
-													handleVitalIdentifierChange(
-														section.section,
-														index,
-														field,
-														value,
-													)
-												}
-												onAdd={() => addVitalIdentifier(section.section)}
-												onRemove={(index) =>
-													removeVitalIdentifier(section.section, index)
-												}
-											/>
 										</div>
-									))}
+									)}
 
 								{isHouseType && (
 									<IdentifiersField
