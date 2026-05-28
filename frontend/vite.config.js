@@ -34,6 +34,12 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: false,
         },
+        // Proxy /media calls to the Django backend
+        "/media": {
+          target: env.DJANGO_API_URL || "http://localhost:8000",
+          changeOrigin: true,
+          secure: false,
+        },
       },
     },
   };

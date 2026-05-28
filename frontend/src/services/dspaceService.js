@@ -163,6 +163,11 @@ class DSpaceService {
     async getCollections() {
         try {
             const headers = this.getCsrfHeaders({ Accept: "application/json" });
+            const token = this.getStoredToken();
+            if (token) {
+                headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+            }
+            
             const response = await fetch(`${DSPACE_API_URL}/core/collections`, {
                 credentials: "include",
                 headers: headers,
@@ -213,31 +218,23 @@ class DSpaceService {
                 out.push({ key, value, language: null });
             }
         };
-        const author = metadata.author || "";
-        const dateIssued = metadata.dateIssued || metadata.publicationDate || "";
-
-        add("dc.title", metadata.title);
-        add("dc.contributor.author", author);
-        add("dc.language.iso", metadata.language);
-        // .....................
-        add("legal.bench.session", metadata.benchSession);
-        add("legal.case.complaintNumber", metadata.complaintNumber);
         add("legal.case.fileNumber", metadata.fileNumber);
         add("legal.case.type", metadata.caseType);
-        add("legal.case.level", metadata.caseLevel);
-        add("legal.case.status", metadata.caseStatus);
         add("legal.case.plaintiff", metadata.plaintiff);
         add("legal.case.defendant", metadata.defendant);
         add("legal.case.representative", metadata.caseRepresentative);
         add("legal.date.registration", metadata.registrationDate);
+        add("legal.case.level", metadata.caseLevel);
+        add("legal.case.status", metadata.caseStatus);
         add("legal.judge.primary", metadata.primaryJudge);
         add("legal.judge.number", metadata.judgeNumber);
         add("legal.location", metadata.location);
+        add("legal.bench.session", metadata.benchSession);
         add("legal.case.format", metadata.recordFormat);
+        add("dc.description", metadata.description);
         add("legal.physical.shelfNumber", metadata.shelfNumber);
         add("legal.physical.rowNumber", metadata.rowNumber);
         add("legal.physical.rfid", metadata.rfid);
-        add("legal.document.type", metadata.documentType);
 
         return out;
     }
@@ -334,34 +331,26 @@ class DSpaceService {
             }
 
             const metadataUpdates = [];
-            const author = metadata.author || [];
-            const dateIssued = metadata.dateIssued || metadata.publicationDate || "";
-
             const dcFields = {
-                "dc.title": metadata.title,
-                "dc.contributor.author": author,
-                "dc.description": metadata.description,
-                "dc.publisher": metadata.publisher,
-                "dc.date.issued": dateIssued,
-                "dc.language.iso": metadata.language,
-                "legal.bench.session": metadata.benchSession,
-                "legal.case.complaintNumber": metadata.complaintNumber,
                 "legal.case.fileNumber": metadata.fileNumber,
                 "legal.case.type": metadata.caseType,
-                "legal.case.level": metadata.caseLevel,
-                "legal.case.status": metadata.caseStatus,
                 "legal.case.plaintiff": metadata.plaintiff,
                 "legal.case.defendant": metadata.defendant,
                 "legal.case.representative": metadata.caseRepresentative,
                 "legal.date.registration": metadata.registrationDate,
+                
+                "legal.case.level": metadata.caseLevel,
+                "legal.case.status": metadata.caseStatus,
                 "legal.judge.primary": metadata.primaryJudge,
                 "legal.judge.number": metadata.judgeNumber,
                 "legal.location": metadata.location,
+                "legal.bench.session": metadata.benchSession,
                 "legal.case.format": metadata.recordFormat,
+                "dc.description": metadata.description,
+
                 "legal.physical.shelfNumber": metadata.shelfNumber,
                 "legal.physical.rowNumber": metadata.rowNumber,
                 "legal.physical.rfid": metadata.rfid,
-                "legal.document.type": metadata.documentType,
             };
 
             for (const [field, raw] of Object.entries(dcFields)) {
@@ -382,7 +371,25 @@ class DSpaceService {
             if (metadataUpdates.length === 0) return true;
 
             const FIELD_SECTION_MAP = {
+                "legal.case.fileNumber": "traditionalpageone",
+                "legal.case.type": "traditionalpageone",
+                "legal.case.plaintiff": "traditionalpageone",
+                "legal.case.defendant": "traditionalpageone",
+                "legal.case.representative": "traditionalpageone",
+                "legal.date.registration": "traditionalpageone",
+
+                "legal.case.level": "traditionalpagetwo",
+                "legal.case.status": "traditionalpagetwo",
+                "legal.judge.primary": "traditionalpagetwo",
+                "legal.judge.number": "traditionalpagetwo",
+                "legal.location": "traditionalpagetwo",
+                "legal.bench.session": "traditionalpagetwo",
+                "legal.case.format": "traditionalpagetwo",
                 "dc.description": "traditionalpagetwo",
+
+                "legal.physical.shelfNumber": "physicalLocationForm",
+                "legal.physical.rowNumber": "physicalLocationForm",
+                "legal.physical.rfid": "physicalLocationForm",
             };
 
             const fieldExists = (sections, section, field) =>
@@ -594,6 +601,10 @@ class DSpaceService {
                 embed: "owningCollection"
             });
             const headers = this.getCsrfHeaders({ Accept: "application/json" });
+            const token = this.getStoredToken();
+            if (token) {
+                headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+            }
             const response = await fetch(`${DSPACE_API_URL}/discover/search/objects?${params}`, {
                 credentials: "include",
                 headers: headers,
@@ -612,6 +623,10 @@ class DSpaceService {
     async getItem(itemId) {
         try {
             const headers = this.getCsrfHeaders({ Accept: "application/json" });
+            const token = this.getStoredToken();
+            if (token) {
+                headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+            }
             const response = await fetch(`${DSPACE_API_URL}/core/items/${itemId}`, {
                 credentials: "include",
                 headers: headers,
