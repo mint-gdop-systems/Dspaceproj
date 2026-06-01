@@ -9,8 +9,13 @@ export default function DashboardCard({ label, value, icon, subtitle }) {
 					{icon}
 				</div>
 				<div className="flex flex-col gap-2">
-					<span className="text-5xl font-semibold text-primary-foreground">
-						{value}
+					<span className="text-5xl font-semibold text-primary-foreground text-ellipsis overflow-hidden">
+						{!isNaN(Number(value))
+							? Number(value).toLocaleString("en-US", {
+								minimumFractionDigits: 0,
+								maximumFractionDigits: 2,
+							})
+							: value}
 					</span>
 					{subtitle && (
 						<span className="text-sm text-primary-foreground/60">
