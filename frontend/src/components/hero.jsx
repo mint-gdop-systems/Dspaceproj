@@ -274,26 +274,29 @@ const Hero = () => {
 								{entityType === "House" && (
 									<div className="pt-6 border-t border-t-border/20 mt-6">
 										<div className="text-xs text-primary-foreground/50 mb-1">
-											House Types
+											House Types:
 										</div>
-										<div className="flex flex-wrap gap-2">
-											{selected.houseStats?.distributionByHouseType ? (
-												Object.entries(
-													selected.houseStats.distributionByHouseType,
-												).map(([k, v]) => (
-													<Badge
-														key={k}
-														className="bg-primary-foreground/10 text-primary-foreground text-md p-3"
-													>
-														{k}: {v}
-													</Badge>
-												))
+										{selected.houseStats?.distributionByHouseType &&
+											(Object.entries(
+												selected.houseStats.distributionByHouseType,
+											).length > 0 ? (
+												<div className="flex flex-wrap gap-2">
+													{Object.entries(
+														selected.houseStats.distributionByHouseType,
+													).map(([k, v]) => (
+														<Badge
+															key={k}
+															className="bg-primary-foreground/10 text-primary-foreground text-md p-3"
+														>
+															{k}: {v}
+														</Badge>
+													))}
+												</div>
 											) : (
-												<div className="text-xs text-primary-foreground/50">
+												<div className="text-xs text-primary-foreground/50 inline">
 													No breakdown
 												</div>
-											)}
-										</div>
+											))}
 									</div>
 								)}
 							</div>

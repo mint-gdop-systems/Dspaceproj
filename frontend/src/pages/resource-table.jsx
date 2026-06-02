@@ -5,7 +5,7 @@ import {
 	FileTextIcon,
 	XIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { pdfjs } from "react-pdf";
 import { useAuth } from "@/contexts/auth-context";
 import { houseTypeOptions } from "../utils/constants";
@@ -15,8 +15,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
-import { SidebarOpenIcon } from "lucide-react";
-import MetadataTreeFilter from "@/components/metadata-tree-filter";
+
 import { houseColumns, vitalEventColumns } from "@/components/resource/columns";
 import FilterLabel from "@/components/resource/filter-label";
 import { FilterOperatorSelect } from "@/components/resource/filter-operator-select";
@@ -32,7 +31,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
+
 import { PdfPreview } from "../components/pdf-preview";
 import dspaceService from "../services/dspaceService";
 
@@ -41,7 +40,6 @@ export default function ResourceTable() {
 	const [allResources, setAllResources] = useState([]);
 	const [loading, setLoading] = useState(false);
 	const [activeFilters, setActiveFilters] = useState({});
-	const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 	const [activeTab, setActiveTab] = useState("house");
 
 	const [columnFilters, setColumnFilters] = useState({
@@ -53,7 +51,7 @@ export default function ResourceTable() {
 		itemidentifier: { value: "", operator: "equals" },
 	});
 
-	const enableDownload = import.meta.env.VITE_ENABLE_FILE_DOWNLOAD === 'true';
+	const enableDownload = import.meta.env.VITE_ENABLE_FILE_DOWNLOAD === "true";
 
 	const [pagination, setPagination] = useState({
 		number: 0,
@@ -61,6 +59,50 @@ export default function ResourceTable() {
 		totalPages: 0,
 		totalElements: 0,
 	});
+
+	const filterSelectOptions = useMemo(() => {
+		if (!allResources || allResources.length === 0) {
+			return { parentCommunity: [], owningCollection: [] };
+		}
+
+		const pcCounts = {};
+		const ocCounts = {};
+
+		allResources.forEach((resource) => {
+			if (resource.parentCommunity) {
+				pcCounts[resource.parentCommunity] =
+					(pcCounts[resource.parentCommunity] || 0) + 1;
+			}
+			if (resource.owningCollection) {
+				ocCounts[resource.owningCollection] =
+					(ocCounts[resource.owningCollection] || 0) + 1;
+			}
+		});
+
+		return {
+			parentCommunity: Object.entries(pcCounts).sort((a, b) => b[1] - a[1]),
+			owningCollection: Object.entries(ocCounts).sort((a, b) => b[1] - a[1]),
+		};
+	}, [allResources]);
+
+	const filteredWoredaOptions = useMemo(() => {
+		if (!allResources || allResources.length === 0) return [];
+
+		const selectedSubCity = activeFilters.parentCommunity?.[0];
+		const filtered = selectedSubCity
+			? allResources.filter((r) => r.parentCommunity === selectedSubCity)
+			: allResources;
+
+		const counts = {};
+		filtered.forEach((resource) => {
+			if (resource.owningCollection) {
+				counts[resource.owningCollection] =
+					(counts[resource.owningCollection] || 0) + 1;
+			}
+		});
+
+		return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+	}, [allResources, activeFilters.parentCommunity]);
 
 	const fetchAllResources = useCallback(async () => {
 		setLoading(true);
@@ -121,12 +163,13 @@ export default function ResourceTable() {
 						houseNumber: getVal("crvs.identifier.houseNumber"),
 						houseType: getVal("crvs.identifier.houseType"),
 						dateOfRegistration: getVal("crvs.date.registration"),
+						eventType: getVal("crvs.vital.eventType"),
 
 						eventSubject:
 							getValList("crvs.birth.childName") ||
 							getValList("crvs.death.personName") ||
 							(getValList("crvs.marriage.husbandName") &&
-								getValList("crvs.marriage.wifeName")
+							getValList("crvs.marriage.wifeName")
 								? `${getValList("crvs.marriage.husbandName")} & ${getValList("crvs.marriage.wifeName")}`
 								: getValList("crvs.marriage.husbandName")) ||
 							"",
@@ -315,6 +358,17 @@ export default function ResourceTable() {
 		}));
 	};
 
+	const handleFilterSelectChange = (category, value) => {
+		setActiveFilters((prev) => {
+			if (value === "all") {
+				const next = { ...prev };
+				delete next[category];
+				return next;
+			}
+			return { ...prev, [category]: [value] };
+		});
+	};
+
 	const handleTabChange = (nextTab) => {
 		setActiveTab(nextTab);
 		setPagination((prev) => ({ ...prev, number: 0 }));
@@ -439,24 +493,6 @@ export default function ResourceTable() {
 		<Tabs value={activeTab} onValueChange={handleTabChange}>
 			<div className="flex justify-between items-center mb-6">
 				<div className="flex items-center gap-4">
-					<Button
-						variant="outline"
-						onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-						title={isSidebarOpen ? "Hide Filters" : "Show Filters"}
-					>
-						<SidebarOpenIcon
-							className={cn(
-								"transition-all duration-300",
-								isSidebarOpen && "rotate-180",
-							)}
-						/>
-						<span className="hidden sm:inline">Filters</span>
-						{Object.keys(activeFilters).length > 0 && (
-							<span className="ml-1 rounded-full bg-primary w-5 h-5 flex items-center justify-center text-[10px] text-primary-foreground">
-								{Object.keys(activeFilters).length}
-							</span>
-						)}
-					</Button>
 					<TabsList className="h-9! m-0!">
 						<TabsTrigger value="house">Resident</TabsTrigger>
 						<TabsTrigger value="vitalEvent">Vital Events</TabsTrigger>
@@ -464,676 +500,678 @@ export default function ResourceTable() {
 				</div>
 			</div>
 
-			<div className="flex flex-col lg:flex-row gap-4">
-				{/* Left Sidebar - Metadata Tree Filter */}
-				{isSidebarOpen && (
-					<div className="lg:w-1/5">
-						<MetadataTreeFilter
-							resources={allResources}
-							selectedFilters={activeFilters}
-							onFilterChange={setActiveFilters}
-							onClearFilters={() => setActiveFilters({})}
-						/>
-					</div>
-				)}
-
-				{/* Right Content - Resource Table */}
-				<div
-					className={cn(
-						"transition-all duration-300",
-						isSidebarOpen ? "lg:w-4/5" : "w-full",
-					)}
-				>
-					<Card>
-						<CardContent className="space-y-4">
-							{/* Search Filter Grid - Always Visible */}
-							<div className="bg-muted/50 p-4 rounded-lg">
-								<div className="flex items-center justify-between mb-4">
-									<h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-										Detail Search
-									</h4>
-									{(columnFilters.houseNumber?.value ||
-										columnFilters.houseType?.value ||
-										columnFilters.husband?.value ||
-										columnFilters.wife?.value) && (
-											<Button
-												type="button"
-												onClick={() =>
-													onColumnFilterChange({
-														houseType: { value: "", operator: "equals" },
-														houseNumber: { value: "", operator: "contains" },
-														husband: { value: "", operator: "contains" },
-														wife: { value: "", operator: "contains" },
-													})
-												}
-												variant="destructive"
-												size="sm"
-											>
-												<XIcon /> Clear Filters
-											</Button>
-										)}
+			<Card>
+				<CardContent className="space-y-4">
+					{/* Search Filter Grid - Always Visible */}
+					<div className="bg-muted/50 p-4 rounded-lg">
+						<div className="flex items-center justify-between mb-4">
+							<h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+								Detail Search
+							</h4>
+							{(columnFilters.houseNumber?.value ||
+								columnFilters.houseType?.value ||
+								columnFilters.husband?.value ||
+								columnFilters.wife?.value ||
+								columnFilters.itemidentifier?.value ||
+								activeFilters.parentCommunity ||
+								activeFilters.owningCollection) && (
+								<Button
+									type="button"
+									onClick={() => {
+										onColumnFilterChange((prev) => ({
+											...prev,
+											houseType: { value: "", operator: "equals" },
+											houseNumber: { value: "", operator: "contains" },
+											husband: { value: "", operator: "contains" },
+											wife: { value: "", operator: "contains" },
+											itemidentifier: { value: "", operator: "equals" },
+										}));
+										setActiveFilters({});
+									}}
+									variant="destructive"
+									size="sm"
+								>
+									<XIcon /> Clear Filters
+								</Button>
+							)}
+						</div>
+						<div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+							{/* Shared Identifier Filter */}
+							<div>
+								<div className="flex items-center justify-between">
+									<FilterLabel
+										htmlFor="filter-itemidentifier"
+										label="Identifier"
+									/>
+									<FilterOperatorSelect
+										value={columnFilters.itemidentifier?.operator || "equals"}
+										onChange={(value) =>
+											handleColumnFilterChange(
+												"itemidentifier",
+												"operator",
+												value,
+											)
+										}
+										operators={operators}
+									/>
 								</div>
-								<div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-									{/* Shared Identifier Filter */}
-									<div>
-										<div className="flex items-center justify-between">
-											<FilterLabel
-												htmlFor="filter-itemidentifier"
-												label="Identifier"
-											/>
-											<FilterOperatorSelect
-												value={
-													columnFilters.itemidentifier?.operator || "equals"
-												}
-												onChange={(value) =>
-													handleColumnFilterChange(
-														"itemidentifier",
-														"operator",
-														value,
-													)
-												}
-												operators={operators}
-											/>
-										</div>
-										<FilterValueInput
-											id="filter-itemidentifier"
-											placeholder="e.g. 123"
-											value={columnFilters.itemidentifier?.value || ""}
+								<FilterValueInput
+									id="filter-itemidentifier"
+									placeholder="e.g. 123"
+									value={columnFilters.itemidentifier?.value || ""}
+									onChange={(value) =>
+										handleColumnFilterChange("itemidentifier", "value", value)
+									}
+								/>
+							</div>
+							{/* Sub City Filter */}
+							<div>
+								<div className="h-8 flex items-center justify-between">
+									<FilterLabel htmlFor="filter-sub-city" label="Sub City" />
+								</div>
+								<Select
+									value={activeFilters.parentCommunity?.[0] || "all"}
+									onValueChange={(value) =>
+										handleFilterSelectChange("parentCommunity", value)
+									}
+								>
+									<SelectTrigger id="filter-sub-city" className="w-full">
+										<SelectValue placeholder="All Sub Cities" />
+									</SelectTrigger>
+									<SelectContent className="p-2">
+										<SelectItem value="all">All Sub Cities</SelectItem>
+										{filterSelectOptions.parentCommunity.map(
+											([name, count]) => (
+												<SelectItem key={name} value={name}>
+													{name} ({count})
+												</SelectItem>
+											),
+										)}
+									</SelectContent>
+								</Select>
+							</div>
+							{/* Woreda Filter */}
+							<div>
+								<div className="h-8 flex items-center justify-between">
+									<FilterLabel htmlFor="filter-woreda" label="Woreda" />
+								</div>
+								<Select
+									value={activeFilters.owningCollection?.[0] || "all"}
+									onValueChange={(value) =>
+										handleFilterSelectChange("owningCollection", value)
+									}
+								>
+									<SelectTrigger id="filter-woreda" className="w-full">
+										<SelectValue placeholder="All Woredas" />
+									</SelectTrigger>
+									<SelectContent className="p-2">
+										<SelectItem value="all">All Woredas</SelectItem>
+										{filteredWoredaOptions.map(([name, count]) => (
+											<SelectItem key={name} value={name}>
+												{name} ({count})
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+						</div>
+
+						{/* House Specific Filters */}
+						{activeTab === "house" && (
+							<div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t">
+								<div>
+									<div className="flex items-center justify-between">
+										<FilterLabel
+											htmlFor="filter-house-number"
+											label="House Number"
+										/>
+										<FilterOperatorSelect
+											value={columnFilters.houseNumber?.operator || "contains"}
 											onChange={(value) =>
 												handleColumnFilterChange(
-													"itemidentifier",
-													"value",
+													"houseNumber",
+													"operator",
 													value,
 												)
 											}
+											operators={operators}
 										/>
 									</div>
+									<FilterValueInput
+										id="filter-house-number"
+										placeholder="e.g. 123"
+										value={columnFilters.houseNumber?.value || ""}
+										onChange={(value) =>
+											handleColumnFilterChange("houseNumber", "value", value)
+										}
+									/>
 								</div>
-
-								{/* House Specific Filters */}
-								{activeTab === "house" && (
-									<div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t">
-										<div>
-											<div className="flex items-center justify-between">
-												<FilterLabel
-													htmlFor="filter-house-number"
-													label="House Number"
-												/>
-												<FilterOperatorSelect
-													value={
-														columnFilters.houseNumber?.operator || "contains"
-													}
-													onChange={(value) =>
-														handleColumnFilterChange(
-															"houseNumber",
-															"operator",
-															value,
-														)
-													}
-													operators={operators}
-												/>
-											</div>
-											<FilterValueInput
-												id="filter-house-number"
-												placeholder="e.g. 123"
-												value={columnFilters.houseNumber?.value || ""}
-												onChange={(value) =>
-													handleColumnFilterChange(
-														"houseNumber",
-														"value",
-														value,
-													)
-												}
-											/>
-										</div>
-										<div>
-											<div className="flex items-center justify-between">
-												<FilterLabel
-													htmlFor="filter-house-type"
-													label="House Type"
-												/>
-												<FilterOperatorSelect
-													value={columnFilters.houseType?.operator || "equals"}
-													onChange={(value) =>
-														handleColumnFilterChange(
-															"houseType",
-															"operator",
-															value,
-														)
-													}
-													operators={operators}
-												/>
-											</div>
-											<Select
-												value={columnFilters.houseType?.value || "all"}
-												onValueChange={(value) =>
-													handleColumnFilterChange(
-														"houseType",
-														"value",
-														value === "all" ? "" : value,
-													)
-												}
-											>
-												<SelectTrigger
-													id="filter-house-type"
-													className="w-full"
-												>
-													<SelectValue placeholder="All House Types" />
-												</SelectTrigger>
-												<SelectContent className="p-2">
-													<SelectItem value="all">All House Types</SelectItem>
-													{houseTypeOptions.map((option) => (
-														<SelectItem key={option} value={option}>
-															{option}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-										</div>
-										<div>
-											<div className="flex items-center justify-between">
-												<FilterLabel
-													htmlFor="filter-husband"
-													label="Husband Name"
-												/>
-												<FilterOperatorSelect
-													value={columnFilters.husband?.operator || "contains"}
-													onChange={(value) =>
-														handleColumnFilterChange(
-															"husband",
-															"operator",
-															value,
-														)
-													}
-													operators={operators}
-												/>
-											</div>
-											<FilterValueInput
-												id="filter-husband"
-												placeholder="Search husband..."
-												value={columnFilters.husband?.value || ""}
-												onChange={(value) =>
-													handleColumnFilterChange("husband", "value", value)
-												}
-											/>
-										</div>
-										<div>
-											<div className="flex items-center justify-between">
-												<FilterLabel htmlFor="filter-wife" label="Wife Name" />
-												<FilterOperatorSelect
-													value={columnFilters.wife?.operator || "contains"}
-													onChange={(value) =>
-														handleColumnFilterChange("wife", "operator", value)
-													}
-													operators={operators}
-												/>
-											</div>
-											<FilterValueInput
-												id="filter-wife"
-												placeholder="Search wife..."
-												value={columnFilters.wife?.value || ""}
-												onChange={(value) =>
-													handleColumnFilterChange("wife", "value", value)
-												}
-											/>
-										</div>
+								<div>
+									<div className="flex items-center justify-between">
+										<FilterLabel
+											htmlFor="filter-house-type"
+											label="House Type"
+										/>
+										<FilterOperatorSelect
+											value={columnFilters.houseType?.operator || "equals"}
+											onChange={(value) =>
+												handleColumnFilterChange("houseType", "operator", value)
+											}
+											operators={operators}
+										/>
 									</div>
-								)}
+									<Select
+										value={columnFilters.houseType?.value || "all"}
+										onValueChange={(value) =>
+											handleColumnFilterChange(
+												"houseType",
+												"value",
+												value === "all" ? "" : value,
+											)
+										}
+									>
+										<SelectTrigger id="filter-house-type" className="w-full">
+											<SelectValue placeholder="All House Types" />
+										</SelectTrigger>
+										<SelectContent className="p-2">
+											<SelectItem value="all">All House Types</SelectItem>
+											{houseTypeOptions.map((option) => (
+												<SelectItem key={option} value={option}>
+													{option}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+								<div>
+									<div className="flex items-center justify-between">
+										<FilterLabel
+											htmlFor="filter-husband"
+											label="Husband Name"
+										/>
+										<FilterOperatorSelect
+											value={columnFilters.husband?.operator || "contains"}
+											onChange={(value) =>
+												handleColumnFilterChange("husband", "operator", value)
+											}
+											operators={operators}
+										/>
+									</div>
+									<FilterValueInput
+										id="filter-husband"
+										placeholder="Search husband..."
+										value={columnFilters.husband?.value || ""}
+										onChange={(value) =>
+											handleColumnFilterChange("husband", "value", value)
+										}
+									/>
+								</div>
+								<div>
+									<div className="flex items-center justify-between">
+										<FilterLabel htmlFor="filter-wife" label="Wife Name" />
+										<FilterOperatorSelect
+											value={columnFilters.wife?.operator || "contains"}
+											onChange={(value) =>
+												handleColumnFilterChange("wife", "operator", value)
+											}
+											operators={operators}
+										/>
+									</div>
+									<FilterValueInput
+										id="filter-wife"
+										placeholder="Search wife..."
+										value={columnFilters.wife?.value || ""}
+										onChange={(value) =>
+											handleColumnFilterChange("wife", "value", value)
+										}
+									/>
+								</div>
+							</div>
+						)}
+					</div>
+
+					{loading ? (
+						<div className="text-center py-12">
+							<div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-border" />
+							<p className="mt-4 text-muted-foreground text-lg">
+								መዛግብት እና መጻሕፍት በመጫን ላይ...
+							</p>
+						</div>
+					) : resources.length === 0 ? (
+						<div className="text-center py-12 bg-muted/50 rounded-lg">
+							<FileTextIcon className="w-16 h-16 text-muted-foreground/80 mx-auto mb-4" />
+							<h3 className="text-xl font-semibold text-muted-foreground/80 mb-2">
+								ምንም መዝገቦች አልተገኙም
+							</h3>
+							<p className="text-muted-foreground/80 mb-4">
+								የፍለጋ መስፈርቶችዎን ማስተካከል ወይም በምድብ ማሰስ ይሞክሩ
+							</p>
+						</div>
+					) : (
+						<div className="overflow-x-auto">
+							<TabsContent value="house">
+								<DataTable
+									columns={houseColumns}
+									data={resources}
+									meta={{ handlePreview }}
+								/>
+							</TabsContent>
+							<TabsContent value="vitalEvent">
+								<DataTable
+									columns={vitalEventColumns}
+									data={resources}
+									meta={{ handlePreview }}
+								/>
+							</TabsContent>
+						</div>
+					)}
+
+					{/* Pagination Controls */}
+					{resources.length > 0 && (
+						<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-4 border-t">
+							{/* Results info */}
+							<div className="text-sm text-muted-foreground text-center sm:text-left">
+								Showing{" "}
+								<span className="font-medium text-foreground">
+									{pagination.number * pagination.size + 1}
+								</span>{" "}
+								to{" "}
+								<span className="font-medium text-foreground">
+									{Math.min(
+										(pagination.number + 1) * pagination.size,
+										pagination.totalElements,
+									)}
+								</span>{" "}
+								of{" "}
+								<span className="font-medium text-foreground">
+									{pagination.totalElements}
+								</span>{" "}
+								results
 							</div>
 
-							{loading ? (
-								<div className="text-center py-12">
-									<div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-border" />
-									<p className="mt-4 text-muted-foreground text-lg">
-										መዛግብት እና መጻሕፍት በመጫን ላይ...
-									</p>
-								</div>
-							) : resources.length === 0 ? (
-								<div className="text-center py-12 bg-muted/50 rounded-lg">
-									<FileTextIcon className="w-16 h-16 text-muted-foreground/80 mx-auto mb-4" />
-									<h3 className="text-xl font-semibold text-muted-foreground/80 mb-2">
-										ምንም መዝገቦች አልተገኙም
-									</h3>
-									<p className="text-muted-foreground/80 mb-4">
-										የፍለጋ መስፈርቶችዎን ማስተካከል ወይም በምድብ ማሰስ ይሞክሩ
-									</p>
-								</div>
-							) : (
-								<div className="overflow-x-auto">
-									<TabsContent value="house">
-										<DataTable
-											columns={houseColumns}
-											data={resources}
-											meta={{ handlePreview }}
-										/>
-									</TabsContent>
-									<TabsContent value="vitalEvent">
-										<DataTable
-											columns={vitalEventColumns}
-											data={resources}
-											meta={{ handlePreview }}
-										/>
-									</TabsContent>
-								</div>
-							)}
-
-							{/* Pagination Controls */}
-							{resources.length > 0 && (
-								<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-4 border-t">
-									{/* Results info */}
-									<div className="text-sm text-muted-foreground text-center sm:text-left">
-										Showing{" "}
-										<span className="font-medium text-foreground">
-											{pagination.number * pagination.size + 1}
-										</span>{" "}
-										to{" "}
-										<span className="font-medium text-foreground">
-											{Math.min(
-												(pagination.number + 1) * pagination.size,
-												pagination.totalElements,
-											)}
-										</span>{" "}
-										of{" "}
-										<span className="font-medium text-foreground">
-											{pagination.totalElements}
-										</span>{" "}
-										results
-									</div>
-
-									{/* Controls */}
-									<div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6">
-										{/* Rows per page */}
-										<div className="flex items-center gap-2">
-											<span className="text-sm text-muted-foreground whitespace-nowrap">
-												Rows per page:
-											</span>
-											<Select
-												value={pagination.size.toString()}
-												onValueChange={(value) =>
-													onPageSizeChange(Number(value))
-												}
-											>
-												<SelectTrigger className="w-fit text-xs">
-													<SelectValue />
-												</SelectTrigger>
-												<SelectContent className="w-fit p-2">
-													{[5, 10, 20, 50, 100].map((size) => (
-														<SelectItem key={size} value={size.toString()}>
-															{size}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-										</div>
-
-										{/* Pagination buttons */}
-										<div className="flex items-center gap-2">
-											{/* Previous */}
-											<Button
-												variant="outline"
-												type="button"
-												onClick={() => onPageChange(pagination.number - 1)}
-												disabled={pagination.number === 0}
-											>
-												Previous
-											</Button>
-
-											{/* Page indicator */}
-											<div className="flex items-center gap-2">
-												<span className="min-w-10 flex items-center justify-center h-8 text-sm border border-border rounded-md">
-													{pagination.number + 1}
-												</span>
-
-												<span className="text-muted-foreground text-sm">/</span>
-
-												<span className="min-w-10 flex items-center justify-center h-8 text-sm border border-border rounded-md">
-													{pagination.totalPages}
-												</span>
-											</div>
-
-											{/* Next */}
-											<Button
-												variant="outline"
-												type="button"
-												onClick={() => onPageChange(pagination.number + 1)}
-												disabled={
-													pagination.number >= pagination.totalPages - 1
-												}
-											>
-												Next
-											</Button>
-										</div>
-									</div>
-								</div>
-							)}
-
-							{/* Preview Modal with Backdrop */}
-							{showPreviewModal && (
-								<div
-									className="fixed inset-0 z-50 bg-foreground/60 backdrop-blur-sm flex items-center justify-center p-4"
-									role="dialog"
-									aria-modal="true"
-									onClick={(e) => {
-										if (e.target === e.currentTarget) {
-											closePreview();
-										}
-									}}
-									onKeyDown={(e) => {
-										if (e.key === "Escape") {
-											closePreview();
-										}
-									}}
-								>
-									{/** biome-ignore lint/a11y/noStaticElementInteractions: <ignore> */}
-									{/** biome-ignore lint/a11y/useKeyWithClickEvents: <ignore> */}
-									<div
-										className="relative bg-foreground rounded-xl shadow-2xl w-[95vw] h-[95vh] flex overflow-hidden"
-										onClick={(e) => e.stopPropagation()}
+							{/* Controls */}
+							<div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6">
+								{/* Rows per page */}
+								<div className="flex items-center gap-2">
+									<span className="text-sm text-muted-foreground whitespace-nowrap">
+										Rows per page:
+									</span>
+									<Select
+										value={pagination.size.toString()}
+										onValueChange={(value) => onPageSizeChange(Number(value))}
 									>
-										{/* Mobile: Single panel with dropdown */}
-										<div className="lg:hidden flex flex-col w-full h-full overflow-hidden">
-											<div className="flex flex-col min-w-0 bg-primary text-primary-foreground px-4 py-3 border-b">
-												<div className="flex items-center justify-between gap-2">
-													<div className="relative inline-block flex-1">
-														<button
-															type="button"
-															className="w-full flex items-center justify-between px-3 py-2 text-left bg-primary/10 hover:bg-primary/20 text-primary-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-														>
-															<span className="flex items-center gap-3">
-																<ChevronDownIcon />
-																<div className="flex-1 min-w-0">
-																	<div className="font-semibold truncate">
-																		{activePreviewBitstream?.name || "Preview"}
-																	</div>
-																	<div className="flex flex-wrap gap-x-4 gap-y-1 text-sm opacity-90">
-																		{activePreviewBitstream?.metadata?.[
-																			"crvs.documentType"
-																		]?.[0]?.value && (
-																				<span>
-																					<span className="font-medium">
-																						Type:
-																					</span>{" "}
-																					{
-																						activePreviewBitstream.metadata[
-																							"crvs.documentType"
-																						][0].value
-																					}
-																				</span>
-																			)}
-																		{activePreviewBitstream?.metadata?.[
-																			"crvs.document.status"
-																		]?.[0]?.value && (
-																				<span>
-																					<span className="font-medium">
-																						Status:
-																					</span>{" "}
-																					{
-																						activePreviewBitstream.metadata[
-																							"crvs.document.status"
-																						][0].value
-																					}
-																				</span>
-																			)}
-																		{activePreviewBitstream?.sizeBytes && (
-																			<span>
-																				<span className="font-medium">
-																					Size:
-																				</span>{" "}
-																				{(
-																					activePreviewBitstream.sizeBytes /
-																					1024
-																				).toFixed(1)}{" "}
-																				KB
-																			</span>
-																		)}
-																	</div>
-																</div>
-															</span>
-														</button>
-														<select
-															value={activePreviewBitstream?.uuid}
-															onChange={(e) =>
-																setActivePreviewBitstream(
-																	allBitstreams.find(
-																		(b) => b.uuid === e.target.value,
-																	),
-																)
-															}
-															className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-														>
-															{allBitstreams.map((b, idx) => (
-																<option key={b.uuid} value={b.uuid}>
-																	{idx === 0 ? "Primary: " : `File ${idx}: `}
-																	{b.name}
-																</option>
-															))}
-														</select>
-													</div>
-													{enableDownload && activePreviewBitstream && activePreviewUrl && (
+										<SelectTrigger className="w-fit text-xs">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent className="w-fit p-2">
+											{[5, 10, 20, 50, 100].map((size) => (
+												<SelectItem key={size} value={size.toString()}>
+													{size}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+
+								{/* Pagination buttons */}
+								<div className="flex items-center gap-2">
+									{/* Previous */}
+									<Button
+										variant="outline"
+										type="button"
+										onClick={() => onPageChange(pagination.number - 1)}
+										disabled={pagination.number === 0}
+									>
+										Previous
+									</Button>
+
+									{/* Page indicator */}
+									<div className="flex items-center gap-2">
+										<span className="min-w-10 flex items-center justify-center h-8 text-sm border border-border rounded-md">
+											{pagination.number + 1}
+										</span>
+
+										<span className="text-muted-foreground text-sm">/</span>
+
+										<span className="min-w-10 flex items-center justify-center h-8 text-sm border border-border rounded-md">
+											{pagination.totalPages}
+										</span>
+									</div>
+
+									{/* Next */}
+									<Button
+										variant="outline"
+										type="button"
+										onClick={() => onPageChange(pagination.number + 1)}
+										disabled={pagination.number >= pagination.totalPages - 1}
+									>
+										Next
+									</Button>
+								</div>
+							</div>
+						</div>
+					)}
+
+					{/* Preview Modal with Backdrop */}
+					{showPreviewModal && (
+						<div
+							className="fixed inset-0 z-50 bg-foreground/60 backdrop-blur-sm flex items-center justify-center p-4"
+							role="dialog"
+							aria-modal="true"
+							onClick={(e) => {
+								if (e.target === e.currentTarget) {
+									closePreview();
+								}
+							}}
+							onKeyDown={(e) => {
+								if (e.key === "Escape") {
+									closePreview();
+								}
+							}}
+						>
+							{/** biome-ignore lint/a11y/noStaticElementInteractions: <ignore> */}
+							{/** biome-ignore lint/a11y/useKeyWithClickEvents: <ignore> */}
+							<div
+								className="relative bg-foreground rounded-xl shadow-2xl w-[95vw] h-[95vh] flex overflow-hidden"
+								onClick={(e) => e.stopPropagation()}
+							>
+								{/* Mobile: Single panel with dropdown */}
+								<div className="lg:hidden flex flex-col w-full h-full overflow-hidden">
+									<div className="flex flex-col min-w-0 bg-primary text-primary-foreground px-4 py-3 border-b">
+										<div className="flex items-center justify-between gap-2">
+											<div className="relative inline-block flex-1">
+												<button
+													type="button"
+													className="w-full flex items-center justify-between px-3 py-2 text-left bg-primary/10 hover:bg-primary/20 text-primary-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+												>
+													<span className="flex items-center gap-3">
+														<ChevronDownIcon />
+														<div className="flex-1 min-w-0">
+															<div className="font-semibold truncate">
+																{activePreviewBitstream?.name || "Preview"}
+															</div>
+															<div className="flex flex-wrap gap-x-4 gap-y-1 text-sm opacity-90">
+																{activePreviewBitstream?.metadata?.[
+																	"crvs.documentType"
+																]?.[0]?.value && (
+																	<span>
+																		<span className="font-medium">Type:</span>{" "}
+																		{
+																			activePreviewBitstream.metadata[
+																				"crvs.documentType"
+																			][0].value
+																		}
+																	</span>
+																)}
+																{activePreviewBitstream?.metadata?.[
+																	"crvs.document.status"
+																]?.[0]?.value && (
+																	<span>
+																		<span className="font-medium">Status:</span>{" "}
+																		{
+																			activePreviewBitstream.metadata[
+																				"crvs.document.status"
+																			][0].value
+																		}
+																	</span>
+																)}
+																{activePreviewBitstream?.sizeBytes && (
+																	<span>
+																		<span className="font-medium">Size:</span>{" "}
+																		{(
+																			activePreviewBitstream.sizeBytes / 1024
+																		).toFixed(1)}{" "}
+																		KB
+																	</span>
+																)}
+															</div>
+														</div>
+													</span>
+												</button>
+												<select
+													value={activePreviewBitstream?.uuid}
+													onChange={(e) =>
+														setActivePreviewBitstream(
+															allBitstreams.find(
+																(b) => b.uuid === e.target.value,
+															),
+														)
+													}
+													className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+												>
+													{allBitstreams.map((b, idx) => (
+														<option key={b.uuid} value={b.uuid}>
+															{idx === 0 ? "Primary: " : `File ${idx}: `}
+															{b.name}
+														</option>
+													))}
+												</select>
+											</div>
+											{enableDownload &&
+												activePreviewBitstream &&
+												activePreviewUrl && (
+													<a
+														href={activePreviewUrl}
+														target="_blank"
+														rel="noopener noreferrer"
+														download={activePreviewBitstream.name}
+														className="p-1.5 rounded hover:bg-white/20 transition-colors"
+														title="Download"
+													>
+														<Download className="w-4 h-4" />
+													</a>
+												)}
+										</div>
+									</div>
+									<div className="flex-1 overflow-auto p-4 bg-white flex flex-col">
+										<div className="flex-1 overflow-auto flex items-center justify-center">
+											{renderBitstreamPreview(
+												activePreviewBitstream,
+												activePreviewUrl,
+												"No file selected",
+											)}
+										</div>
+									</div>
+								</div>
+
+								{/* Desktop: Two panels side by side */}
+								<div className="hidden lg:flex w-full h-full">
+									{/* Left: Primary Bitstream */}
+									<div className="flex flex-col w-1/2 h-full border-r overflow-hidden">
+										<div className="h-18 flex flex-col justify-center border-b bg-primary text-primary-foreground px-4 py-3">
+											<div className="flex items-center gap-2">
+												<h2 className="text-lg font-semibold truncate text-ellipsis line-clamp-1">
+													{primaryBitstream?.name || "Preview"}
+												</h2>
+												{enableDownload &&
+													primaryBitstream &&
+													primaryBitstreamUrl && (
 														<a
-															href={activePreviewUrl}
+															href={primaryBitstreamUrl}
 															target="_blank"
 															rel="noopener noreferrer"
-															download={activePreviewBitstream.name}
+															download={primaryBitstream.name}
 															className="p-1.5 rounded hover:bg-white/20 transition-colors"
 															title="Download"
 														>
 															<Download className="w-4 h-4" />
 														</a>
 													)}
-												</div>
 											</div>
-											<div className="flex-1 overflow-auto p-4 bg-white flex flex-col">
-												<div className="flex-1 overflow-auto flex items-center justify-center">
-													{renderBitstreamPreview(
-														activePreviewBitstream,
-														activePreviewUrl,
-														"No file selected",
-													)}
-												</div>
+											<div className="flex flex-wrap gap-x-4 gap-y-1 text-sm opacity-90 mt-1">
+												{primaryBitstream?.metadata?.["crvs.documentType"]?.[0]
+													?.value && (
+													<span>
+														<span className="font-medium">Type:</span>{" "}
+														{
+															primaryBitstream.metadata["crvs.documentType"][0]
+																.value
+														}
+													</span>
+												)}
+												{primaryBitstream?.metadata?.[
+													"crvs.document.status"
+												]?.[0]?.value && (
+													<span>
+														<span className="font-medium">Status:</span>{" "}
+														{
+															primaryBitstream.metadata[
+																"crvs.document.status"
+															][0].value
+														}
+													</span>
+												)}
+												{primaryBitstream?.sizeBytes && (
+													<span>
+														<span className="font-medium">Size:</span>{" "}
+														{(primaryBitstream.sizeBytes / 1024).toFixed(1)} KB
+													</span>
+												)}
 											</div>
 										</div>
-
-										{/* Desktop: Two panels side by side */}
-										<div className="hidden lg:flex w-full h-full">
-											{/* Left: Primary Bitstream */}
-											<div className="flex flex-col w-1/2 h-full border-r overflow-hidden">
-												<div className="h-18 flex flex-col justify-center border-b bg-primary text-primary-foreground px-4 py-3">
-													<div className="flex items-center gap-2">
-														<h2 className="text-lg font-semibold truncate text-ellipsis line-clamp-1">
-															{primaryBitstream?.name || "Preview"}
-														</h2>
-														{enableDownload && primaryBitstream && primaryBitstreamUrl && (
-															<a
-																href={primaryBitstreamUrl}
-																target="_blank"
-																rel="noopener noreferrer"
-																download={primaryBitstream.name}
-																className="p-1.5 rounded hover:bg-white/20 transition-colors"
-																title="Download"
-															>
-																<Download className="w-4 h-4" />
-															</a>
-														)}
-													</div>
-													<div className="flex flex-wrap gap-x-4 gap-y-1 text-sm opacity-90 mt-1">
-														{primaryBitstream?.metadata?.[
-															"crvs.documentType"
-														]?.[0]?.value && (
-																<span>
-																	<span className="font-medium">Type:</span>{" "}
-																	{
-																		primaryBitstream.metadata[
-																			"crvs.documentType"
-																		][0].value
-																	}
-																</span>
-															)}
-														{primaryBitstream?.metadata?.[
-															"crvs.document.status"
-														]?.[0]?.value && (
-																<span>
-																	<span className="font-medium">Status:</span>{" "}
-																	{
-																		primaryBitstream.metadata[
-																			"crvs.document.status"
-																		][0].value
-																	}
-																</span>
-															)}
-														{primaryBitstream?.sizeBytes && (
-															<span>
-																<span className="font-medium">Size:</span>{" "}
-																{(primaryBitstream.sizeBytes / 1024).toFixed(1)}{" "}
-																KB
-															</span>
-														)}
-													</div>
-												</div>
-												<div className="flex-1 overflow-auto bg-white flex flex-col">
-													<div className="flex-1 overflow-auto flex items-center justify-center">
-														{renderBitstreamPreview(
-															primaryBitstream,
-															primaryBitstreamUrl,
-															"Primary file not found",
-														)}
-													</div>
-												</div>
+										<div className="flex-1 overflow-auto bg-white flex flex-col">
+											<div className="flex-1 overflow-auto flex items-center justify-center">
+												{renderBitstreamPreview(
+													primaryBitstream,
+													primaryBitstreamUrl,
+													"Primary file not found",
+												)}
 											</div>
+										</div>
+									</div>
 
-											{/* Right: Bundled Bitstreams */}
-											<div className="flex flex-col w-1/2 h-full overflow-hidden">
-												<div className="h-18 flex flex-col min-w-0 bg-primary text-primary-foreground px-4 py-3 border-b">
-													<div className="flex items-start">
-														<div className="relative inline-block">
-															<button
-																type="button"
-																className="w-full flex items-center justify-between px-3 py-0.5 text-left bg-primary/10 hover:bg-primary/20 text-primary-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-															>
-																<span className="flex items-center gap-4">
-																	<ChevronDownIcon />
-																	<div>
-																		<h2 className="text-lg font-semibold truncate text-ellipsis line-clamp-1">
-																			{bundledBitstreams?.length > 0
-																				? selectedBitstream?.name ||
-																				primaryBitstream?.name
-																				: "No Additional Files"}
-																		</h2>
-																		{bundledBitstreams?.length > 0 && (
-																			<div className="flex flex-wrap gap-x-4 gap-y-1 text-sm opacity-90 text-ellipsis line-clamp-1">
-																				{selectedBitstream?.metadata?.[
-																					"crvs.documentType"
-																				]?.[0]?.value && (
-																						<span>
-																							<span className="font-medium">
-																								Type:
-																							</span>{" "}
-																							{
-																								selectedBitstream.metadata[
-																									"crvs.documentType"
-																								][0].value
-																							}
-																						</span>
-																					)}
-																				{selectedBitstream?.metadata?.[
-																					"crvs.document.status"
-																				]?.[0]?.value && (
-																						<span>
-																							<span className="font-medium">
-																								Status:
-																							</span>{" "}
-																							{
-																								selectedBitstream.metadata[
-																									"crvs.document.status"
-																								][0].value
-																							}
-																						</span>
-																					)}
-																				{selectedBitstream?.sizeBytes && (
-																					<span>
-																						<span className="font-medium">
-																							Size:
-																						</span>{" "}
-																						{(
-																							selectedBitstream.sizeBytes / 1024
-																						).toFixed(1)}{" "}
-																						KB
-																					</span>
-																				)}
-																			</div>
+									{/* Right: Bundled Bitstreams */}
+									<div className="flex flex-col w-1/2 h-full overflow-hidden">
+										<div className="h-18 flex flex-col min-w-0 bg-primary text-primary-foreground px-4 py-3 border-b">
+											<div className="flex items-start">
+												<div className="relative inline-block">
+													<button
+														type="button"
+														className="w-full flex items-center justify-between px-3 py-0.5 text-left bg-primary/10 hover:bg-primary/20 text-primary-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+													>
+														<span className="flex items-center gap-4">
+															<ChevronDownIcon />
+															<div>
+																<h2 className="text-lg font-semibold truncate text-ellipsis line-clamp-1">
+																	{bundledBitstreams?.length > 0
+																		? selectedBitstream?.name ||
+																			primaryBitstream?.name
+																		: "No Additional Files"}
+																</h2>
+																{bundledBitstreams?.length > 0 && (
+																	<div className="flex flex-wrap gap-x-4 gap-y-1 text-sm opacity-90 text-ellipsis line-clamp-1">
+																		{selectedBitstream?.metadata?.[
+																			"crvs.documentType"
+																		]?.[0]?.value && (
+																			<span>
+																				<span className="font-medium">
+																					Type:
+																				</span>{" "}
+																				{
+																					selectedBitstream.metadata[
+																						"crvs.documentType"
+																					][0].value
+																				}
+																			</span>
+																		)}
+																		{selectedBitstream?.metadata?.[
+																			"crvs.document.status"
+																		]?.[0]?.value && (
+																			<span>
+																				<span className="font-medium">
+																					Status:
+																				</span>{" "}
+																				{
+																					selectedBitstream.metadata[
+																						"crvs.document.status"
+																					][0].value
+																				}
+																			</span>
+																		)}
+																		{selectedBitstream?.sizeBytes && (
+																			<span>
+																				<span className="font-medium">
+																					Size:
+																				</span>{" "}
+																				{(
+																					selectedBitstream.sizeBytes / 1024
+																				).toFixed(1)}{" "}
+																				KB
+																			</span>
 																		)}
 																	</div>
-																</span>
-															</button>
-															{bundledBitstreams?.length > 0 && (
-																<select
-																	value={selectedBitstream?.uuid}
-																	onChange={(e) =>
-																		setSelectedBitstream(
-																			bundledBitstreams.find(
-																				(b) => b.uuid === e.target.value,
-																			),
-																		)
-																	}
-																	className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-																>
-																	{bundledBitstreams.map((b) => (
-																		<option key={b.uuid} value={b.uuid}>
-																			{b.name}
-																		</option>
-																	))}
-																</select>
-															)}
-														</div>
-														{enableDownload && bundledBitstreams?.length > 0 &&
-															selectedBitstream &&
-															selectedBitstreamUrl && (
-																<a
-																	href={selectedBitstreamUrl}
-																	target="_blank"
-																	rel="noopener noreferrer"
-																	download={selectedBitstream.name}
-																	className="p-1.5 rounded hover:bg-white/20 transition-colors mt-0.5"
-																	title="Download"
-																>
-																	<DownloadIcon className="w-4 h-4" />
-																</a>
-															)}
-													</div>
-												</div>
-												<div className="flex-1 overflow-auto bg-white flex flex-col">
-													<div className="flex-1 overflow-auto flex items-center justify-center">
-														{bundledBitstreams?.length > 0 ? (
-															renderBitstreamPreview(
-																selectedBitstream,
-																selectedBitstreamUrl,
-																"No additional files",
-															)
-														) : (
-															<div className="text-muted-foreground">
-																No additional files
+																)}
 															</div>
-														)}
-													</div>
+														</span>
+													</button>
+													{bundledBitstreams?.length > 0 && (
+														<select
+															value={selectedBitstream?.uuid}
+															onChange={(e) =>
+																setSelectedBitstream(
+																	bundledBitstreams.find(
+																		(b) => b.uuid === e.target.value,
+																	),
+																)
+															}
+															className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+														>
+															{bundledBitstreams.map((b) => (
+																<option key={b.uuid} value={b.uuid}>
+																	{b.name}
+																</option>
+															))}
+														</select>
+													)}
 												</div>
+												{enableDownload &&
+													bundledBitstreams?.length > 0 &&
+													selectedBitstream &&
+													selectedBitstreamUrl && (
+														<a
+															href={selectedBitstreamUrl}
+															target="_blank"
+															rel="noopener noreferrer"
+															download={selectedBitstream.name}
+															className="p-1.5 rounded hover:bg-white/20 transition-colors mt-0.5"
+															title="Download"
+														>
+															<DownloadIcon className="w-4 h-4" />
+														</a>
+													)}
 											</div>
 										</div>
-
-										{/* Close Button */}
-										<button
-											type="button"
-											onClick={closePreview}
-											className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white text-lg font-bold flex items-center justify-center transition-colors"
-										>
-											×
-										</button>
+										<div className="flex-1 overflow-auto bg-white flex flex-col">
+											<div className="flex-1 overflow-auto flex items-center justify-center">
+												{bundledBitstreams?.length > 0 ? (
+													renderBitstreamPreview(
+														selectedBitstream,
+														selectedBitstreamUrl,
+														"No additional files",
+													)
+												) : (
+													<div className="text-muted-foreground">
+														No additional files
+													</div>
+												)}
+											</div>
+										</div>
 									</div>
 								</div>
-							)}
-						</CardContent>
-					</Card>
-				</div>
-			</div>
+
+								{/* Close Button */}
+								<button
+									type="button"
+									onClick={closePreview}
+									className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white text-lg font-bold flex items-center justify-center transition-colors"
+								>
+									×
+								</button>
+							</div>
+						</div>
+					)}
+				</CardContent>
+			</Card>
 		</Tabs>
 	);
 }

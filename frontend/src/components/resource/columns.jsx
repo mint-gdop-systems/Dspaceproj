@@ -152,6 +152,11 @@ export const houseColumns = [
 export const vitalEventColumns = [
 	...sharedColumnsStart,
 	{
+		accessorKey: "eventType",
+		header: "Event Type",
+		cell: renderFallback,
+	},
+	{
 		accessorKey: "eventSubject",
 		header: "Subject Name",
 		cell: renderFallback,
