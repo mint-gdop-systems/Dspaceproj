@@ -306,9 +306,12 @@ class DSpaceService {
 
 	async checkAuthStatus() {
 		try {
-			const response = await this.fetchWithCsrf(`${DSPACE_API_URL}/authn/status`, {
-				headers: { Accept: "application/json" },
-			});
+			const response = await this.fetchWithCsrf(
+				`${DSPACE_API_URL}/authn/status`,
+				{
+					headers: { Accept: "application/json" },
+				},
+			);
 
 			if (response.ok) {
 				const data = await response.json();
@@ -350,9 +353,12 @@ class DSpaceService {
 
 	async getCollections() {
 		try {
-			const response = await this.fetchWithCsrf(`${DSPACE_API_URL}/core/collections`, {
-				headers: { Accept: "application/json" },
-			});
+			const response = await this.fetchWithCsrf(
+				`${DSPACE_API_URL}/core/collections`,
+				{
+					headers: { Accept: "application/json" },
+				},
+			);
 
 			if (response.ok) {
 				const data = await response.json();
@@ -799,14 +805,17 @@ class DSpaceService {
 				: workspaceItemId;
 		const workspaceUri = `${window.location.protocol}//${window.location.host}/server/api/submission/workspaceitems/${id}`;
 
-		const response = await this.fetchWithCsrf(`${DSPACE_API_URL}/workflow/workflowitems`, {
-			method: "POST",
-			headers: {
-				Accept: "application/json",
-				"Content-Type": "text/uri-list",
+		const response = await this.fetchWithCsrf(
+			`${DSPACE_API_URL}/workflow/workflowitems`,
+			{
+				method: "POST",
+				headers: {
+					Accept: "application/json",
+					"Content-Type": "text/uri-list",
+				},
+				body: workspaceUri,
 			},
-			body: workspaceUri,
-		});
+		);
 
 		if (response.ok || response.status === 201 || response.status === 202) {
 			return await response.json().catch(() => ({ id: workspaceItemId }));
@@ -849,7 +858,6 @@ class DSpaceService {
 				params.append("query", queryParts.join(" AND "));
 			}
 
-			const headers = this.getCsrfHeaders({ Accept: "application/json" });
 			const url = `${DSPACE_API_URL}/discover/search/objects?${params.toString().replace(/\*/g, "%2A")}`;
 			const response = await this.fetchWithCsrf(url, {
 				headers: { Accept: "application/json" },
@@ -896,9 +904,12 @@ class DSpaceService {
 
 	async getItem(itemId) {
 		try {
-			const response = await this.fetchWithCsrf(`${DSPACE_API_URL}/core/items/${itemId}`, {
-				headers: { Accept: "application/json" },
-			});
+			const response = await this.fetchWithCsrf(
+				`${DSPACE_API_URL}/core/items/${itemId}`,
+				{
+					headers: { Accept: "application/json" },
+				},
+			);
 			return response.ok ? await response.json() : null;
 		} catch {
 			return null;
@@ -924,12 +935,18 @@ class DSpaceService {
 	async getBitstreams(bundleId) {
 		try {
 			const [primaryRes, bundledRes] = await Promise.all([
-				this.fetchWithCsrf(`${DSPACE_API_URL}/core/bundles/${bundleId}/primaryBitstream`, {
-					headers: { Accept: "application/json" },
-				}),
-				this.fetchWithCsrf(`${DSPACE_API_URL}/core/bundles/${bundleId}/bitstreams`, {
-					headers: { Accept: "application/json" },
-				}),
+				this.fetchWithCsrf(
+					`${DSPACE_API_URL}/core/bundles/${bundleId}/primaryBitstream`,
+					{
+						headers: { Accept: "application/json" },
+					},
+				),
+				this.fetchWithCsrf(
+					`${DSPACE_API_URL}/core/bundles/${bundleId}/bitstreams`,
+					{
+						headers: { Accept: "application/json" },
+					},
+				),
 			]);
 
 			const primaryBitstream =
