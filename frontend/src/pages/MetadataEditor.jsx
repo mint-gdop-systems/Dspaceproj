@@ -32,15 +32,15 @@ const VALUE_PAIRS = {
     { label: "የወንጀል መዝገብ (Criminal)", value: "Criminal" },
     { label: "የሰበር መዝገብ (Cassation)", value: "Cassation" },
   ],
-  case_levels: [
-    { label: "Registrar (ሬጅስትራር)", value: "Registrar" },
-    { label: "Screening (ቅድመ ምርመራ)", value: "Screening" },
-    { label: "Litigation (የችሎት ክርክር)", value: "Litigation" },
-    { label: "Archive (መዝገብ ቤት)", value: "Archive" },
-  ],
+  // case_levels: [
+  //   { label: "Registrar (ሬጅስትራር)", value: "Registrar" },
+  //   { label: "Screening (ቅድመ ምርመራ)", value: "Screening" },
+  //   { label: "Litigation (የችሎት ክርክር)", value: "Litigation" },
+  //   { label: "Archive (መዝገብ ቤት)", value: "Archive" },
+  // ],
   case_status_types: [
     { label: "Active (በሂደት ላይ)", value: "Active" },
-    { label: "Adjourned (የተቀጠረ)", value: "Adjourned" },
+    // { label: "Adjourned (የተቀጠረ)", value: "Adjourned" },
     { label: "Closed (የተዘጋ)", value: "Closed" },
   ],
   record_formats: [
@@ -67,8 +67,19 @@ const VALUE_PAIRS = {
     { label: "የዳኝነት ክፍያ ደረሰኝ (Court Fee Receipt)", value: "Fee_Receipt" },
   ],
   active_status_types: [
-    { label: "Active (ገቢ)", value: "Active" },
-    { label: "Inactive (ውድቅ)", value: "Inactive" },
+    { label: "Active", value: "Active" },
+    { label: "Inactive", value: "Inactive" },
+  ],
+  court_locations: [
+    { label: "6 ኪሎ", value: "6 ኪሎ" },
+    { label: "4 ኪሎ", value: "4 ኪሎ" },
+    { label: "ፍርድ አፈፃፀም ያሬድ ት/ት ቤት ፊት ለፊት", value: "ፍርድ አፈፃፀም" },
+  ],
+  court_adjured_locations: [
+    { label: "ልደታ - ፍትሐብሔር ምድብ (Lideta - Civil Division)", value: "ልደታ - ፍትሐብሔር ምድብ" },
+    { label: "ልደታ - ወንጀል ምድብ (Lideta - Criminal Division)", value: "ልደታ - ወንጀል ምድብ" },
+    { label: "አራዳ ምድብ ችሎት (Arada Division)", value: "አራዳ ምድብ ችሎት" },
+    { label: "የካ ምድብ ችሎት (Yeka Division)", value: "የካ ምድብ ችሎት" },
   ],
 };
 
@@ -125,7 +136,7 @@ const MetadataEditor = () => {
   const [collections, setCollections] = useState([]);
   const [collectionId, setCollectionId] = useState("");
   const [title, setTitle] = useState("");
-  const [language, setLanguage] = useState("en_US");
+  // const [language, setLanguage] = useState("en_US");
   const [description, setDescription] = useState("");
 
   // Traditional Page One
@@ -137,15 +148,16 @@ const MetadataEditor = () => {
   const [registrationDate, setRegistrationDate] = useState("");
 
   // Traditional Page Two
-  const [caseLevel, setCaseLevel] = useState("");
+  // const [caseLevel, setCaseLevel] = useState("");
   const [caseStatus, setCaseStatus] = useState("");
-  const [primaryJudge, setPrimaryJudge] = useState("");
-  const [judgeNumber, setJudgeNumber] = useState("");
+  // const [primaryJudge, setPrimaryJudge] = useState("");
+  // const [judgeNumber, setJudgeNumber] = useState("");
   const [location, setLocation] = useState("");
   const [benchSession, setBenchSession] = useState("");
   const [recordFormat, setRecordFormat] = useState("");
   const [shelfNumber, setShelfNumber] = useState("");
   const [rowNumber, setRowNumber] = useState("");
+  const [colNumber, setColNumber] = useState("");
   const [rfid, setRfid] = useState("");
 
   // PDF viewer states
@@ -243,16 +255,16 @@ const MetadataEditor = () => {
     }
 
     // Judge Number validation (1-9)
-    if (
-      judgeNumber &&
-      (isNaN(judgeNumber) ||
-        parseInt(judgeNumber) < 1 ||
-        parseInt(judgeNumber) > 9)
-    ) {
-      alert("Judge Number must be a number between 1 and 9.");
-      setUploading(false);
-      return;
-    }
+    // if (
+    //   judgeNumber &&
+    //   (isNaN(judgeNumber) ||
+    //     parseInt(judgeNumber) < 1 ||
+    //     parseInt(judgeNumber) > 9)
+    // ) {
+    //   alert("Judge Number must be a number between 1 and 9.");
+    //   setUploading(false);
+    //   return;
+    // }
 
     setUploading(true);
 
@@ -273,7 +285,7 @@ const MetadataEditor = () => {
       const metadata = {
         title: title || fileNumber, // Fallback if no specific title
         description: description,
-        language: language,
+        // language: language,
         // Traditional Page 1
         fileNumber,
         caseType,
@@ -282,15 +294,16 @@ const MetadataEditor = () => {
         caseRepresentative: caseRepresentatives.filter((r) => r.trim()),
         registrationDate,
         // Traditional Page 2
-        caseLevel,
+        // caseLevel,
         caseStatus,
-        primaryJudge,
-        judgeNumber,
+        // primaryJudge,
+        // judgeNumber,
         location,
         benchSession,
         recordFormat,
         shelfNumber,
         rowNumber,
+        colNumber,
         rfid,
       };
 
@@ -335,15 +348,16 @@ const MetadataEditor = () => {
       setDefendants([""]);
       setCaseRepresentatives([""]);
       setRegistrationDate("");
-      setCaseLevel("");
+      // setCaseLevel("");
       setCaseStatus("");
-      setPrimaryJudge("");
-      setJudgeNumber("");
+      // setPrimaryJudge("");
+      // setJudgeNumber("");
       setLocation("");
       setBenchSession("");
       setRecordFormat("");
       setShelfNumber("");
       setRowNumber("");
+      setColNumber("");
       setRfid("");
     } catch (e) {
       console.error("Critical upload error:", e);
@@ -805,7 +819,8 @@ const MetadataEditor = () => {
                     htmlFor="collection"
                     className="block text-sm font-medium text-gray-700"
                   >
-                    Select Collection *
+                    የመዝገብ አይነት ይምረጡ
+                    <span className="text-red-500 ml-1">*</span>
                   </label>
                   <select
                     id="collection"
@@ -815,7 +830,7 @@ const MetadataEditor = () => {
                     className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
                   >
                     <option value="" disabled>
-                      Select a collection
+                      የመዝገብ አይነት ይምረጡ
                     </option>
                     {collections.map((c) => (
                       <option key={c.uuid} value={c.uuid}>
@@ -827,7 +842,7 @@ const MetadataEditor = () => {
 
                 <div className="border-t border-gray-200 pt-6">
                   <h3 className="text-md font-semibold text-gray-800 mb-4">
-                    Traditional Page One (Case Details)
+                    የመዝገብ መረጃ (Case Details)
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -835,7 +850,8 @@ const MetadataEditor = () => {
                         htmlFor="fileNumber"
                         className="block text-sm font-medium text-gray-700"
                       >
-                        የመዝገብ ቁጥር (Case Number) *
+                        የመዝገብ ቁጥር (Case Number)
+                        <span className="text-red-500 ml-1">*</span>
                       </label>
                       <input
                         id="fileNumber"
@@ -908,7 +924,7 @@ const MetadataEditor = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700">
-                        ምዝገባ ቀን (Registration Date)
+                        መዝገቡ የተከፈተበት ቀን
                       </label>
                       <input
                         type="date"
@@ -922,10 +938,10 @@ const MetadataEditor = () => {
 
                 <div className="border-t border-gray-200 pt-6">
                   <h3 className="text-md font-semibold text-gray-800 mb-4">
-                    Traditional Page Two (Additional Details)
+                    ተጨማሪ ዝርዝር መረጃ (Additional Details)
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
+                    {/* <div>
                       <label
                         htmlFor="caseLevel"
                         className="block text-sm font-medium text-gray-700"
@@ -949,7 +965,7 @@ const MetadataEditor = () => {
                         Current process stage: Registrar, Screening, etc. [cite:
                         18]
                       </p>
-                    </div>
+                    </div> */}
                     <div>
                       <label
                         htmlFor="caseStatus"
@@ -971,7 +987,7 @@ const MetadataEditor = () => {
                         ))}
                       </select>
                     </div>
-                    <div>
+                    {/* <div>
                       <label
                         htmlFor="primaryJudge"
                         className="block text-sm font-medium text-gray-700"
@@ -985,8 +1001,8 @@ const MetadataEditor = () => {
                         onChange={(e) => setPrimaryJudge(e.target.value)}
                         className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
                       />
-                    </div>
-                    <div>
+                    </div> */}
+                    {/* <div>
                       <label
                         htmlFor="judgeNumber"
                         className="block text-sm font-medium text-gray-700"
@@ -1000,7 +1016,7 @@ const MetadataEditor = () => {
                         onChange={(e) => setJudgeNumber(e.target.value)}
                         className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
                       />
-                    </div>
+                    </div> */}
                     <div>
                       <label
                         htmlFor="location"
@@ -1008,13 +1024,19 @@ const MetadataEditor = () => {
                       >
                         የፍርድ ቤቱ ቦታ/ምድብ (Location/Division)
                       </label>
-                      <input
+                      <select
                         id="location"
-                        type="text"
                         value={location}
                         onChange={(e) => setLocation(e.target.value)}
                         className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                      />
+                      >
+                        <option value="">Select Location</option>
+                        {VALUE_PAIRS.court_locations.map((loc) => (
+                          <option key={loc.value} value={loc.value}>
+                            {loc.label}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label
@@ -1023,13 +1045,19 @@ const MetadataEditor = () => {
                       >
                         ችሎት (Bench)
                       </label>
-                      <input
+                      <select
                         id="benchSession"
-                        type="text"
                         value={benchSession}
                         onChange={(e) => setBenchSession(e.target.value)}
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                      />
+                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                      >
+                        <option value="">Select Bench</option>
+                        {VALUE_PAIRS.court_adjured_locations.map((loc) => (
+                          <option key={loc.value} value={loc.value}>
+                            {loc.label}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                   <div className="mt-4">
@@ -1037,7 +1065,7 @@ const MetadataEditor = () => {
                       htmlFor="description"
                       className="block text-sm font-medium text-gray-700"
                     >
-                      Description
+                      የሰነዱ ዝርዝር መግለጫ (Description)
                     </label>
                     <textarea
                       id="description"
@@ -1045,17 +1073,17 @@ const MetadataEditor = () => {
                       onChange={(e) => setDescription(e.target.value)}
                       rows="3"
                       className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                      placeholder="Enter the description of the Case"
+                      placeholder="ስለ ሰነዱ አጭር መግለጫ እዚህ ያስገቡ..."
                     ></textarea>
                   </div>
                 </div>
 
                 <div className="border-t border-gray-200 pt-6">
                   <h3 className="text-md font-semibold text-gray-800 mb-4">
-                    Physical Storage & Format
+                    የማህደር አደረጃጀት (Physical Storage)
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
+                    {/* <div className="col-span-2">
                       <label
                         htmlFor="recordFormat"
                         className="block text-sm font-medium text-gray-700"
@@ -1078,9 +1106,9 @@ const MetadataEditor = () => {
                       <p className="text-xs text-gray-500 mt-1">
                         Choose Physical, E-File, or Hybrid. [cite: 51]
                       </p>
-                    </div>
-                    {recordFormat !== "Electronic" && (
-                      <>
+                    </div> */}
+                    {/* {recordFormat !== "Electronic" && (
+                      <> */}
                         <div>
                           <label
                             htmlFor="shelfNumber"
@@ -1114,8 +1142,23 @@ const MetadataEditor = () => {
                             className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
                           />
                         </div>
-                      </>
-                    )}
+                        <div>
+                          <label
+                            htmlFor="colNumber"
+                            className="block text-sm font-medium text-gray-700"
+                          >
+                            አምድ ቁጥር (Column No.)
+                          </label>
+                          <input
+                            id="colNumber"
+                            type="text"
+                            value={colNumber}
+                            onChange={(e) => setColNumber(e.target.value)}
+                            className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                          />
+                        </div>
+                      {/* </>) */}
+                    {/* } */}
                     <div>
                       <label
                         htmlFor="rfid"
@@ -1137,7 +1180,7 @@ const MetadataEditor = () => {
                 {/* File List Section */}
                 <div className="border-t border-gray-200 pt-6">
                   <label className="block text-sm font-bold text-gray-800 mb-4 uppercase tracking-tighter">
-                    File Metadata (Bitstream)
+                    መዝገብ ፋይሎች
                   </label>
                   {files.length > 0 ? (
                     <div className="space-y-6">
@@ -1349,8 +1392,8 @@ const MetadataEditor = () => {
             ) : (
               <div className="text-center text-gray-500 pt-16">
                 <FileText size={48} className="mx-auto mb-4" />
-                <h3 className="text-lg font-semibold">No file selected</h3>
-                <p>Please upload a file and select it to edit metadata.</p>
+                <h3 className="text-lg font-semibold">የተመረጠ ፋይል የለም</h3>
+                <p>እባክዎ መጀመሪያ ፋይል ይጫኑ (Upload)፤ ከዚያም ሜታዳታውን ለማስተካከል ፋይሉን ይምረጡ።</p>
               </div>
             )}
           </div>
@@ -1372,7 +1415,8 @@ const MetadataEditor = () => {
                       <ChevronLeft size={18} />
                     </button>
                     <span>
-                      Page {pageNumber} of {numPages}
+                      {/* Page {pageNumber} of {numPages} */}
+                      ገጽ {pageNumber} ከ {numPages}
                     </span>
                     <button
                       type="button"

@@ -9,7 +9,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
-const ResourceTable = ({ resources, loading, onCatalogClick }) => {
+const ResourceTable = ({ resources, loading, onCirculationClick }) => {
     const { user } = useAuth();
     const isAuthenticated = !!user;
     const [previewLoading, setPreviewLoading] = useState({});
@@ -187,7 +187,7 @@ const ResourceTable = ({ resources, loading, onCatalogClick }) => {
                                     {resource.location || "—"}
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-700">
-                                    {resource.case_level || "—"}
+                                    {resource.case_status || "—"}
                                 </td>
 
                                 <td className="px-6 py-4 text-center">
@@ -212,11 +212,11 @@ const ResourceTable = ({ resources, loading, onCatalogClick }) => {
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            onCatalogClick(resource);
+                                                            onCirculationClick(resource);
                                                         }}
                                                         className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 cursor-pointer"
                                                     >
-                                                        ካታሎግ
+                                                        የስርጭት ሁነቶች
                                                     </button>
                                                 )}
                                             </>

@@ -1,6 +1,6 @@
 import Carousel from "../components/UI/Carousel";
 import dspaceService from "../services/dspaceService";
-import CatalogModal from "./CatalogModal";
+import CirculationEventsModal from "./CirculationEventsModal";
 import { AuthContext } from "../contexts/AuthContext";
 import { useState, useEffect, useContext } from "react";
 import axios from "axios";
@@ -18,36 +18,13 @@ const Home = () => {
     const [catalogedResources, setCatalogedResources] = useState([]); // For Koha cataloged items
     const [dspaceItems, setDspaceItems] = useState([]); // For DSpace items fetched directly
     const [loading, setLoading] = useState(false);
-    const [showCatalogModal, setShowCatalogModal] = useState(false);
-    const [catalogData, setCatalogData] = useState({
-        title: "",
-        authors: "",
-        dspace_url: "",
-        resource_type: "eBook",
-        year: "",
-        publisher: "",
-        isbn_issn: "",
-        language: "English",
-        subject_keywords: "",
-        description: "",
-        call_number: "",
-        access_note: "Open access",
-        content_type: "Text",
-        format: "PDF",
-        current_library: "",
-        barcode: "",
-        marc_fields: {
-            "000": "", "001": "", "003": "", "005": "", "006": "", "007": "", "008": "",
-            "010a": "", "015a": "", "016a": "", "020a": "", "022a": "", "024a": "",
-            "027a": "", "028a": "", "035a": "", "037a": "", "040a": "", "041a": "",
-            "045a": "", "047a": "", "048a": "", "050a": "", "074a": "", "082a": "", "086a": ""
-        }
-    });
+    const [isCirculationModalOpen, setIsCirculationModalOpen] = useState(false);
+    const [selectedCaseFile, setSelectedCaseFile] = useState(null);
 
     const [stats, setStats] = useState({
         totalResources: 0,
-        monthlyDownloads: 0,
-        activeUsers: 0,
+        mySubmissions: 0,
+        allowedCollections: 0,
         communities: 0,
     });
 
@@ -91,19 +68,32 @@ const Home = () => {
         return () => clearTimeout(delayDebounceFn);
     }, [searchQuery, selectedCollections, displayMode]);
 
+
+    const fetchCollections = async () => {
+    try {
+        const collectionsList = await dspaceService.getCollections();
+        // Fallback to empty array if the response structure differs
+        setCollections(collectionsList || []); 
+    } catch (error) {
+        console.error("Error fetching collections:", error);
+        setCollections([]);
+    }
+    };
+
     // Fetch all resources (using DSpace search)
     const fetchAllResources = async (query = "") => {
         setLoading(true);
         try {
-            // Use DSpace service to search
-            const results = await dspaceService.searchItems(query);
-
-            // Transform DSpace items to common resource format
-            // Filter out collections - only include actual items
-            const mappedResults = results
+            // Use DSpace service to search and immediately chain array transformations
+            const mappedResults = (await dspaceService.searchItems(query))
+                // Transform DSpace items to common resource format
+                // Filter out collections - only include actual items
                 .filter(item => {
-                    const type = item._embedded?.indexableObject?.type;
-                    return type === 'item'; // Only items, not collections
+                    const indexableObject = item._embedded?.indexableObject;
+                    if (indexableObject?.type !== 'item') return false;
+                    const metadata = indexableObject?.metadata || {};
+                    const entityType = metadata["dspace.entity.type"]?.[0]?.value;
+                    return entityType === "CaseFile";
                 })
                 .map(item => {
                     const metadata = item._embedded?.indexableObject?.metadata || {};
@@ -165,16 +155,17 @@ const Home = () => {
                         complaint_number: getVal("legal.case.complaintNumber"),
                         file_number: getVal("legal.case.fileNumber"),
                         case_document_type: getVal("legal.document.type"),
-                        judge_number: getVal("legal.judge.number"),
+                        // judge_number: getVal("legal.judge.number"),
                         location: getVal("legal.location"),
-                        case_level: getVal("legal.case.level"),
+                        case_status: getVal("legal.case.status"),
                         case_type: getVal("legal.case.type"),
-                        primary_judge: getVal("legal.judge.primary"),
+                        // primary_judge: getVal("legal.judge.primary"),
                         registration_date: getVal("legal.date.registration"),
                         plaintiff: getVal("legal.case.plaintiff"),
                         defendant: getVal("legal.case.defendant"),
                         shelf_number: getVal("legal.physical.shelfNumber"),
                         row_number: getVal("legal.physical.rowNumber"),
+                        col_number: getVal("legal.physical.colNumber"),
                         rfid: getVal("legal.physical.rfid"),
                     };
                 });
@@ -188,7 +179,6 @@ const Home = () => {
             setLoading(false);
         }
     };
-
     // Fetch items from Koha (Cataloged)
     const fetchCatalogedResources = async (query = "") => {
         setLoading(true);
@@ -221,118 +211,51 @@ const Home = () => {
 
     const fetchSystemStats = async () => {
         try {
+            // 1. Fetch total collections list first to use as a potential fallback
+            const collectionsList = await dspaceService.getCollections();
+            const totalCols = collectionsList?.length || 0;
+
+            // 2. Fetch search objects and filter strictly for items
+            const searchObjects = await dspaceService.searchItems();
+            const totalCaseFiles = searchObjects?.filter(
+                obj => obj.dspaceObject?.type === 'item' || obj.type === 'item'
+            ).length || 0;
+
+            let mySubmissionsCount = 0;
+            let allowedCollectionsCount = 0;
+
+            if (user && user.id) {
+                try {
+                    const submissionsRes = await dspaceService.getMySubmissions(user.id);
+                    mySubmissionsCount = submissionsRes?._embedded?.workspaceitems?.length || 0;
+
+                    const authColRes = await dspaceService.getSubmitAuthorizedCollections(0, 100);
+                    allowedCollectionsCount = authColRes?.collections?.length || totalCols;
+                } catch (err) {
+                    console.warn("Could not load user submissions / authorized collections:", err);
+                    allowedCollectionsCount = totalCols;
+                }
+            }
+
             setStats({
-                totalResources: 1000000,
-                monthlyDownloads: 250000,
-                activeUsers: 180000,
-                communities: 3,
+                totalResources: totalCaseFiles, // Will now correctly show 3
+                mySubmissions: mySubmissionsCount,
+                allowedCollections: allowedCollectionsCount, // Will now show 3
+                communities: totalCols, // Shows 3
             });
         } catch (error) {
             console.error("Error fetching stats:", error);
         }
     };
 
+    const handleCirculationClick = (resource) => {
+        setSelectedCaseFile(resource);
+        setIsCirculationModalOpen(true);
+    };
+
     const handleSearch = (e) => {
         e.preventDefault();
         // Search is handled by useEffect now
-    };
-
-    const fetchCollections = async () => {
-        try {
-            const collectionList = await dspaceService.getCollections();
-            setCollections(collectionList || []);
-        } catch (error) {
-            console.error("Error fetching collections:", error);
-        }
-    };
-
-    const handleCatalogSubmit = async () => {
-        try {
-            // Use Django token for backend requests
-            const activeToken = djangoToken || localStorage.getItem('djangoToken');
-
-            const config = activeToken ? {
-                headers: {
-                    Authorization: `Token ${activeToken}`
-                }
-            } : {};
-
-            const response = await axios.post(
-                "/api/resources/catalog-external/",
-                catalogData,
-                config
-            );
-            alert("Successfully cataloged in Koha!");
-            setShowCatalogModal(false);
-            // Reset catalog data
-            setCatalogData({
-                title: "",
-                authors: "",
-                description: "",
-                year: "",
-                subject_keywords: "",
-                publisher: "",
-                language: "en",
-                resource_type: "Text",
-                abstract: "",
-                sponsors: "",
-                dspace_url: "",
-                collection: "",
-                current_library: "",
-                shelving_location: "",
-                barcode: "",
-                koha_item_type: "",
-                public_note: "",
-            });
-        } catch (error) {
-            console.error("Catalog error:", error);
-            alert(
-                "Failed to catalog in Koha: " +
-                (error.response?.data?.error || error.message),
-            );
-        }
-    };
-
-    const handleCatalogDataChange = (field, value) => {
-        setCatalogData((prev) => ({
-            ...prev,
-            [field]: value,
-        }));
-    };
-
-    const handleCatalogClick = (resource) => {
-        // Construct handle URL if external_id exists
-        const baseUrl = import.meta.env.DSPACE_FRONTEND_URL || "http://localhost:4000";
-        const handleUrl = resource.external_id
-            ? `${baseUrl}/handle/${resource.external_id}`
-            : (resource.url || "");
-
-        setCatalogData({
-            title: resource.title || "",
-            authors: resource.authors || "",
-            dspace_url: handleUrl,
-            resource_type: resource.resource_type || "eBook",
-            year: resource.year || "",
-            publisher: resource.publisher || "",
-            isbn_issn: resource.isbn || resource.issn || "",
-            language: resource.language || "English",
-            subject_keywords: resource.subjects || "",
-            description: resource.description || "",
-            call_number: "",
-            access_note: "Open access",
-            content_type: "Text",
-            format: resource.format || "PDF",
-            current_library: "",
-            barcode: "",
-            // MARC Fields
-            marc_fields: {
-                "000": "", "001": "", "003": "", "005": "", "006": "", "007": "", "008": "",
-                "010a": "", "015a": "", "016a": "", "020a": "", "022a": "", "024a": "",
-                "027a": "", "028a": "", "035a": "", "037a": "", "040a": "", "041a": "",
-                "045a": "", "047a": "", "048a": "", "050a": "", "074a": "", "082a": "", "086a": ""
-            }
-        });
-        setShowCatalogModal(true);
     };
 
     const handleCollectionClick = (collection) => {
@@ -406,8 +329,11 @@ const Home = () => {
                     // Transform items to common format and filter out collections
                     const transformedItems = items
                         .filter(item => {
-                            const type = item._embedded?.indexableObject?.type;
-                            return type === 'item'; // Only items, not collections
+                            const indexableObject = item._embedded?.indexableObject;
+                            if (indexableObject?.type !== 'item') return false;
+                            const metadata = indexableObject?.metadata || {};
+                            const entityType = metadata["dspace.entity.type"]?.[0]?.value;
+                            return entityType === "CaseFile";
                         })
                         .map(item => {
                             const metadata = item._embedded?.indexableObject?.metadata || {};
@@ -454,16 +380,18 @@ const Home = () => {
                                 complaint_number: getVal("legal.case.complaintNumber"),
                                 file_number: getVal("legal.case.fileNumber"),
                                 case_document_type: getVal("legal.document.type"),
-                                judge_number: getVal("legal.judge.number"),
+                                // judge_number: getVal("legal.judge.number"),
                                 location: getVal("legal.location"),
-                                case_level: getVal("legal.case.level"),
+                                // case_level: getVal("legal.case.level"),
+                                case_status: getVal("legal.case.status"),
                                 case_type: getVal("legal.case.type"),
-                                primary_judge: getVal("legal.judge.primary"),
+                                // primary_judge: getVal("legal.judge.primary"),
                                 registration_date: getVal("legal.date.registration"),
                                 plaintiff: getVal("legal.case.plaintiff"),
                                 defendant: getVal("legal.case.defendant"),
                                 shelf_number: getVal("legal.physical.shelfNumber"),
                                 row_number: getVal("legal.physical.rowNumber"),
+                                col_number: getVal("legal.physical.colNumber"),
                                 rfid: getVal("legal.physical.rfid"),
                             };
                         });
@@ -539,11 +467,14 @@ const Home = () => {
                 let resourceValue;
                 if (category === 'case_type') {
                     resourceValue = resource.case_type;
-                } else if (category === 'case_level') {
-                    resourceValue = resource.case_level;
-                } else if (category === 'primary_judge') {
-                    resourceValue = resource.primary_judge;
-                } else if (category === 'location') {
+                } 
+                else if (category === 'case_status') {
+                    resourceValue = resource.case_status;
+                } 
+                // else if (category === 'primary_judge') {
+                //     resourceValue = resource.primary_judge;
+                // } 
+                else if (category === 'location') {
                     resourceValue = resource.location;
                 } else if (category === 'registration_date') {
                     resourceValue = resource.registration_date;
@@ -613,32 +544,32 @@ const Home = () => {
                     {/* Stats Overview */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                         <Card className="text-center bg-white hover:shadow-lg transition-shadow border border-gray-200">
-                            <BarChart3 className="w-8 h-8 text-gray-800 mx-auto mb-3" />
-                            <h3 className="text-4xl font-bold text-gray-900 mb-2">
-                                {stats.totalResources.toLocaleString()}+
-                            </h3>
-                            <p className="text-gray-600 font-medium">ውሳኔ ያገኙ ሰነዶች</p>
-                        </Card>
-                        <Card className="text-center bg-white hover:shadow-lg transition-shadow border border-gray-200">
-                            <Download className="w-8 h-8 text-gray-800 mx-auto mb-3" />
-                            <h3 className="text-4xl font-bold text-gray-900 mb-2">
-                                {stats.monthlyDownloads.toLocaleString()}+
-                            </h3>
-                            <p className="text-gray-600 font-medium">የወንጀል ክሶች</p>
-                        </Card>
-                        <Card className="text-center bg-white hover:shadow-lg transition-shadow border border-gray-200">
-                            <Users className="w-8 h-8 text-gray-800 mx-auto mb-3" />
-                            <h3 className="text-4xl font-bold text-gray-900 mb-2">
-                                {stats.activeUsers.toLocaleString()}+
-                            </h3>
-                            <p className="text-gray-600 font-medium">ሰበር ውሳኔዎች</p>
-                        </Card>
-                        <Card className="text-center bg-white hover:shadow-lg transition-shadow border border-gray-200">
                             <MapPin className="w-8 h-8 text-gray-800 mx-auto mb-3" />
                             <h3 className="text-4xl font-bold text-gray-900 mb-2">
                                 {stats.communities}
                             </h3>
-                            <p className="text-gray-600 font-medium">ፍርድ ቤቶች</p>
+                            <p className="text-gray-600 font-medium">የመዝገብ አይነቶች</p>
+                        </Card>
+                        <Card className="text-center bg-white hover:shadow-lg transition-shadow border border-gray-200">
+                            <BarChart3 className="w-8 h-8 text-gray-800 mx-auto mb-3" />
+                            <h3 className="text-4xl font-bold text-gray-900 mb-2">
+                                {stats.totalResources.toLocaleString()}
+                            </h3>
+                            <p className="text-gray-600 font-medium">ጠቅላላ የክስ ፋይሎች</p>
+                        </Card>
+                        <Card className="text-center bg-white hover:shadow-lg transition-shadow border border-gray-200">
+                            <Download className="w-8 h-8 text-gray-800 mx-auto mb-3" />
+                            <h3 className="text-4xl font-bold text-gray-900 mb-2">
+                                {user ? stats.mySubmissions : 0}
+                            </h3>
+                            <p className="text-gray-600 font-medium">የእኔ መዝገቦች (ማስረከቢያዎች)</p>
+                        </Card>
+                        <Card className="text-center bg-white hover:shadow-lg transition-shadow border border-gray-200">
+                            <Users className="w-8 h-8 text-gray-800 mx-auto mb-3" />
+                            <h3 className="text-4xl font-bold text-gray-900 mb-2">
+                                {user ? stats.allowedCollections : 0}
+                            </h3>
+                            <p className="text-gray-600 font-medium">የተፈቀዱ የመዝገብ አይነቶች</p>
                         </Card>
                     </div>
                 </section>
@@ -770,7 +701,7 @@ const Home = () => {
                                     : "border border-gray-300 text-gray-700 hover:bg-gray-100"
                                     }`}
                             >
-                                Digital
+                                መዛግብት
                             </button>
                             <button
                                 onClick={() => handleDisplayModeChange("cataloged")}
@@ -779,7 +710,7 @@ const Home = () => {
                                     : "border border-gray-300 text-gray-700 hover:bg-gray-100"
                                     }`}
                             >
-                                Cataloged
+                                ወጪ ገቢ
                             </button>
                         </div>
                     </div>
@@ -801,7 +732,7 @@ const Home = () => {
                             <ResourceTable
                                 resources={resourcesToDisplay.slice((currentPage - 1) * pageSize, currentPage * pageSize)}
                                 loading={loading}
-                                onCatalogClick={handleCatalogClick}
+                                onCirculationClick={handleCirculationClick}
                             />
 
                             {/* Pagination Controls */}
@@ -875,104 +806,11 @@ const Home = () => {
                 </div>
             </section>
 
-            <HowItWorks />
-
-            <CatalogModal
-                isOpen={showCatalogModal}
-                onClose={() => setShowCatalogModal(false)}
-                catalogData={catalogData}
-                onCatalogDataChange={handleCatalogDataChange}
-                onSubmit={handleCatalogSubmit}
+            <CirculationEventsModal
+                isOpen={isCirculationModalOpen}
+                onClose={() => setIsCirculationModalOpen(false)}
+                caseFile={selectedCaseFile}
             />
-
-            {/* Stats and Additional Sections - Same as before */}
-            <div className="max-w-7xl mx-auto px-4 py-12">
-                {/* System Overview */}
-                {/* <section className="mb-16"> */}
-                {/* <div className="text-center mb-12">
-                        <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                            ብሔራዊ መዛግብት እና መጻሕፍት መድረክ
-                        </h2>
-                        <p className="text-xl text-gray-600 max-w-4xl mx-auto">
-                            የኢትዮጵያ ማዕከላዊ የመዛግብት እና መጻሕፍት መድረክ። ከ2016 ጀምሮ በማስረጃ ላይ የተመሰረተ የምርምር
-                            እና የህዝብ ብዛት ድግፍ።
-                        </p>
-                    </div> */}
-
-                {/* Stats Overview */}
-                {/* <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-                        <Card className="text-center bg-white hover:shadow-lg transition-shadow border border-gray-200">
-                            <BarChart3 className="w-8 h-8 text-gray-800 mx-auto mb-3" />
-                            <h3 className="text-4xl font-bold text-gray-900 mb-2">
-                                {stats.totalResources.toLocaleString()}
-                            </h3>
-                            <p className="text-gray-600 font-medium">የክስ ሰነዶች</p>
-                        </Card>
-                        <Card className="text-center bg-white hover:shadow-lg transition-shadow border border-gray-200">
-                            <Download className="w-8 h-8 text-gray-800 mx-auto mb-3" />
-                            <h3 className="text-4xl font-bold text-gray-900 mb-2">
-                                {stats.monthlyDownloads.toLocaleString()}+
-                            </h3>
-                            <p className="text-gray-600 font-medium">ወርሃዊ መዳረሻ</p>
-                        </Card>
-                        <Card className="text-center bg-white hover:shadow-lg transition-shadow border border-gray-200">
-                            <Users className="w-8 h-8 text-gray-800 mx-auto mb-3" />
-                            <h3 className="text-4xl font-bold text-gray-900 mb-2">
-                                {stats.activeUsers.toLocaleString()}
-                            </h3>
-                            <p className="text-gray-600 font-medium">የተመዘገቡ ተጠቃሚዎች</p>
-                        </Card>
-                        <Card className="text-center bg-white hover:shadow-lg transition-shadow border border-gray-200">
-                            <MapPin className="w-8 h-8 text-gray-800 mx-auto mb-3" />
-                            <h3 className="text-4xl font-bold text-gray-900 mb-2">
-                                {stats.communities}
-                            </h3>
-                            <p className="text-gray-600 font-medium">ክልላዊ ቢሮዎች</p>
-                        </Card>
-                    </div> */}
-                {/* </section> */}
-
-                {/* Guidelines for Submitters */}
-                <section className="mb-16">
-                    <div className="bg-blue-50 rounded-2xl p-8">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-6 text-center">
-                            Guidelines for Submitters
-                        </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="text-center">
-                                <Book className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-                                <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                                    File Formats
-                                </h3>
-                                <p className="text-gray-600">
-                                    Accepted formats: PDF, EPUB, DOC, DOCX, TXT. Maximum file
-                                    size: 50MB per file.
-                                </p>
-                            </div>
-                            <div className="text-center">
-                                <CheckCircle className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-                                <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                                    Metadata Requirement
-                                </h3>
-                                <p className="text-gray-600">
-                                    All submissions must include accurate metadata including author,
-                                    year, and subject keywords.
-                                </p>
-                            </div>
-                            <div className="text-center">
-                                <AlertCircle className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-                                <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                                    Review Process
-                                </h3>
-                                <p className="text-gray-600">
-                                    Submissions are reviewed by librarians within 3 business days
-                                    before being published.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </div>
         </div>
     );
 };

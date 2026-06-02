@@ -224,16 +224,17 @@ class DSpaceService {
         add("legal.case.defendant", metadata.defendant);
         add("legal.case.representative", metadata.caseRepresentative);
         add("legal.date.registration", metadata.registrationDate);
-        add("legal.case.level", metadata.caseLevel);
+        // add("legal.case.level", metadata.caseLevel);
         add("legal.case.status", metadata.caseStatus);
-        add("legal.judge.primary", metadata.primaryJudge);
-        add("legal.judge.number", metadata.judgeNumber);
+        // add("legal.judge.primary", metadata.primaryJudge);
+        // add("legal.judge.number", metadata.judgeNumber);
         add("legal.location", metadata.location);
         add("legal.bench.session", metadata.benchSession);
         add("legal.case.format", metadata.recordFormat);
         add("dc.description", metadata.description);
         add("legal.physical.shelfNumber", metadata.shelfNumber);
         add("legal.physical.rowNumber", metadata.rowNumber);
+        add("legal.physical.colNumber", metadata.colNumber);
         add("legal.physical.rfid", metadata.rfid);
 
         return out;
@@ -339,10 +340,10 @@ class DSpaceService {
                 "legal.case.representative": metadata.caseRepresentative,
                 "legal.date.registration": metadata.registrationDate,
                 
-                "legal.case.level": metadata.caseLevel,
+                // "legal.case.level": metadata.caseLevel,
                 "legal.case.status": metadata.caseStatus,
-                "legal.judge.primary": metadata.primaryJudge,
-                "legal.judge.number": metadata.judgeNumber,
+                // "legal.judge.primary": metadata.primaryJudge,
+                // "legal.judge.number": metadata.judgeNumber,
                 "legal.location": metadata.location,
                 "legal.bench.session": metadata.benchSession,
                 "legal.case.format": metadata.recordFormat,
@@ -350,6 +351,7 @@ class DSpaceService {
 
                 "legal.physical.shelfNumber": metadata.shelfNumber,
                 "legal.physical.rowNumber": metadata.rowNumber,
+                "legal.physical.colNumber": metadata.colNumber,
                 "legal.physical.rfid": metadata.rfid,
             };
 
@@ -378,10 +380,10 @@ class DSpaceService {
                 "legal.case.representative": "traditionalpageone",
                 "legal.date.registration": "traditionalpageone",
 
-                "legal.case.level": "traditionalpagetwo",
+                // "legal.case.level": "traditionalpagetwo",
                 "legal.case.status": "traditionalpagetwo",
-                "legal.judge.primary": "traditionalpagetwo",
-                "legal.judge.number": "traditionalpagetwo",
+                // "legal.judge.primary": "traditionalpagetwo",
+                // "legal.judge.number": "traditionalpagetwo",
                 "legal.location": "traditionalpagetwo",
                 "legal.bench.session": "traditionalpagetwo",
                 "legal.case.format": "traditionalpagetwo",
@@ -389,6 +391,7 @@ class DSpaceService {
 
                 "legal.physical.shelfNumber": "physicalLocationForm",
                 "legal.physical.rowNumber": "physicalLocationForm",
+                "legal.physical.colNumber": "physicalLocationForm",
                 "legal.physical.rfid": "physicalLocationForm",
             };
 
@@ -646,6 +649,359 @@ class DSpaceService {
             this.isAuthenticated = false;
             this.authToken = null;
             this.csrfToken = null;
+        }
+    }
+
+    async fetchCollectionStats(page = 0, size = 20) {
+        try {
+            const token = this.getStoredToken();
+            const headers = this.getCsrfHeaders({ Accept: "application/json" });
+            if (token) {
+                headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+            }
+
+            const url = `${DSPACE_API_URL}/statistics/collectionstats?page=${page}&size=${size}`;
+            const response = await fetch(url, {
+                credentials: "include",
+                headers: headers,
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                return {
+                    collectionstatses: data._embedded?.collectionstatses || [],
+                    page: data.page || {
+                        number: 0,
+                        size,
+                        totalPages: 1,
+                        totalElements: 0,
+                    },
+                };
+            }
+            throw new Error(`Failed to fetch collection stats: ${response.status}`);
+        } catch (error) {
+            console.warn("Failed to fetch collection stats:", error);
+            return null;
+        }
+    }
+
+    async getMySubmissions(userUuid) {
+        try {
+            const token = this.getStoredToken();
+            const headers = this.getCsrfHeaders({ Accept: "application/json" });
+            if (token) {
+                headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+            }
+
+            const response = await fetch(
+                `${DSPACE_API_URL}/submission/workspaceitems/search/findBySubmitter?uuid=${userUuid}`,
+                {
+                    credentials: "include",
+                    headers: headers,
+                }
+            );
+
+            return response.ok ? await response.json() : null;
+        } catch (error) {
+            console.error("Error in getMySubmissions:", error);
+            return null;
+        }
+    }
+
+    async getSubmitAuthorizedCollections(page = 0, size = 20) {
+        try {
+            const token = this.getStoredToken();
+            const headers = this.getCsrfHeaders({
+                Accept: "application/json",
+                "Content-Type": "application/json",
+            });
+            if (token) {
+                headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+            }
+
+            const response = await fetch(
+                `${DSPACE_API_URL}/core/collections/search/findSubmitAuthorized?page=${page}&size=${size}&query=&embed=parentCommunity`,
+                {
+                    credentials: "include",
+                    headers: headers,
+                }
+            );
+
+            if (response.ok) {
+                const data = await response.json();
+                return {
+                    collections: data._embedded?.collections || [],
+                    page: data.page || {
+                        number: 0,
+                        size: size,
+                        totalPages: 1,
+                        totalElements: 0,
+                    },
+                };
+            }
+            return {
+                collections: [],
+                page: { number: 0, size: size, totalPages: 0, totalElements: 0 },
+            };
+        } catch (error) {
+            console.error("Error in getSubmitAuthorizedCollections:", error);
+            return {
+                collections: [],
+                page: { number: 0, size: size, totalPages: 0, totalElements: 0 },
+            };
+        }
+    }
+
+    async getOwningCollection(url) {
+        try {
+            const token = this.getStoredToken();
+            const headers = this.getCsrfHeaders({ Accept: "application/json" });
+            if (token) {
+                headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+            }
+
+            const response = await fetch(`${DSPACE_API_URL}${url}`, {
+                credentials: "include",
+                headers: headers,
+            });
+
+            if (response.ok) {
+                return await response.json();
+            }
+            return null;
+        } catch (error) {
+            console.error("Error in getOwningCollection:", error);
+            return null;
+        }
+    }
+
+    async getParentCommunity(url) {
+        try {
+            const token = this.getStoredToken();
+            const headers = this.getCsrfHeaders({ Accept: "application/json" });
+            if (token) {
+                headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+            }
+
+            const response = await fetch(`${DSPACE_API_URL}${url}`, {
+                credentials: "include",
+                headers: headers,
+            });
+
+            if (response.ok) {
+                return await response.json();
+            }
+            return null;
+        } catch (error) {
+            console.error("Error in getParentCommunity:", error);
+            return null;
+        }
+    }
+
+    async getRelatedCirculationEvents(caseFileUuid) {
+        try {
+            const token = this.getStoredToken();
+            const headers = this.getCsrfHeaders({ Accept: "application/json" });
+            if (token) {
+                headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+            }
+
+            const response = await fetch(
+                `${DSPACE_API_URL}/core/items/${caseFileUuid}/relationships`,
+                {
+                    credentials: "include",
+                    headers: headers,
+                }
+            );
+
+            if (!response.ok) {
+                console.error(`Failed to fetch relationships: ${response.status}`);
+                return [];
+            }
+
+            const data = await response.json();
+            const relationships = data._embedded?.relationships || [];
+            
+            const events = [];
+            for (const rel of relationships) {
+                const rightItemHref = rel._links?.rightItem?.href;
+                if (rightItemHref) {
+                    const pathIndex = rightItemHref.indexOf("/api/core/items/");
+                    if (pathIndex === -1) continue;
+                    const relativePath = rightItemHref.substring(pathIndex);
+                    
+                    const itemResponse = await fetch(`${DSPACE_API_URL}${relativePath}`, {
+                        credentials: "include",
+                        headers: headers,
+                    });
+                    
+                    if (itemResponse.ok) {
+                        const itemData = await itemResponse.json();
+                        const metadata = itemData.metadata || {};
+                        const getVal = (key) => metadata[key]?.[0]?.value || "";
+                        
+                        events.push({
+                            id: itemData.uuid || itemData.id,
+                            title: getVal("dc.title") || itemData.name,
+                            eventDate: getVal("legal.event.date") || "—",
+                            status: getVal("legal.event.status") || "—",
+                            handover: getVal("legal.event.handover") || "—",
+                            receiver: getVal("legal.event.receiver") || "—",
+                            department: getVal("legal.event.department") || "—",
+                            returnDate: getVal("legal.event.returnDate") || "—",
+                            description: getVal("dc.description") || "—",
+                            raw: itemData
+                        });
+                    }
+                }
+            }
+            return events;
+        } catch (error) {
+            console.error("Error in getRelatedCirculationEvents:", error);
+            return [];
+        }
+    }
+
+    async createCirculationEvent(caseFileUuid, eventData) {
+        try {
+            const token = this.getStoredToken();
+            const headers = this.getCsrfHeaders({
+                Accept: "application/json",
+                "Content-Type": "application/json",
+            });
+            if (token) {
+                headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+            }
+
+            const caseFile = await this.getItem(caseFileUuid);
+            if (!caseFile) throw new Error("CaseFile not found");
+            
+            const owningCollectionLink = caseFile._links?.owningCollection?.href;
+            if (!owningCollectionLink) throw new Error("CaseFile has no owning collection");
+            
+            const colUuidMatch = owningCollectionLink.match(/collections\/([a-f0-9\-]+)/i);
+            if (!colUuidMatch) throw new Error("Could not parse collection UUID");
+            const collectionId = colUuidMatch[1];
+
+            const wsItem = await this.createWorkspaceItem(collectionId);
+            if (!wsItem) throw new Error("Failed to create workspace item for circulation event");
+            const wsItemId = wsItem.id || wsItem.uuid;
+
+            const patchHeaders = this.getCsrfHeaders({
+                "Content-Type": "application/json-patch+json",
+                Accept: "application/json",
+            });
+            if (token) {
+                patchHeaders["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+            }
+
+            const patchBody = [
+                {
+                    op: "add",
+                    path: "/sections/circulationEventForm/dspace.entity.type",
+                    value: [{ value: "CirculationEvent", language: null, authority: null, confidence: -1 }]
+                },
+                {
+                    op: "add",
+                    path: "/sections/circulationEventForm/dc.title",
+                    value: [{ value: `Circulation Event - ${eventData.status}`, language: null, authority: null, confidence: -1 }]
+                },
+                {
+                    op: "add",
+                    path: "/sections/circulationEventForm/legal.event.date",
+                    value: [{ value: eventData.eventDate, language: null, authority: null, confidence: -1 }]
+                },
+                {
+                    op: "add",
+                    path: "/sections/circulationEventForm/legal.event.status",
+                    value: [{ value: eventData.status, language: null, authority: null, confidence: -1 }]
+                },
+                {
+                    op: "add",
+                    path: "/sections/circulationEventForm/legal.event.handover",
+                    value: eventData.handover ? [{ value: eventData.handover, language: null, authority: null, confidence: -1 }] : []
+                },
+                {
+                    op: "add",
+                    path: "/sections/circulationEventForm/legal.event.receiver",
+                    value: [{ value: eventData.receiver, language: null, authority: null, confidence: -1 }]
+                },
+                {
+                    op: "add",
+                    path: "/sections/circulationEventForm/legal.event.department",
+                    value: eventData.department ? [{ value: eventData.department, language: null, authority: null, confidence: -1 }] : []
+                },
+                {
+                    op: "add",
+                    path: "/sections/circulationEventForm/legal.event.returnDate",
+                    value: eventData.returnDate ? [{ value: eventData.returnDate, language: null, authority: null, confidence: -1 }] : []
+                },
+                {
+                    op: "add",
+                    path: "/sections/circulationEventForm/dc.description",
+                    value: eventData.description ? [{ value: eventData.description, language: null, authority: null, confidence: -1 }] : []
+                }
+            ];
+
+            const patchRes = await fetch(`${DSPACE_API_URL}/submission/workspaceitems/${wsItemId}`, {
+                method: "PATCH",
+                headers: patchHeaders,
+                credentials: "include",
+                body: JSON.stringify(patchBody),
+            });
+
+            if (!patchRes.ok) {
+                console.error("Failed to patch circulation event metadata");
+            }
+
+            const submittedItem = await this.submitWorkspaceItem(wsItemId);
+            if (!submittedItem) throw new Error("Failed to submit circulation event item");
+            
+            const newEventUuid = submittedItem.item?.uuid || submittedItem.uuid || submittedItem.id;
+            if (!newEventUuid) throw new Error("Could not find submitted item UUID");
+
+            const relTypeRes = await fetch(`${DSPACE_API_URL}/core/relationshiptypes`, {
+                credentials: "include",
+                headers: headers
+            });
+            let relationshipTypeId = null;
+            if (relTypeRes.ok) {
+                const relTypesData = await relTypeRes.json();
+                const types = relTypesData?._embedded?.relationshiptypes || [];
+                const matchedType = types.find(t => 
+                    (t.leftType === "CaseFile" && t.rightType === "CirculationEvent") ||
+                    (t.leftwardType === "isCaseFileOf" && t.rightwardType === "hasCirculationEvent")
+                );
+                if (matchedType) {
+                    relationshipTypeId = matchedType.id || matchedType.uuid;
+                }
+            }
+
+            if (!relationshipTypeId) {
+                relationshipTypeId = "hasCirculationEvent";
+            }
+
+            const relationshipBody = {
+                leftItem: `${window.location.protocol}//${window.location.host}/server/api/core/items/${caseFileUuid}`,
+                rightItem: `${window.location.protocol}//${window.location.host}/server/api/core/items/${newEventUuid}`,
+                relationshipType: `${window.location.protocol}//${window.location.host}/server/api/core/relationshiptypes/${relationshipTypeId}`
+            };
+
+            const relPostRes = await fetch(`${DSPACE_API_URL}/core/relationships`, {
+                method: "POST",
+                headers: headers,
+                credentials: "include",
+                body: JSON.stringify(relationshipBody),
+            });
+
+            if (!relPostRes.ok) {
+                console.error("Failed to establish relationship between CaseFile and CirculationEvent:", relPostRes.status);
+            }
+
+            return { success: true, item: submittedItem };
+        } catch (error) {
+            console.error("Error creating circulation event:", error);
+            return { success: false, error: error.message };
         }
     }
 }
