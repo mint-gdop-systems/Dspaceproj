@@ -58,13 +58,13 @@ const VALUE_PAIRS = {
     { label: "4. Administrative (የአስተዳደር ክፍል)", value: "Administrative" },
   ],
   document_types: [
-    { label: "የክስ ማመልከቻ (Complaint)", value: "Complaint" },
-    { label: "የመከላከያ መልስ (Defense Statement)", value: "Defense" },
-    { label: "የችሎት ቃለ-ጉባኤ (Minutes)", value: "Minutes" },
-    { label: "የመጨረሻ ውሳኔ (Final Judgment)", value: "Judgment" },
-    { label: "የሰነድ ማስረጃ (Exhibit Document)", value: "Exhibit" },
-    { label: "የባለሙያ ሪፖርት (Expert Report)", value: "Expert_Report" },
-    { label: "የዳኝነት ክፍያ ደረሰኝ (Court Fee Receipt)", value: "Fee_Receipt" },
+    { label: "በዳኛ የተሰራ", value: "በዳኛ የተሰራ" },
+    { label: "ልዩ ልዩ", value: "ልዩ ልዩ" },
+    { label: "የመልስ መልስ", value: "የመልስ መልስ" },
+    { label: "ሰበር መልስ እና ማስረጃ", value: "ሰበር መልስ እና ማስረጃ" },
+    { label: "ሰበር ማመልከቻ እና ማስረጃ", value: "ሰበር ማመልከቻ እና ማስረጃ" },
+    { label: "የስር ፍርድ ቤት ውሳኔ", value: "የስር ፍርድ ቤት ውሳኔ" },
+    { label: "ሌሎች", value: "ሌሎች" },
   ],
   active_status_types: [
     { label: "Active", value: "Active" },
@@ -76,10 +76,21 @@ const VALUE_PAIRS = {
     { label: "ፍርድ አፈፃፀም ያሬድ ት/ት ቤት ፊት ለፊት", value: "ፍርድ አፈፃፀም" },
   ],
   court_adjured_locations: [
-    { label: "ልደታ - ፍትሐብሔር ምድብ (Lideta - Civil Division)", value: "ልደታ - ፍትሐብሔር ምድብ" },
-    { label: "ልደታ - ወንጀል ምድብ (Lideta - Criminal Division)", value: "ልደታ - ወንጀል ምድብ" },
-    { label: "አራዳ ምድብ ችሎት (Arada Division)", value: "አራዳ ምድብ ችሎት" },
-    { label: "የካ ምድብ ችሎት (Yeka Division)", value: "የካ ምድብ ችሎት" },
+    { label: "የውዝፍ መዛግብት ሰበር ችሎት", value: "የውዝፍ መዛግብት ሰበር ችሎት" },
+    { label: "1ኛ ሰበር ችሎት", value: "1ኛ ሰበር ችሎት" },
+    { label: "2ኛ ሰበር ችሎት", value: "2ኛ ሰበር ችሎት" },
+    { label: "3ኛ ሰበር ችሎት", value: "3ኛ ሰበር ችሎት" },
+    { label: "4ኛ ሰበር ችሎት", value: "4ኛ ሰበር ችሎት" },
+    { label: "ፍትሐብሔር 1ኛ ችሎት", value: "ፍትሐብሔር 1ኛ ችሎት" },
+    { label: "ፍትሐብሔር 2ኛ ችሎት", value: "ፍትሐብሔር 2ኛ ችሎት" },
+    { label: "ፍትሐብሔር 3ኛ ችሎት", value: "ፍትሐብሔር 3ኛ ችሎት" },
+    { label: "ፍትሐብሔር 4ኛ ችሎት", value: "ፍትሐብሔር 4ኛ ችሎት" },
+    { label: "1ኛ አጣሪ ሰበር ችሎት", value: "1ኛ አጣሪ ሰበር ችሎት" },
+    { label: "2ኛ አጣሪ ሰበር ችሎት", value: "2ኛ አጣሪ ሰበር ችሎት" },
+    { label: "3ኛ አጣሪ ሰበር ችሎት", value: "3ኛ አጣሪ ሰበር ችሎት" },
+    { label: "4ኛ አጣሪ ሰበር ችሎት", value: "4ኛ አጣሪ ሰበር ችሎት" },
+    { label: "ወንጀል ችሎት 1ኛ", value: "ወንጀል ችሎት 1ኛ" },
+    { label: "ወንጀል ችሎት 2ኛ", value: "ወንጀል ችሎት 2ኛ" },
   ],
 };
 
@@ -148,13 +159,10 @@ const MetadataEditor = () => {
   const [registrationDate, setRegistrationDate] = useState("");
 
   // Traditional Page Two
-  // const [caseLevel, setCaseLevel] = useState("");
+  const [lowerCourtFileNumber, setLowerCourtFileNumber] = useState("");
   const [caseStatus, setCaseStatus] = useState("");
-  // const [primaryJudge, setPrimaryJudge] = useState("");
-  // const [judgeNumber, setJudgeNumber] = useState("");
   const [location, setLocation] = useState("");
   const [benchSession, setBenchSession] = useState("");
-  const [recordFormat, setRecordFormat] = useState("");
   const [shelfNumber, setShelfNumber] = useState("");
   const [rowNumber, setRowNumber] = useState("");
   const [colNumber, setColNumber] = useState("");
@@ -211,9 +219,8 @@ const MetadataEditor = () => {
       label: "",
       metadata: {
         title: file.name,
-        section: "",
         type: "",
-        exhibitCode: "",
+        pageCount: "",
         status: "Active",
         description: "",
       },
@@ -254,18 +261,6 @@ const MetadataEditor = () => {
       return;
     }
 
-    // Judge Number validation (1-9)
-    // if (
-    //   judgeNumber &&
-    //   (isNaN(judgeNumber) ||
-    //     parseInt(judgeNumber) < 1 ||
-    //     parseInt(judgeNumber) > 9)
-    // ) {
-    //   alert("Judge Number must be a number between 1 and 9.");
-    //   setUploading(false);
-    //   return;
-    // }
-
     setUploading(true);
 
     // Check if user is authenticated with DSpace
@@ -294,13 +289,11 @@ const MetadataEditor = () => {
         caseRepresentative: caseRepresentatives.filter((r) => r.trim()),
         registrationDate,
         // Traditional Page 2
-        // caseLevel,
+        lowerCourtFileNumber,
         caseStatus,
-        // primaryJudge,
-        // judgeNumber,
-        location,
         benchSession,
-        recordFormat,
+        // Physical location step
+        location,
         shelfNumber,
         rowNumber,
         colNumber,
@@ -348,13 +341,10 @@ const MetadataEditor = () => {
       setDefendants([""]);
       setCaseRepresentatives([""]);
       setRegistrationDate("");
-      // setCaseLevel("");
+      setLowerCourtFileNumber("");
       setCaseStatus("");
-      // setPrimaryJudge("");
-      // setJudgeNumber("");
       setLocation("");
       setBenchSession("");
-      setRecordFormat("");
       setShelfNumber("");
       setRowNumber("");
       setColNumber("");
@@ -553,9 +543,8 @@ const MetadataEditor = () => {
               label: "",
               metadata: {
                 title: fileData.name,
-                section: "",
                 type: "",
-                exhibitCode: "",
+                pageCount: "",
                 status: "Active",
                 description: "",
               },
@@ -676,9 +665,8 @@ const MetadataEditor = () => {
           label: "",
           metadata: {
             title: finalName,
-            section: "",
             type: "",
-            exhibitCode: "",
+            pageCount: "",
             status: "Active",
             description: "",
           },
@@ -941,31 +929,23 @@ const MetadataEditor = () => {
                     ተጨማሪ ዝርዝር መረጃ (Additional Details)
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
-                    {/* <div>
+                    <div>
                       <label
-                        htmlFor="caseLevel"
+                        htmlFor="lowerCourtFileNumber"
                         className="block text-sm font-medium text-gray-700"
                       >
-                        የመዝገቡ ደረጃ (Case Level)
+                        የስር ፍርድ ቤት የመዝገብ ቁጥር (Lower Court Case Number) *
                       </label>
-                      <select
-                        id="caseLevel"
-                        value={caseLevel}
-                        onChange={(e) => setCaseLevel(e.target.value)}
+                      <input
+                        id="lowerCourtFileNumber"
+                        type="text"
+                        value={lowerCourtFileNumber}
+                        onChange={(e) => setLowerCourtFileNumber(e.target.value)}
+                        required
                         className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                      >
-                        <option value="">Select Level</option>
-                        {VALUE_PAIRS.case_levels.map((l) => (
-                          <option key={l.value} value={l.value}>
-                            {l.label}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Current process stage: Registrar, Screening, etc. [cite:
-                        18]
-                      </p>
-                    </div> */}
+                        placeholder="የስር ፍርድ ቤት መዝገብ ቁጥር..."
+                      />
+                    </div>
                     <div>
                       <label
                         htmlFor="caseStatus"
@@ -983,57 +963,6 @@ const MetadataEditor = () => {
                         {VALUE_PAIRS.case_status_types.map((s) => (
                           <option key={s.value} value={s.value}>
                             {s.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    {/* <div>
-                      <label
-                        htmlFor="primaryJudge"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        ሰብሳቢ ዳኛ (Primary Judge)
-                      </label>
-                      <input
-                        id="primaryJudge"
-                        type="text"
-                        value={primaryJudge}
-                        onChange={(e) => setPrimaryJudge(e.target.value)}
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                      />
-                    </div> */}
-                    {/* <div>
-                      <label
-                        htmlFor="judgeNumber"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        የዳኛ ብዛት (Total number of judges)
-                      </label>
-                      <input
-                        id="judgeNumber"
-                        type="number"
-                        value={judgeNumber}
-                        onChange={(e) => setJudgeNumber(e.target.value)}
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                      />
-                    </div> */}
-                    <div>
-                      <label
-                        htmlFor="location"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        የፍርድ ቤቱ ቦታ/ምድብ (Location/Division)
-                      </label>
-                      <select
-                        id="location"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                      >
-                        <option value="">Select Location</option>
-                        {VALUE_PAIRS.court_locations.map((loc) => (
-                          <option key={loc.value} value={loc.value}>
-                            {loc.label}
                           </option>
                         ))}
                       </select>
@@ -1080,85 +1009,75 @@ const MetadataEditor = () => {
 
                 <div className="border-t border-gray-200 pt-6">
                   <h3 className="text-md font-semibold text-gray-800 mb-4">
-                    የማህደር አደረጃጀት (Physical Storage)
+                    የመዝገቡ መገኛ እና መደርደሪያ (Physical Location & Storage)
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
-                    {/* <div className="col-span-2">
+                    <div>
                       <label
-                        htmlFor="recordFormat"
+                        htmlFor="location"
                         className="block text-sm font-medium text-gray-700"
                       >
-                        የፋይል አደረጃጀት (Record Format)
+                        የመዝገቡ መገኛ (Location)
                       </label>
                       <select
-                        id="recordFormat"
-                        value={recordFormat}
-                        onChange={(e) => setRecordFormat(e.target.value)}
+                        id="location"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
                         className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
                       >
-                        <option value="">Select Format</option>
-                        {VALUE_PAIRS.record_formats.map((f) => (
-                          <option key={f.value} value={f.value}>
-                            {f.label}
+                        <option value="">Select Location</option>
+                        {VALUE_PAIRS.court_locations.map((loc) => (
+                          <option key={loc.value} value={loc.value}>
+                            {loc.label}
                           </option>
                         ))}
                       </select>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Choose Physical, E-File, or Hybrid. [cite: 51]
-                      </p>
-                    </div> */}
-                    {/* {recordFormat !== "Electronic" && (
-                      <> */}
-                        <div>
-                          <label
-                            htmlFor="shelfNumber"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            መደርደሪያ ቁጥር (Shelf No.)
-                          </label>
-                          <input
-                            id="shelfNumber"
-                            type="text"
-                            value={shelfNumber}
-                            onChange={(e) => setShelfNumber(e.target.value)}
-                            className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">
-                            Required for physical files. [cite: 52]
-                          </p>
-                        </div>
-                        <div>
-                          <label
-                            htmlFor="rowNumber"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            ረድፍ ቁጥር (Row No.)
-                          </label>
-                          <input
-                            id="rowNumber"
-                            type="text"
-                            value={rowNumber}
-                            onChange={(e) => setRowNumber(e.target.value)}
-                            className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            htmlFor="colNumber"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            አምድ ቁጥር (Column No.)
-                          </label>
-                          <input
-                            id="colNumber"
-                            type="text"
-                            value={colNumber}
-                            onChange={(e) => setColNumber(e.target.value)}
-                            className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                          />
-                        </div>
-                      {/* </>) */}
-                    {/* } */}
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="shelfNumber"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        የመደርደሪያ ቁጥር (Shelf No.)
+                      </label>
+                      <input
+                        id="shelfNumber"
+                        type="text"
+                        value={shelfNumber}
+                        onChange={(e) => setShelfNumber(e.target.value)}
+                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="rowNumber"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        የረድፍ ቁጥር (Row No.)
+                      </label>
+                      <input
+                        id="rowNumber"
+                        type="text"
+                        value={rowNumber}
+                        onChange={(e) => setRowNumber(e.target.value)}
+                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="colNumber"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        አምድ ቁጥር (Column No.)
+                      </label>
+                      <input
+                        id="colNumber"
+                        type="text"
+                        value={colNumber}
+                        onChange={(e) => setColNumber(e.target.value)}
+                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
                     <div>
                       <label
                         htmlFor="rfid"
@@ -1267,31 +1186,6 @@ const MetadataEditor = () => {
                             </div>
                             <div>
                               <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">
-                                የሰነድ ክፍል (Section)
-                              </label>
-                              <select
-                                value={file.metadata.section}
-                                onChange={(e) => {
-                                  const newFiles = [...files];
-                                  const idx = newFiles.findIndex(
-                                    (f) => f.id === file.id,
-                                  );
-                                  newFiles[idx].metadata.section =
-                                    e.target.value;
-                                  setFiles(newFiles);
-                                }}
-                                className="w-full text-xs p-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 outline-none h-9"
-                              >
-                                <option value="">Select Section</option>
-                                {VALUE_PAIRS.document_sections.map((opt) => (
-                                  <option key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                            <div>
-                              <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">
                                 የሰነዱ ዓይነት (Type)
                               </label>
                               <select
@@ -1316,22 +1210,22 @@ const MetadataEditor = () => {
                             </div>
                             <div>
                               <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">
-                                የማስረጃ ኮድ (Exhibit Code)
+                                የሰነዱ የገጽ ቁጥር (Page Count)
                               </label>
                               <input
                                 type="text"
-                                value={file.metadata.exhibitCode}
+                                value={file.metadata.pageCount || ""}
                                 onChange={(e) => {
                                   const newFiles = [...files];
                                   const idx = newFiles.findIndex(
                                     (f) => f.id === file.id,
                                   );
-                                  newFiles[idx].metadata.exhibitCode =
+                                  newFiles[idx].metadata.pageCount =
                                     e.target.value;
                                   setFiles(newFiles);
                                 }}
                                 className="w-full text-sm p-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 outline-none h-9"
-                                placeholder="e.g. ከ-1 or ተ-1"
+                                placeholder="Page Count"
                               />
                             </div>
                             <div>

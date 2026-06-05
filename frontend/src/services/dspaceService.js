@@ -225,12 +225,10 @@ class DSpaceService {
         add("legal.case.representative", metadata.caseRepresentative);
         add("legal.date.registration", metadata.registrationDate);
         // add("legal.case.level", metadata.caseLevel);
+        add("legal.lowerCourt.fileNumber", metadata.lowerCourtFileNumber);
         add("legal.case.status", metadata.caseStatus);
-        // add("legal.judge.primary", metadata.primaryJudge);
-        // add("legal.judge.number", metadata.judgeNumber);
         add("legal.location", metadata.location);
         add("legal.bench.session", metadata.benchSession);
-        add("legal.case.format", metadata.recordFormat);
         add("dc.description", metadata.description);
         add("legal.physical.shelfNumber", metadata.shelfNumber);
         add("legal.physical.rowNumber", metadata.rowNumber);
@@ -341,13 +339,11 @@ class DSpaceService {
                 "legal.date.registration": metadata.registrationDate,
                 
                 // "legal.case.level": metadata.caseLevel,
+                "legal.lowerCourt.fileNumber": metadata.lowerCourtFileNumber,
                 "legal.case.status": metadata.caseStatus,
-                // "legal.judge.primary": metadata.primaryJudge,
-                // "legal.judge.number": metadata.judgeNumber,
-                "legal.location": metadata.location,
                 "legal.bench.session": metadata.benchSession,
-                "legal.case.format": metadata.recordFormat,
                 "dc.description": metadata.description,
+                "legal.location": metadata.location,
 
                 "legal.physical.shelfNumber": metadata.shelfNumber,
                 "legal.physical.rowNumber": metadata.rowNumber,
@@ -381,14 +377,12 @@ class DSpaceService {
                 "legal.date.registration": "traditionalpageone",
 
                 // "legal.case.level": "traditionalpagetwo",
+                "legal.lowerCourt.fileNumber": "traditionalpagetwo",
                 "legal.case.status": "traditionalpagetwo",
-                // "legal.judge.primary": "traditionalpagetwo",
-                // "legal.judge.number": "traditionalpagetwo",
-                "legal.location": "traditionalpagetwo",
                 "legal.bench.session": "traditionalpagetwo",
-                "legal.case.format": "traditionalpagetwo",
                 "dc.description": "traditionalpagetwo",
 
+                "legal.location": "physicalLocationForm",
                 "legal.physical.shelfNumber": "physicalLocationForm",
                 "legal.physical.rowNumber": "physicalLocationForm",
                 "legal.physical.colNumber": "physicalLocationForm",
@@ -525,14 +519,11 @@ class DSpaceService {
             if (metadata.title) {
                 patch.push({ op: "add", path: "/metadata/dc.title", value: [{ value: metadata.title, language: null, authority: null, confidence: -1 }] });
             }
-            if (metadata.section) {
-                patch.push({ op: "add", path: "/metadata/legal.document.section", value: [{ value: metadata.section, language: null, authority: null, confidence: -1 }] });
-            }
             if (metadata.type) {
                 patch.push({ op: "add", path: "/metadata/legal.document.type", value: [{ value: metadata.type, language: null, authority: null, confidence: -1 }] });
             }
-            if (metadata.exhibitCode) {
-                patch.push({ op: "add", path: "/metadata/legal.document.exhibitCode", value: [{ value: metadata.exhibitCode, language: null, authority: null, confidence: -1 }] });
+            if (metadata.pageCount) {
+                patch.push({ op: "add", path: "/metadata/legal.document.pageCount", value: [{ value: metadata.pageCount, language: null, authority: null, confidence: -1 }] });
             }
             if (metadata.status) {
                 patch.push({ op: "add", path: "/metadata/legal.document.status", value: [{ value: metadata.status, language: null, authority: null, confidence: -1 }] });
