@@ -315,6 +315,9 @@ const MetadataEditor = () => {
           fileItem.fileObject,
         );
         if (bitstream && bitstream.uuid) {
+          if (fileItem.id === primaryFileId || (!primaryFileId && files[0].id === fileItem.id)) {
+            await dspaceService.setWorkspaceItemPrimaryBitstream(workspaceItemId, bitstream.uuid);
+          }
           await dspaceService.updateBitstreamMetadata(
             bitstream.uuid,
             fileItem.metadata,

@@ -517,7 +517,7 @@ class DSpaceService {
             const patch = [];
             
             if (metadata.title) {
-                patch.push({ op: "add", path: "/metadata/dc.title", value: [{ value: metadata.title, language: null, authority: null, confidence: -1 }] });
+                patch.push({ op: "replace", path: "/metadata/dc.title", value: [{ value: metadata.title, language: null, authority: null, confidence: -1 }] });
             }
             if (metadata.type) {
                 patch.push({ op: "add", path: "/metadata/legal.document.type", value: [{ value: metadata.type, language: null, authority: null, confidence: -1 }] });
@@ -554,6 +554,44 @@ class DSpaceService {
         }
     }
 
+    async setWorkspaceItemPrimaryBitstream(workspaceItemId, bitstreamUuid) {
+        try {
+            const token = this.getStoredToken();
+            const headers = this.getCsrfHeaders({
+                "Content-Type": "application/json-patch+json",
+                Accept: "application/json",
+            });
+            if (token) {
+                headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+            }
+
+            const patchOp = [
+                {
+                    op: "add",
+                    path: "/sections/upload/primary",
+                    value: bitstreamUuid
+                }
+            ];
+
+            const response = await fetch(`${DSPACE_API_URL}/submission/workspaceitems/${workspaceItemId}`, {
+                method: "PATCH",
+                headers: headers,
+                credentials: "include",
+                body: JSON.stringify(patchOp),
+            });
+
+            if (response.ok) {
+                console.log(`Successfully set primary bitstream ${bitstreamUuid} for workspace item ${workspaceItemId}`);
+                return true;
+            }
+            
+            console.error("Failed to set primary bitstream on workspace item:", await response.text());
+            return false;
+        } catch (error) {
+            console.error("Error in setWorkspaceItemPrimaryBitstream:", error);
+            return false;
+        }
+    }
 
     async submitWorkspaceItem(workspaceItemId) {
         try {
