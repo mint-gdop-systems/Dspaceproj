@@ -525,9 +525,9 @@ class DSpaceService {
             if (metadata.pageCount) {
                 patch.push({ op: "add", path: "/metadata/legal.document.pageCount", value: [{ value: metadata.pageCount, language: null, authority: null, confidence: -1 }] });
             }
-            if (metadata.status) {
-                patch.push({ op: "add", path: "/metadata/legal.document.status", value: [{ value: metadata.status, language: null, authority: null, confidence: -1 }] });
-            }
+            // if (metadata.status) {
+            //     patch.push({ op: "add", path: "/metadata/legal.document.status", value: [{ value: metadata.status, language: null, authority: null, confidence: -1 }] });
+            // }
             if (metadata.description) {
                 patch.push({ op: "add", path: "/metadata/dc.description", value: [{ value: metadata.description, language: null, authority: null, confidence: -1 }] });
             }

@@ -66,10 +66,10 @@ const VALUE_PAIRS = {
     { label: "የስር ፍርድ ቤት ውሳኔ", value: "የስር ፍርድ ቤት ውሳኔ" },
     { label: "ሌሎች", value: "ሌሎች" },
   ],
-  active_status_types: [
-    { label: "Active", value: "Active" },
-    { label: "Inactive", value: "Inactive" },
-  ],
+  // active_status_types: [
+  //   { label: "Active", value: "Active" },
+  //   { label: "Inactive", value: "Inactive" },
+  // ],
   court_locations: [
     { label: "6 ኪሎ", value: "6 ኪሎ" },
     { label: "4 ኪሎ", value: "4 ኪሎ" },
@@ -221,7 +221,7 @@ const MetadataEditor = () => {
         title: file.name,
         type: "",
         pageCount: "",
-        status: "Active",
+        // status: "Active",
         description: "",
       },
     }));
@@ -545,7 +545,7 @@ const MetadataEditor = () => {
                 title: fileData.name,
                 type: "",
                 pageCount: "",
-                status: "Active",
+                // status: "Active",
                 description: "",
               },
             };
@@ -667,7 +667,7 @@ const MetadataEditor = () => {
             title: finalName,
             type: "",
             pageCount: "",
-            status: "Active",
+            // status: "Active",
             description: "",
           },
         };
@@ -830,7 +830,7 @@ const MetadataEditor = () => {
 
                 <div className="border-t border-gray-200 pt-6">
                   <h3 className="text-md font-semibold text-gray-800 mb-4">
-                    የመዝገብ መረጃ (Case Details)
+                    የመዝገብ መረጃ
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -838,7 +838,7 @@ const MetadataEditor = () => {
                         htmlFor="fileNumber"
                         className="block text-sm font-medium text-gray-700"
                       >
-                        የመዝገብ ቁጥር (Case Number)
+                        የመዝገብ ቁጥር
                         <span className="text-red-500 ml-1">*</span>
                       </label>
                       <input
@@ -858,7 +858,8 @@ const MetadataEditor = () => {
                         htmlFor="caseType"
                         className="block text-sm font-medium text-gray-700"
                       >
-                        የጉዳዩ አይነት (Case Type)
+                        የጉዳዩ አይነት
+                        <span className="text-red-500 ml-1">*</span>
                       </label>
                       <select
                         id="caseType"
@@ -879,7 +880,12 @@ const MetadataEditor = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <RepeatableField
-                          label="ከሳሽ/አመልካች (Plaintiff/Applicant)"
+                          label={
+                            <>
+                              ከሳሽ/አመልካች
+                              <span className="text-red-500 ml-1">*</span>
+                            </>
+                          }
                           values={plaintiffs}
                           setValues={setPlaintiffs}
                           placeholder="Enter plaintiff name"
@@ -891,7 +897,12 @@ const MetadataEditor = () => {
                       </div>
                       <div>
                         <RepeatableField
-                          label="ተከሳሽ/መልስ ሰጪ (Defendant/Respondent)"
+                          label={
+                            <>
+                              ተከሳሽ/መልስ ሰጪ
+                              <span className="text-red-500 ml-1">*</span>
+                            </>
+                          }
                           values={defendants}
                           setValues={setDefendants}
                           placeholder="Enter defendant name"
@@ -904,7 +915,7 @@ const MetadataEditor = () => {
                     </div>
 
                     <RepeatableField
-                      label="የሕግ ወኪል/ጠበቃ (Legal Representative)"
+                      label="የሕግ ወኪል/ጠበቃ"
                       values={caseRepresentatives}
                       setValues={setCaseRepresentatives}
                       placeholder="Enter representative name"
@@ -926,7 +937,7 @@ const MetadataEditor = () => {
 
                 <div className="border-t border-gray-200 pt-6">
                   <h3 className="text-md font-semibold text-gray-800 mb-4">
-                    ተጨማሪ ዝርዝር መረጃ (Additional Details)
+                    ተጨማሪ ዝርዝር መረጃ
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -934,7 +945,7 @@ const MetadataEditor = () => {
                         htmlFor="lowerCourtFileNumber"
                         className="block text-sm font-medium text-gray-700"
                       >
-                        የስር ፍርድ ቤት የመዝገብ ቁጥር (Lower Court Case Number) *
+                        የስር ፍርድ ቤት የመዝገብ ቁጥር
                       </label>
                       <input
                         id="lowerCourtFileNumber"
@@ -951,7 +962,7 @@ const MetadataEditor = () => {
                         htmlFor="caseStatus"
                         className="block text-sm font-medium text-gray-700"
                       >
-                        የመዝገቡ ሁኔታ (Case Status)
+                        የመዝገቡ ሁኔታ
                       </label>
                       <select
                         id="caseStatus"
@@ -972,7 +983,7 @@ const MetadataEditor = () => {
                         htmlFor="benchSession"
                         className="block text-sm font-medium text-gray-700"
                       >
-                        ችሎት (Bench)
+                        ችሎት
                       </label>
                       <select
                         id="benchSession"
@@ -994,7 +1005,7 @@ const MetadataEditor = () => {
                       htmlFor="description"
                       className="block text-sm font-medium text-gray-700"
                     >
-                      የሰነዱ ዝርዝር መግለጫ (Description)
+                      የሰነዱ ዝርዝር መግለጫ
                     </label>
                     <textarea
                       id="description"
@@ -1009,7 +1020,7 @@ const MetadataEditor = () => {
 
                 <div className="border-t border-gray-200 pt-6">
                   <h3 className="text-md font-semibold text-gray-800 mb-4">
-                    የመዝገቡ መገኛ እና መደርደሪያ (Physical Location & Storage)
+                    የመዝገቡ መገኛ እና መደርደሪያ
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -1017,7 +1028,7 @@ const MetadataEditor = () => {
                         htmlFor="location"
                         className="block text-sm font-medium text-gray-700"
                       >
-                        የመዝገቡ መገኛ (Location)
+                        የመዝገቡ መገኛ
                       </label>
                       <select
                         id="location"
@@ -1038,7 +1049,7 @@ const MetadataEditor = () => {
                         htmlFor="shelfNumber"
                         className="block text-sm font-medium text-gray-700"
                       >
-                        የመደርደሪያ ቁጥር (Shelf No.)
+                        የመደርደሪያ ቁጥር
                       </label>
                       <input
                         id="shelfNumber"
@@ -1053,7 +1064,7 @@ const MetadataEditor = () => {
                         htmlFor="rowNumber"
                         className="block text-sm font-medium text-gray-700"
                       >
-                        የረድፍ ቁጥር (Row No.)
+                        የረድፍ ቁጥር
                       </label>
                       <input
                         id="rowNumber"
@@ -1068,7 +1079,7 @@ const MetadataEditor = () => {
                         htmlFor="colNumber"
                         className="block text-sm font-medium text-gray-700"
                       >
-                        አምድ ቁጥር (Column No.)
+                        አምድ ቁጥር
                       </label>
                       <input
                         id="colNumber"
@@ -1186,7 +1197,7 @@ const MetadataEditor = () => {
                             </div>
                             <div>
                               <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">
-                                የሰነዱ ዓይነት (Type)
+                                የሰነዱ ዓይነት
                               </label>
                               <select
                                 value={file.metadata.type}
@@ -1210,7 +1221,7 @@ const MetadataEditor = () => {
                             </div>
                             <div>
                               <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">
-                                የሰነዱ የገጽ ቁጥር (Page Count)
+                                የሰነዱ የገጽ ቁጥር
                               </label>
                               <input
                                 type="text"
@@ -1228,7 +1239,7 @@ const MetadataEditor = () => {
                                 placeholder="Page Count"
                               />
                             </div>
-                            <div>
+                            {/* <div>
                               <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">
                                 ሁኔታ (Status)
                               </label>
@@ -1251,10 +1262,10 @@ const MetadataEditor = () => {
                                   </option>
                                 ))}
                               </select>
-                            </div>
+                            </div> */}
                             <div className="col-span-2">
                               <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">
-                                Description
+                                መግለጫ
                               </label>
                               <textarea
                                 value={file.metadata.description}
@@ -1269,7 +1280,7 @@ const MetadataEditor = () => {
                                 }}
                                 rows="2"
                                 className="w-full text-sm p-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 outline-none min-h-[60px]"
-                                placeholder="Enter description for this file"
+                                placeholder="ስለ ሰነዱ አጭር መግለጫ እዚህ ያስገቡ..."
                               ></textarea>
                             </div>
                           </div>
