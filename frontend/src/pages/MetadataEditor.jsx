@@ -28,9 +28,9 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 
 const VALUE_PAIRS = {
   case_types: [
-    { label: "የፍትሐብሔር መዝገብ (Civil)", value: "Civil" },
-    { label: "የወንጀል መዝገብ (Criminal)", value: "Criminal" },
-    { label: "የሰበር መዝገብ (Cassation)", value: "Cassation" },
+    { label: "የፍትሐብሔር መዝገብ (Civil Cases)", value: "Civil" },
+    { label: "የወንጀል መዝገብ (Criminal Cases)", value: "Criminal" },
+    { label: "የሰበር መዝገብ (Cassation Cases)", value: "Cassation" },
   ],
   // case_levels: [
   //   { label: "Registrar (ሬጅስትራር)", value: "Registrar" },
@@ -203,36 +203,79 @@ const MetadataEditor = () => {
     fetchDspaceCollections();
   }, []);
 
+  useEffect(() => {
+      if (collectionId && collections.length > 0) {
+        const selectedCollection = collections.find(
+          (c) => c.uuid === collectionId || c.id === collectionId
+        );
+
+        if (selectedCollection) {
+          const collectionName = selectedCollection.name; 
+          const matchedType = VALUE_PAIRS.case_types.find(
+            (t) => t.label === collectionName
+          );
+          
+          // Automatically set the hidden caseType state
+          setCaseType(matchedType ? matchedType.value : "");
+        }
+      } else {
+        setCaseType(""); // Clear if no collection is selected
+      }
+    }, [collectionId, collections]);
+
   const selectedFile = files.find((f) => f.id === selectedFileId);
 
-  const handleFileUpload = (event) => {
+  const handleFileUpload = async (event) => {
     const uploadedFiles = Array.from(event.target.files || []);
 
-    const newFileItems = uploadedFiles.map((file) => ({
-      id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      lastModified: new Date(file.lastModified),
-      fileObject: file,
-      fileUrl: URL.createObjectURL(file),
-      label: "",
-      metadata: {
-        title: file.name,
-        type: "",
-        pageCount: "",
-        // status: "Active",
-        description: "",
-      },
-    }));
+    const processedFiles = await Promise.all(
+      uploadedFiles.map(async (file) => {
+        
+        // 1. Strip the extension from the file name for the Title input
+        const titleWithoutExtension = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
 
-    const updatedFiles = [...files, ...newFileItems];
+        // 2. Auto-calculate PDF pages
+        let calculatedPageCount = 1; 
+        if (file.type === 'application/pdf') {
+          try {
+            const arrayBuffer = await file.arrayBuffer();
+            // Make sure pdfjsLib is imported at the top of your file!
+            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+            calculatedPageCount = pdf.numPages;
+          } catch (error) {
+            console.error("Error calculating PDF pages:", error);
+          }
+        }
+
+        // 3. Return the fully constructed file object
+        return {
+          id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: file.name, 
+          type: file.type,
+          size: file.size,
+          lastModified: new Date(file.lastModified),
+          fileObject: file, // Keep this as fileObject so handleFinalUpload doesn't break
+          fileUrl: URL.createObjectURL(file),
+          label: "",
+          metadata: {
+            title: titleWithoutExtension,
+            type: "",
+            description: "",
+            pageCount: calculatedPageCount, // Injected correctly here
+          },
+        };
+      })
+    );
+
+    const updatedFiles = [...files, ...processedFiles];
     setFiles(updatedFiles);
 
-    if (newFileItems.length > 0 && !selectedFileId) {
-      handleFileSelect(newFileItems[0].id);
+    // Auto-select the first file if none is selected
+    if (processedFiles.length > 0 && !selectedFileId) {
+      handleFileSelect(processedFiles[0].id);
     }
 
+    // Reset the input
     event.target.value = "";
   };
 
@@ -418,6 +461,7 @@ const MetadataEditor = () => {
       return url;
     }
   };
+
 
   // --- Rotate ---
   const handleRotate = async (angle) => {
@@ -856,7 +900,7 @@ const MetadataEditor = () => {
                         Primary identification is mandatory. [cite: 25]
                       </p>
                     </div>
-                    <div>
+                    {/* <div>
                       <label
                         htmlFor="caseType"
                         className="block text-sm font-medium text-gray-700"
@@ -877,7 +921,7 @@ const MetadataEditor = () => {
                           </option>
                         ))}
                       </select>
-                    </div>
+                    </div> */}
                   </div>
                   <div className="mt-4 space-y-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -1120,7 +1164,11 @@ const MetadataEditor = () => {
                       {files.map((file) => (
                         <div
                           key={file.id}
-                          className={`p-4 rounded-lg border-2 transition-all ${selectedFileId === file.id ? "border-blue-400 bg-blue-50/30" : "border-gray-200 bg-white shadow-sm"}`}
+                          className={`p-4 rounded-lg border-2 transition-all ${
+                            selectedFileId === file.id
+                              ? "border-blue-400 bg-blue-50/30"
+                              : "border-gray-200 bg-white shadow-sm"
+                          }`}
                         >
                           <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
                             <div className="flex items-center overflow-hidden">
@@ -1160,11 +1208,11 @@ const MetadataEditor = () => {
                                 onClick={() => {
                                   if (
                                     window.confirm(
-                                      "Are you sure you want to remove this file?",
+                                      "Are you sure you want to remove this file?"
                                     )
                                   ) {
                                     const newFiles = files.filter(
-                                      (f) => f.id !== file.id,
+                                      (f) => f.id !== file.id
                                     );
                                     setFiles(newFiles);
                                     if (selectedFileId === file.id)
@@ -1178,8 +1226,10 @@ const MetadataEditor = () => {
                             </div>
                           </div>
 
+                          {/* Updated Grid Layout */}
                           <div className="grid grid-cols-2 gap-4">
-                            <div className="col-span-2">
+                            {/* Title - Now takes 1 column instead of 2 */}
+                            <div>
                               <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">
                                 Title
                               </label>
@@ -1189,12 +1239,12 @@ const MetadataEditor = () => {
                                 onChange={(e) => {
                                   const newFiles = [...files];
                                   const idx = newFiles.findIndex(
-                                    (f) => f.id === file.id,
+                                    (f) => f.id === file.id
                                   );
                                   newFiles[idx].metadata.title = e.target.value;
                                   setFiles(newFiles);
                                 }}
-                                className="w-full text-sm p-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 outline-none"
+                                className="w-full text-sm p-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 outline-none h-9"
                                 placeholder="File Name"
                               />
                             </div>
@@ -1207,7 +1257,7 @@ const MetadataEditor = () => {
                                 onChange={(e) => {
                                   const newFiles = [...files];
                                   const idx = newFiles.findIndex(
-                                    (f) => f.id === file.id,
+                                    (f) => f.id === file.id
                                   );
                                   newFiles[idx].metadata.type = e.target.value;
                                   setFiles(newFiles);
@@ -1222,50 +1272,8 @@ const MetadataEditor = () => {
                                 ))}
                               </select>
                             </div>
-                            <div>
-                              <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">
-                                የሰነዱ የገጽ ቁጥር
-                              </label>
-                              <input
-                                type="text"
-                                value={file.metadata.pageCount || ""}
-                                onChange={(e) => {
-                                  const newFiles = [...files];
-                                  const idx = newFiles.findIndex(
-                                    (f) => f.id === file.id,
-                                  );
-                                  newFiles[idx].metadata.pageCount =
-                                    e.target.value;
-                                  setFiles(newFiles);
-                                }}
-                                className="w-full text-sm p-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 outline-none h-9"
-                                placeholder="Page Count"
-                              />
-                            </div>
-                            {/* <div>
-                              <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">
-                                ሁኔታ (Status)
-                              </label>
-                              <select
-                                value={file.metadata.status}
-                                onChange={(e) => {
-                                  const newFiles = [...files];
-                                  const idx = newFiles.findIndex(
-                                    (f) => f.id === file.id,
-                                  );
-                                  newFiles[idx].metadata.status =
-                                    e.target.value;
-                                  setFiles(newFiles);
-                                }}
-                                className="w-full text-xs p-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 outline-none h-9"
-                              >
-                                {VALUE_PAIRS.active_status_types.map((opt) => (
-                                  <option key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                  </option>
-                                ))}
-                              </select>
-                            </div> */}
+
+                            {/* Description - Takes full width below */}
                             <div className="col-span-2">
                               <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">
                                 መግለጫ
@@ -1275,7 +1283,7 @@ const MetadataEditor = () => {
                                 onChange={(e) => {
                                   const newFiles = [...files];
                                   const idx = newFiles.findIndex(
-                                    (f) => f.id === file.id,
+                                    (f) => f.id === file.id
                                   );
                                   newFiles[idx].metadata.description =
                                     e.target.value;
