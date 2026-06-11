@@ -23,14 +23,16 @@ import {
   X,
 } from "lucide-react";
 import dspaceService from "../services/dspaceService";
+import { EthiopianDatePicker } from 'ethiopian-date-picker-and-converter';
+import 'ethiopian-date-picker-and-converter/dist/cjs/style.css';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 const VALUE_PAIRS = {
   case_types: [
-    { label: "የፍትሐብሔር መዝገብ (Civil Cases)", value: "Civil" },
-    { label: "የወንጀል መዝገብ (Criminal Cases)", value: "Criminal" },
-    { label: "የሰበር መዝገብ (Cassation Cases)", value: "Cassation" },
+    { label: "ፍትሐብሔር", value: "ፍትሐብሔር" },
+    { label: "ወንጀል", value: "ወንጀል" },
+    { label: "ስራ ክርክር", value: "ስራ ክርክር" },
   ],
   // case_levels: [
   //   { label: "Registrar (ሬጅስትራር)", value: "Registrar" },
@@ -39,9 +41,8 @@ const VALUE_PAIRS = {
   //   { label: "Archive (መዝገብ ቤት)", value: "Archive" },
   // ],
   case_status_types: [
-    { label: "Active (በሂደት ላይ)", value: "Active" },
-    // { label: "Adjourned (የተቀጠረ)", value: "Adjourned" },
-    { label: "Closed (የተዘጋ)", value: "Closed" },
+    { label: "በሂደት ላይ", value: "በሂደት ላይ" },
+    { label: "የተዘጋ", value: "የተዘጋ" },
   ],
   record_formats: [
     { label: "የኤሌክትሮኒክ ፋይል (E-File Only)", value: "Electronic" },
@@ -64,7 +65,6 @@ const VALUE_PAIRS = {
     { label: "ሰበር መልስ እና ማስረጃ", value: "ሰበር መልስ እና ማስረጃ" },
     { label: "ሰበር ማመልከቻ እና ማስረጃ", value: "ሰበር ማመልከቻ እና ማስረጃ" },
     { label: "የስር ፍርድ ቤት ውሳኔ", value: "የስር ፍርድ ቤት ውሳኔ" },
-    { label: "ሌሎች", value: "ሌሎች" },
   ],
   // active_status_types: [
   //   { label: "Active", value: "Active" },
@@ -156,17 +156,75 @@ const MetadataEditor = () => {
   const [plaintiffs, setPlaintiffs] = useState([""]);
   const [defendants, setDefendants] = useState([""]);
   const [caseRepresentatives, setCaseRepresentatives] = useState([""]);
-  const [registrationDate, setRegistrationDate] = useState("");
 
   // Traditional Page Two
   const [lowerCourtFileNumber, setLowerCourtFileNumber] = useState("");
   const [caseStatus, setCaseStatus] = useState("");
-  const [location, setLocation] = useState("");
   const [benchSession, setBenchSession] = useState("");
+  const [location, setLocation] = useState("");
+  const [registrationDate, setRegistrationDate] = useState("");
+  const [registrationAmDate, setRegistrationAmDate] = useState("");
+  const [manualEthioDate, setManualEthioDate] = useState("");
   const [shelfNumber, setShelfNumber] = useState("");
   const [rowNumber, setRowNumber] = useState("");
   const [colNumber, setColNumber] = useState("");
   const [rfid, setRfid] = useState("");
+
+  const formatEthioDateString = (dateStr) => {
+    if (!dateStr) return dateStr;
+    const ethioMonths = {
+      "መስከረም": "01",
+      "ጥቅምት": "02",
+      "ኅዳር": "03",
+      "ታኅሣሥ": "04",
+      "ጥር": "05",
+      "የካቲት": "06",
+      "መጋቢት": "07",
+      "ሚያዝያ": "08",
+      "ግንቦት": "09",
+      "ሰኔ": "10",
+      "ሐምሌ": "11",
+      "ነሐሴ": "12",
+      "ጳጉሜን": "13",
+      "ጳጉሜ": "13"
+    };
+    const parts = dateStr.trim().split(" ");
+    if (parts.length === 3) {
+      const day = parts[0].padStart(2, '0');
+      const monthName = parts[1];
+      const year = parts[2];
+      const month = ethioMonths[monthName];
+      if (month && year && day) {
+        return `${year}-${month}-${day}`;
+      }
+    }
+    return dateStr;
+  };
+
+  const handleManualEthioDateChange = (e) => {
+    const val = e.target.value;
+    setManualEthioDate(val);
+    
+    // Parse DD/MM/YYYY
+    const parts = val.split('/');
+    if (parts.length === 3 && parts[2].length === 4) {
+      const day = parts[0].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      const year = parts[2];
+      setRegistrationAmDate(`${year}-${month}-${day}`);
+    } else {
+      setRegistrationAmDate(""); // clear if invalid
+    }
+  };
+
+  const handlePickerDateChange = (date) => {
+    const formatted = formatEthioDateString(date);
+    setRegistrationAmDate(formatted);
+    if (formatted) {
+      const [y, m, d] = formatted.split('-');
+      setManualEthioDate(`${d}/${m}/${y}`);
+    }
+  };
 
   // PDF viewer states
   const [numPages, setNumPages] = useState(null);
@@ -204,21 +262,7 @@ const MetadataEditor = () => {
   }, []);
 
   useEffect(() => {
-      if (collectionId && collections.length > 0) {
-        const selectedCollection = collections.find(
-          (c) => c.uuid === collectionId || c.id === collectionId
-        );
-
-        if (selectedCollection) {
-          const collectionName = selectedCollection.name; 
-          const matchedType = VALUE_PAIRS.case_types.find(
-            (t) => t.label === collectionName
-          );
-          
-          // Automatically set the hidden caseType state
-          setCaseType(matchedType ? matchedType.value : "");
-        }
-      } else {
+      if (!collectionId) {
         setCaseType(""); // Clear if no collection is selected
       }
     }, [collectionId, collections]);
@@ -331,6 +375,7 @@ const MetadataEditor = () => {
         defendant: defendants.filter((d) => d.trim()),
         caseRepresentative: caseRepresentatives.filter((r) => r.trim()),
         registrationDate,
+        registrationAmDate,
         // Traditional Page 2
         lowerCourtFileNumber,
         caseStatus,
@@ -387,6 +432,8 @@ const MetadataEditor = () => {
       setDefendants([""]);
       setCaseRepresentatives([""]);
       setRegistrationDate("");
+      setRegistrationAmDate("");
+      setManualEthioDate("");
       setLowerCourtFileNumber("");
       setCaseStatus("");
       setLocation("");
@@ -900,7 +947,7 @@ const MetadataEditor = () => {
                         Primary identification is mandatory. [cite: 25]
                       </p>
                     </div>
-                    {/* <div>
+                    <div>
                       <label
                         htmlFor="caseType"
                         className="block text-sm font-medium text-gray-700"
@@ -921,7 +968,7 @@ const MetadataEditor = () => {
                           </option>
                         ))}
                       </select>
-                    </div> */}
+                    </div>
                   </div>
                   <div className="mt-4 space-y-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -978,6 +1025,33 @@ const MetadataEditor = () => {
                         onChange={(e) => setRegistrationDate(e.target.value)}
                         className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
                       />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        መዝገቡ የተከፈተበት ቀን (Ethiopian Date)
+                      </label>
+                      <div className="mt-1 relative flex items-center">
+                        <input
+                          type="text"
+                          placeholder="DD/MM/YYYY"
+                          value={manualEthioDate}
+                          onChange={handleManualEthioDateChange}
+                          className="block w-full p-2 border border-gray-300 rounded-md pr-10 focus:ring-1 focus:ring-blue-500"
+                        />
+                        <div className="absolute right-0 top-0 h-full w-10 flex items-center justify-center overflow-visible">
+                          <div className="ethiopian-calendar-fix ethiopian-picker-hidden-input absolute inset-0 z-20 w-full h-full flex items-center justify-center cursor-pointer">
+                            <EthiopianDatePicker 
+                              id="registrationAmDate" 
+                              placeholder="" 
+                              onDateChange={handlePickerDateChange} 
+                            />
+                          </div>
+                          <div className="z-10 text-gray-500 pointer-events-none">
+                            📅
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">Format: DD/MM/YYYY (or click icon)</p>
                     </div>
                   </div>
                 </div>

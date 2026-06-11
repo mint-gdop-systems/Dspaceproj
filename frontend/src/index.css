@@ -1,1 +1,34 @@
 @import "tailwindcss";
+
+/* Fix Ethiopian Date Picker Tailwind Conflicts */
+.ethiopian-calendar-fix > div {
+  width: 100%;
+}
+.ethiopian-calendar-fix [class*="calendar"],
+.ethiopian-calendar-fix [class*="datepicker"] {
+  min-width: 320px !important;
+  padding: 0.5rem !important;
+  background-color: white !important;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
+  z-index: 100 !important;
+}
+.ethiopian-calendar-fix th {
+  padding: 0.5rem !important;
+  font-size: 0.875rem !important;
+}
+.ethiopian-calendar-fix td {
+  padding: 0.25rem !important;
+}
+
+/* Hide the default input, but keep it clickable over the icon */
+.ethiopian-picker-hidden-input input {
+  opacity: 0 !important;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40px !important;
+  height: 100% !important;
+  cursor: pointer;
+  padding: 0 !important;
+  border: none !important;
+}

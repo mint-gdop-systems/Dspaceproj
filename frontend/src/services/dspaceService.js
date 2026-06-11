@@ -224,6 +224,7 @@ class DSpaceService {
         add("legal.case.defendant", metadata.defendant);
         add("legal.case.representative", metadata.caseRepresentative);
         add("legal.date.registration", metadata.registrationDate);
+        add("legal.date.registrationAm", metadata.registrationAmDate);
         // add("legal.case.level", metadata.caseLevel);
         add("legal.lowerCourt.fileNumber", metadata.lowerCourtFileNumber);
         add("legal.case.status", metadata.caseStatus);
@@ -337,6 +338,7 @@ class DSpaceService {
                 "legal.case.defendant": metadata.defendant,
                 "legal.case.representative": metadata.caseRepresentative,
                 "legal.date.registration": metadata.registrationDate,
+                "legal.date.registrationAm": metadata.registrationAmDate,
                 
                 // "legal.case.level": metadata.caseLevel,
                 "legal.lowerCourt.fileNumber": metadata.lowerCourtFileNumber,
