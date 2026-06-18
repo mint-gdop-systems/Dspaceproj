@@ -103,7 +103,7 @@ def perform_ocr_on_image(image: Image.Image) -> str:
 def extract_text_from_file(file_obj) -> str:
     """
     Process file object (image or PDF) and return OCR text.
-    Handles multiple pages for PDFs.
+    Processes only the first page of files.
     """
     filename = file_obj.name.lower()
 
@@ -115,10 +115,10 @@ def extract_text_from_file(file_obj) -> str:
 
     try:
         if filename.endswith(".pdf"):
-            images = convert_from_bytes(file_bytes)
-            for img in images:
-                page_text = perform_ocr_on_image(img)
-                text_content.append(page_text)
+            # Only process the first page
+            first_page = convert_from_bytes(file_bytes, first_page=1, last_page=1)[0]
+            page_text = perform_ocr_on_image(first_page)
+            text_content.append(page_text)
         else:
             image = Image.open(io.BytesIO(file_bytes))
 

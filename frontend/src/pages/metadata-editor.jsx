@@ -349,27 +349,14 @@ const getEntityTypeFromCollection = (collection) => {
 const normalizeEntityType = (entityType) =>
 	(entityType || "").replace(/\s+/g, "").toLowerCase();
 
-const houseMetadataKeys = new Set(
-	houseSections.flatMap((section) =>
-		section.fields.map((field) => field.metadata),
-	),
-);
-
-const vitalEventMetadataKeys = new Set(
-	[
-		vitalEventTypeField.metadata,
-		...vitalEventSections.flatMap((section) =>
-			section.fields.map((field) => field.metadata),
-		),
-	],
-);
-
 const metadataFieldConfig = new Map(
 	[
 		...houseSections,
 		...vitalEventSections,
 		{ fields: [vitalEventTypeField] },
-	].flatMap((section) => section.fields.map((field) => [field.metadata, field])),
+	].flatMap((section) =>
+		section.fields.map((field) => [field.metadata, field]),
+	),
 );
 
 const dedupeStringValues = (values) => {
@@ -410,46 +397,12 @@ const mergeOcrCandidateMaps = (currentMap, incomingMap) => {
 	return merged;
 };
 
-const isBlankMetadataValue = (value) => {
-	if (Array.isArray(value)) {
-		return value.every(
-			(entry) => typeof entry !== "string" || entry.trim().length === 0,
-		);
-	}
-
-	return typeof value !== "string" || value.trim().length === 0;
-};
-
 const normalizeGenderValue = (value) => {
 	if (typeof value !== "string") return value;
 	const v = value.trim().toLowerCase();
 	if (["male", "m", "ወንድ"].includes(v)) return "Male";
 	if (["female", "f", "ሴት"].includes(v)) return "Female";
 	return value;
-};
-
-const applyOcrCandidatesToMetadata = (metadata, ocrCandidates, allowedKeys) => {
-	// No longer auto-populate OCR values - let users manually select from dropdown
-	return metadata;
-};
-
-const inferDocumentTypeFromOcr = (ocrDocumentType) => {
-	const normalizedValue = (ocrDocumentType || "").trim().toLowerCase();
-	if (!normalizedValue) return null;
-
-	if (normalizedValue.includes("birth")) return "Birth Certificate";
-	if (normalizedValue.includes("death")) return "Death Certificate";
-	if (normalizedValue.includes("marriage")) return "Marriage Certificate";
-	if (normalizedValue.includes("divorce")) return "Divorce Decree";
-	if (normalizedValue.includes("adoption")) return "Adoption Decree";
-	if (normalizedValue.includes("id")) return "ID Card";
-	if (normalizedValue.includes("support")) return "Supporting Document";
-
-	return (
-		documentTypeOptions.find(
-			(option) => option.toLowerCase() === normalizedValue,
-		) || null
-	);
 };
 
 const RepeatableField = ({ label, values, setValues, placeholder }) => {
@@ -989,16 +942,6 @@ const MetadataEditor = () => {
 
 		ocrMetadataCandidatesRef.current = mergedCandidates;
 		setOcrMetadataCandidates(mergedCandidates);
-		setHouseMetadata((prev) =>
-			applyOcrCandidatesToMetadata(prev, mergedCandidates, houseMetadataKeys),
-		);
-		setVitalEventMetadata((prev) =>
-			applyOcrCandidatesToMetadata(
-				prev,
-				mergedCandidates,
-				vitalEventMetadataKeys,
-			),
-		);
 	};
 
 	const extractOcrMetadataForFiles = async (uploadedFiles) => {
@@ -1009,8 +952,10 @@ const MetadataEditor = () => {
 			const isPdf = file.type.includes("pdf");
 			if (!isImage && !isPdf) return false;
 
-			const name = (file.name || "").toLowerCase();
-			return /(main|ocr)/i.test(name);
+			// const name = (file.name || "").toLowerCase();
+			// return /(main|ocr)/i.test(name);
+
+			return true;
 		};
 
 		const ocrEligibleFiles = uploadedFiles.filter(shouldRunOcr);
@@ -1094,8 +1039,8 @@ const MetadataEditor = () => {
 		vitalEventTypeSectionMap[selectedVitalEventType] || null;
 	const visibleVitalEventSections = selectedVitalEventSection
 		? vitalEventSections.filter(
-			(section) => section.section === selectedVitalEventSection,
-		)
+				(section) => section.section === selectedVitalEventSection,
+			)
 		: [];
 	const visibleVitalEventMetadataKeys = new Set([
 		vitalEventTypeField.metadata,
@@ -1154,8 +1099,8 @@ const MetadataEditor = () => {
 
 		const normalizedCurrentValue = Array.isArray(currentValue)
 			? currentValue.find(
-				(value) => typeof value === "string" && value.trim().length > 0,
-			) || ""
+					(value) => typeof value === "string" && value.trim().length > 0,
+				) || ""
 			: currentValue || "";
 
 		const fieldConfig = metadataFieldConfig.get(metadataKey);
@@ -1172,7 +1117,8 @@ const MetadataEditor = () => {
 			<div className="mt-2 rounded-md border border-amber-200 bg-amber-50/60 p-2">
 				<div className="flex items-center justify-between mb-2">
 					<p className="text-xs text-amber-900">
-						OCR found {candidates.length} possible value{candidates.length !== 1 ? 's' : ''}.
+						OCR found {candidates.length} possible value
+						{candidates.length !== 1 ? "s" : ""}.
 					</p>
 				</div>
 				<Select
@@ -1313,20 +1259,20 @@ const MetadataEditor = () => {
 
 			const rawMetadata = isHouseType
 				? {
-					...houseMetadata,
-					"crvs.identifier.houseFamilyKey": `${houseMetadata["crvs.identifier.houseNumber"]} - ${houseMetadata["crvs.head.husband"] || ""} - ${houseMetadata["crvs.head.wife"] || ""}`,
-					"crvs.family.member": (
-						houseMetadata["crvs.family.member"] || []
-					).filter((value) => value.trim()),
-					...processedHouseIdentifiers,
-				}
+						...houseMetadata,
+						"crvs.identifier.houseFamilyKey": `${houseMetadata["crvs.identifier.houseNumber"]} - ${houseMetadata["crvs.head.husband"] || ""} - ${houseMetadata["crvs.head.wife"] || ""}`,
+						"crvs.family.member": (
+							houseMetadata["crvs.family.member"] || []
+						).filter((value) => value.trim()),
+						...processedHouseIdentifiers,
+					}
 				: {
-					...Object.fromEntries(
-						Object.entries(vitalEventMetadata).filter(([field]) =>
-							visibleVitalEventMetadataKeys.has(field),
+						...Object.fromEntries(
+							Object.entries(vitalEventMetadata).filter(([field]) =>
+								visibleVitalEventMetadataKeys.has(field),
+							),
 						),
-					),
-				};
+					};
 
 			// Filter empty fields
 			const metadataFields = Object.fromEntries(
@@ -1527,8 +1473,12 @@ const MetadataEditor = () => {
 							{uploading ? (
 								<span className="flex items-center gap-1">
 									<span className="flex">
-										<span className="animate-bounce [animation-delay:-0.3s]">.</span>
-										<span className="animate-bounce [animation-delay:-0.15s]">.</span>
+										<span className="animate-bounce [animation-delay:-0.3s]">
+											.
+										</span>
+										<span className="animate-bounce [animation-delay:-0.15s]">
+											.
+										</span>
 										<span className="animate-bounce">.</span>
 									</span>
 									Uploading
@@ -1601,13 +1551,13 @@ const MetadataEditor = () => {
 									</Select>
 								</div>
 
-								{isHouseType
-									? houseSections.map((section) => (
+								{isHouseType ? (
+									houseSections.map((section) => (
 										<div key={section.section} className="space-y-4">
 											{section.fields.map((field) => {
 												const isVisible = field.visibleWhen
 													? houseMetadata[field.visibleWhen.metadata] ===
-													field.visibleWhen.equals
+														field.visibleWhen.equals
 													: true;
 												if (!isVisible) return null;
 
@@ -1618,10 +1568,7 @@ const MetadataEditor = () => {
 																label={field.label}
 																values={houseMetadata[field.metadata] || [""]}
 																setValues={(values) =>
-																	handleHouseFieldChange(
-																		field.metadata,
-																		values,
-																	)
+																	handleHouseFieldChange(field.metadata, values)
 																}
 																placeholder={field.placeholder}
 															/>
@@ -1651,10 +1598,7 @@ const MetadataEditor = () => {
 																	houseMetadata[field.metadata] || undefined
 																}
 																onValueChange={(value) =>
-																	handleHouseFieldChange(
-																		field.metadata,
-																		value,
-																	)
+																	handleHouseFieldChange(field.metadata, value)
 																}
 															>
 																<SelectTrigger className="w-full">
@@ -1710,143 +1654,143 @@ const MetadataEditor = () => {
 											})}
 										</div>
 									))
-									: (
-										<div className="space-y-5">
-											<div>
-												<Label htmlFor={vitalEventTypeField.metadata}>
-													{vitalEventTypeField.label}
-													<span className="text-destructive"> *</span>
-												</Label>
-												<Select
-													value={selectedVitalEventType || undefined}
-													onValueChange={(value) =>
-														handleVitalEventFieldChange(
-															vitalEventTypeField.metadata,
-															value,
-														)
-													}
-												>
-													<SelectTrigger className="w-full">
-														<SelectValue
-															placeholder={`Select ${vitalEventTypeField.label}`}
-														/>
-													</SelectTrigger>
-													<SelectContent>
-														{(
-															valuePairs[vitalEventTypeField.valuePairs] || []
-														).map((option) => (
-															<SelectItem key={option} value={option}>
-																{option}
-															</SelectItem>
-														))}
-													</SelectContent>
-												</Select>
-												{renderOcrCandidateSelector(
-													vitalEventTypeField.metadata,
-													selectedVitalEventType,
-													(value) =>
-														handleVitalEventFieldChange(
-															vitalEventTypeField.metadata,
-															value,
-														),
-												)}
-											</div>
-											{visibleVitalEventSections.map((section) => (
-												<div key={section.section} className="space-y-3">
-													<h3 className="font-semibold">{section.title}</h3>
-													{section.fields.map((field) => (
-														<div key={field.metadata}>
-															<Label htmlFor={field.metadata}>
-																{field.label}
-															</Label>
-															{field.inputType === "dropdown" ? (
-																<Select
-																	value={
-																		vitalEventMetadata[field.metadata] ||
-																		undefined
-																	}
-																	onValueChange={(value) =>
-																		handleVitalEventFieldChange(
-																			field.metadata,
-																			value,
-																		)
-																	}
-																>
-																	<SelectTrigger className="w-full">
-																		<SelectValue
-																			placeholder={`Select ${field.label}`}
-																		/>
-																	</SelectTrigger>
-																	<SelectContent>
-																		{(valuePairs[field.valuePairs] || []).map(
-																			(option) => (
-																				<SelectItem key={option} value={option}>
-																					{option}
-																				</SelectItem>
-																			),
-																		)}
-																	</SelectContent>
-																</Select>
-															) : field.inputType === "textarea" ? (
-																<Textarea
-																	id={field.metadata}
-																	value={vitalEventMetadata[field.metadata] || ""}
-																	onChange={(e) =>
-																		handleVitalEventFieldChange(
-																			field.metadata,
-																			e.target.value,
-																		)
-																	}
-																	rows="3"
-																/>
-															) : (
-																<Input
-																	id={field.metadata}
-																	type={field.inputType}
-																	value={vitalEventMetadata[field.metadata] || ""}
-																	onChange={(e) =>
-																		handleVitalEventFieldChange(
-																			field.metadata,
-																			e.target.value,
-																		)
-																	}
-																/>
-															)}
-															{renderOcrCandidateSelector(
-																field.metadata,
-																vitalEventMetadata[field.metadata] || "",
-																(value) =>
+								) : (
+									<div className="space-y-5">
+										<div>
+											<Label htmlFor={vitalEventTypeField.metadata}>
+												{vitalEventTypeField.label}
+												<span className="text-destructive"> *</span>
+											</Label>
+											<Select
+												value={selectedVitalEventType || undefined}
+												onValueChange={(value) =>
+													handleVitalEventFieldChange(
+														vitalEventTypeField.metadata,
+														value,
+													)
+												}
+											>
+												<SelectTrigger className="w-full">
+													<SelectValue
+														placeholder={`Select ${vitalEventTypeField.label}`}
+													/>
+												</SelectTrigger>
+												<SelectContent>
+													{(
+														valuePairs[vitalEventTypeField.valuePairs] || []
+													).map((option) => (
+														<SelectItem key={option} value={option}>
+															{option}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+											{renderOcrCandidateSelector(
+												vitalEventTypeField.metadata,
+												selectedVitalEventType,
+												(value) =>
+													handleVitalEventFieldChange(
+														vitalEventTypeField.metadata,
+														value,
+													),
+											)}
+										</div>
+										{visibleVitalEventSections.map((section) => (
+											<div key={section.section} className="space-y-3">
+												<h3 className="font-semibold">{section.title}</h3>
+												{section.fields.map((field) => (
+													<div key={field.metadata}>
+														<Label htmlFor={field.metadata}>
+															{field.label}
+														</Label>
+														{field.inputType === "dropdown" ? (
+															<Select
+																value={
+																	vitalEventMetadata[field.metadata] ||
+																	undefined
+																}
+																onValueChange={(value) =>
 																	handleVitalEventFieldChange(
 																		field.metadata,
 																		value,
-																	),
-															)}
-														</div>
-													))}
-													<IdentifiersField
-														label={`${section.title} Identifiers`}
-														identifiers={
-															vitalEventIdentifiers[section.section] || [
-																{ type: "filenumber", value: "" },
-															]
-														}
-														onChange={(index, field, value) =>
-															handleVitalIdentifierChange(
-																section.section,
-																index,
-																field,
-																value,
-															)
-														}
-														onAdd={() => addVitalIdentifier(section.section)}
-														onRemove={(index) =>
-															removeVitalIdentifier(section.section, index)
-														}
-													/>
-												</div>
-											))}
-										</div>
-									)}
+																	)
+																}
+															>
+																<SelectTrigger className="w-full">
+																	<SelectValue
+																		placeholder={`Select ${field.label}`}
+																	/>
+																</SelectTrigger>
+																<SelectContent>
+																	{(valuePairs[field.valuePairs] || []).map(
+																		(option) => (
+																			<SelectItem key={option} value={option}>
+																				{option}
+																			</SelectItem>
+																		),
+																	)}
+																</SelectContent>
+															</Select>
+														) : field.inputType === "textarea" ? (
+															<Textarea
+																id={field.metadata}
+																value={vitalEventMetadata[field.metadata] || ""}
+																onChange={(e) =>
+																	handleVitalEventFieldChange(
+																		field.metadata,
+																		e.target.value,
+																	)
+																}
+																rows="3"
+															/>
+														) : (
+															<Input
+																id={field.metadata}
+																type={field.inputType}
+																value={vitalEventMetadata[field.metadata] || ""}
+																onChange={(e) =>
+																	handleVitalEventFieldChange(
+																		field.metadata,
+																		e.target.value,
+																	)
+																}
+															/>
+														)}
+														{renderOcrCandidateSelector(
+															field.metadata,
+															vitalEventMetadata[field.metadata] || "",
+															(value) =>
+																handleVitalEventFieldChange(
+																	field.metadata,
+																	value,
+																),
+														)}
+													</div>
+												))}
+												<IdentifiersField
+													label={`${section.title} Identifiers`}
+													identifiers={
+														vitalEventIdentifiers[section.section] || [
+															{ type: "filenumber", value: "" },
+														]
+													}
+													onChange={(index, field, value) =>
+														handleVitalIdentifierChange(
+															section.section,
+															index,
+															field,
+															value,
+														)
+													}
+													onAdd={() => addVitalIdentifier(section.section)}
+													onRemove={(index) =>
+														removeVitalIdentifier(section.section, index)
+													}
+												/>
+											</div>
+										))}
+									</div>
+								)}
 
 								{isHouseType && (
 									<IdentifiersField
@@ -2291,7 +2235,9 @@ const MetadataEditor = () => {
 										<div className="text-center text-gray-500 pt-16">
 											<div>
 												<FileText size={48} className="mx-auto mb-4" />
-												<h3 className="text-lg font-semibold">Preview Not Available</h3>
+												<h3 className="text-lg font-semibold">
+													Preview Not Available
+												</h3>
 												<p className="mt-1">
 													Unsupported file type for preview.
 												</p>
