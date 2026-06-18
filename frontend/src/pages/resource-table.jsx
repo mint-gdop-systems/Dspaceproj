@@ -50,6 +50,7 @@ export default function ResourceTable() {
 		wife: { value: "", operator: "contains" },
 		itemidentifier: { value: "", operator: "equals" },
 		eventType: { value: "", operator: "equals" },
+		eventDate: { value: "", operator: "contains" },
 		subjectName: { value: "", operator: "contains" },
 		motherName: { value: "", operator: "contains" },
 		fatherName: { value: "", operator: "contains" },
@@ -352,6 +353,7 @@ export default function ResourceTable() {
 			wife: { value: "", operator: "contains" },
 			itemidentifier: { value: "", operator: "equals" },
 			eventType: { value: "", operator: "equals" },
+			eventDate: { value: "", operator: "contains" },
 			subjectName: { value: "", operator: "contains" },
 			motherName: { value: "", operator: "contains" },
 			fatherName: { value: "", operator: "contains" },
@@ -492,6 +494,7 @@ export default function ResourceTable() {
 								columnFilters.wife?.value ||
 								columnFilters.itemidentifier?.value ||
 								columnFilters.eventType?.value ||
+								columnFilters.eventDate?.value ||
 								columnFilters.subjectName?.value ||
 								columnFilters.motherName?.value ||
 								columnFilters.fatherName?.value ||
@@ -509,6 +512,7 @@ export default function ResourceTable() {
 											wife: { value: "", operator: "contains" },
 											itemidentifier: { value: "", operator: "equals" },
 											eventType: { value: "", operator: "equals" },
+											eventDate: { value: "", operator: "contains" },
 											subjectName: { value: "", operator: "contains" },
 											motherName: { value: "", operator: "contains" },
 											fatherName: { value: "", operator: "contains" },
@@ -755,6 +759,31 @@ export default function ResourceTable() {
 											<SelectItem value="Death">Death</SelectItem>
 										</SelectContent>
 									</Select>
+								</div>
+								<div>
+									<div className="flex items-center justify-between">
+										<div className="flex items-center gap-1">
+											<FilterLabel
+												htmlFor="filter-event-date"
+												label="Event Date"
+											/>
+										</div>
+										<FilterOperatorSelect
+											value={columnFilters.subjectName?.operator || "contains"}
+											onChange={(value) =>
+												handleColumnFilterChange("eventDate", "operator", value)
+											}
+											operators={operators}
+										/>
+									</div>
+									<FilterValueInput
+										id="filter-event-date"
+										placeholder="Search event date..."
+										value={columnFilters.eventDate?.value || ""}
+										onChange={(value) =>
+											handleColumnFilterChange("eventDate", "value", value)
+										}
+									/>
 								</div>
 								<div>
 									<div className="flex items-center justify-between">

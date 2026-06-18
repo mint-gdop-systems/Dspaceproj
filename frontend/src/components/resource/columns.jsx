@@ -6,7 +6,7 @@ import {
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 
-const renderFallback = ({ getValue }) => getValue() || "—";
+const renderWithFallback = ({ getValue }) => getValue() || "—";
 
 const renderPrimaryIdentifier = (resource) => {
 	const order = ["filenumber", "issn", "other"];
@@ -26,12 +26,12 @@ const sharedColumnsStart = [
 	{
 		accessorKey: "parentCommunity",
 		header: "Sub City",
-		cell: renderFallback,
+		cell: renderWithFallback,
 	},
 	{
 		accessorKey: "owningCollection",
 		header: "Woreda",
-		cell: renderFallback,
+		cell: renderWithFallback,
 	},
 ];
 
@@ -123,27 +123,27 @@ export const houseColumns = [
 	{
 		accessorKey: "houseNumber",
 		header: "House #",
-		cell: renderFallback,
+		cell: renderWithFallback,
 	},
 	{
 		accessorKey: "houseType",
 		header: "House Type",
-		cell: renderFallback,
+		cell: renderWithFallback,
 	},
 	{
 		accessorKey: "husband",
 		header: "Husband",
-		cell: renderFallback,
+		cell: renderWithFallback,
 	},
 	{
 		accessorKey: "wife",
 		header: "Wife",
-		cell: renderFallback,
+		cell: renderWithFallback,
 	},
 	{
 		accessorKey: "dateOfRegistration",
 		header: "Reg. Date",
-		cell: renderFallback,
+		cell: renderWithFallback,
 	},
 	sharedIdentifierColumn,
 	sharedActionColumn,
@@ -154,32 +154,32 @@ export const vitalEventColumns = [
 	{
 		accessorKey: "eventType",
 		header: "Event Type",
-		cell: renderFallback,
+		cell: renderWithFallback,
 	},
 	{
 		accessorKey: "eventSubject",
 		header: "Subject Name",
-		cell: renderFallback,
+		cell: renderWithFallback,
 	},
 	{
 		accessorKey: "eventDate",
 		header: "Event Date",
-		cell: renderFallback,
+		cell: renderWithFallback,
 	},
 	{
 		accessorKey: "gender",
 		header: "Gender",
-		cell: renderFallback,
+		cell: renderWithFallback,
 	},
 	{
 		accessorKey: "motherName",
 		header: "Mother Name",
-		cell: renderFallback,
+		cell: renderWithFallback,
 	},
 	{
 		accessorKey: "fatherName",
 		header: "Father Name",
-		cell: renderFallback,
+		cell: renderWithFallback,
 	},
 	sharedIdentifierColumn,
 	sharedActionColumn,
