@@ -1,6 +1,5 @@
 import {
 	ChevronDownIcon,
-	Download,
 	DownloadIcon,
 	FileTextIcon,
 	XIcon,
@@ -32,7 +31,6 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { PdfPreview } from "../components/pdf-preview";
 import dspaceService from "../services/dspaceService";
 
 export default function ResourceTable() {
@@ -245,18 +243,13 @@ export default function ResourceTable() {
 	const onPageSizeChange = handlePageSizeChange;
 
 	const [showPreviewModal, setShowPreviewModal] = useState(false);
-	const [primaryBitstream, setPrimaryBitstream] = useState(null);
-	const [bundledBitstreams, setBundledBitstreams] = useState(null);
+	const [bitstreams, setBitstreams] = useState([]);
 	const [selectedBitstream, setSelectedBitstream] = useState(null);
 	const [activePreviewBitstream, setActivePreviewBitstream] = useState(null);
 	const [bitstreamContentUrls, setBitstreamContentUrls] = useState({});
 	const [loadingBitstreamContent, setLoadingBitstreamContent] = useState({});
 	const bitstreamContentUrlsRef = useRef({});
 	const loadingBitstreamContentRef = useRef({});
-
-	const allBitstreams = primaryBitstream
-		? [primaryBitstream, ...(bundledBitstreams || [])]
-		: bundledBitstreams || [];
 
 	const releaseBitstreamContentUrls = useCallback(() => {
 		Object.values(bitstreamContentUrlsRef.current).forEach((url) => {
@@ -270,8 +263,7 @@ export default function ResourceTable() {
 
 	const closePreview = useCallback(() => {
 		setShowPreviewModal(false);
-		setPrimaryBitstream(null);
-		setBundledBitstreams(null);
+		setBitstreams(null);
 		setSelectedBitstream(null);
 		setActivePreviewBitstream(null);
 		releaseBitstreamContentUrls();
@@ -370,16 +362,8 @@ export default function ResourceTable() {
 		}
 
 		const res = await dspaceService.getBitstreams(resource.originalBundleId);
-		if (res.primaryBitstream || res.bundledBitstreams) {
-			setPrimaryBitstream(res.primaryBitstream);
-			setBundledBitstreams(
-				res.bundledBitstreams?._embedded?.bitstreams.filter(
-					(bitstream) => bitstream.uuid !== res?.primaryBitstream?.uuid,
-				) ?? [],
-			);
-
-			setShowPreviewModal(true);
-		}
+		setBitstreams(res);
+		setShowPreviewModal(true);
 	};
 
 	const operators = [
@@ -390,29 +374,20 @@ export default function ResourceTable() {
 	];
 
 	useEffect(() => {
-		if (bundledBitstreams?.length > 0) {
-			setSelectedBitstream(bundledBitstreams[0]);
+		if (bitstreams?.length > 0) {
+			setSelectedBitstream(bitstreams[0]);
 		}
-	}, [bundledBitstreams]);
-
-	useEffect(() => {
-		if (showPreviewModal && primaryBitstream) {
-			setActivePreviewBitstream(primaryBitstream);
-		}
-	}, [showPreviewModal, primaryBitstream]);
+	}, [bitstreams]);
 
 	useEffect(() => {
 		if (!showPreviewModal) return;
 
-		[activePreviewBitstream, primaryBitstream, selectedBitstream].forEach(
-			(bitstream) => {
-				ensureBitstreamContentUrl(bitstream);
-			},
-		);
+		[activePreviewBitstream, selectedBitstream].forEach((bitstream) => {
+			ensureBitstreamContentUrl(bitstream);
+		});
 	}, [
 		activePreviewBitstream,
 		ensureBitstreamContentUrl,
-		primaryBitstream,
 		selectedBitstream,
 		showPreviewModal,
 	]);
@@ -421,12 +396,6 @@ export default function ResourceTable() {
 		return releaseBitstreamContentUrls;
 	}, [releaseBitstreamContentUrls]);
 
-	const activePreviewUrl = activePreviewBitstream?.uuid
-		? bitstreamContentUrls[activePreviewBitstream.uuid]
-		: null;
-	const primaryBitstreamUrl = primaryBitstream?.uuid
-		? bitstreamContentUrls[primaryBitstream.uuid]
-		: null;
 	const selectedBitstreamUrl = selectedBitstream?.uuid
 		? bitstreamContentUrls[selectedBitstream.uuid]
 		: null;
@@ -452,13 +421,21 @@ export default function ResourceTable() {
 				<img
 					src={contentUrl}
 					alt={bitstream?.name}
-					className="max-h-[70vh] max-w-full object-contain rounded-md shadow-sm"
+					className="max-h-full max-w-full object-contain rounded-md shadow-sm"
 				/>
 			);
 		}
 
 		if (isPdf(bitstream)) {
-			return <PdfPreview fileUrl={contentUrl} />;
+			return (
+				<iframe
+					src={contentUrl}
+					frameborder="0"
+					title="PDF preview"
+					className="w-full h-full border-none"
+				></iframe>
+			);
+			// return <PdfPreview fileUrl={contentUrl} />;
 		}
 
 		return (
@@ -1053,286 +1030,118 @@ export default function ResourceTable() {
 								className="relative bg-foreground rounded-xl shadow-2xl w-[95vw] h-[95vh] flex overflow-hidden"
 								onClick={(e) => e.stopPropagation()}
 							>
-								{/* Mobile: Single panel with dropdown */}
-								<div className="lg:hidden flex flex-col w-full h-full overflow-hidden">
-									<div className="flex flex-col min-w-0 bg-primary text-primary-foreground px-4 py-3 border-b">
-										<div className="flex items-center justify-between gap-2">
-											<div className="relative inline-block flex-1">
+								<div className="flex flex-col w-full h-full overflow-hidden">
+									<div className="h-18 flex flex-col min-w-0 bg-primary text-primary-foreground px-4 py-3 border-b">
+										<div className="flex items-start">
+											<div className="relative inline-block">
 												<button
 													type="button"
-													className="w-full flex items-center justify-between px-3 py-2 text-left bg-primary/10 hover:bg-primary/20 text-primary-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+													className="w-full flex items-center justify-between px-3 py-0.5 text-left bg-primary/10 hover:bg-primary/20 text-primary-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/30"
 												>
-													<span className="flex items-center gap-3">
+													<span className="flex items-center gap-4">
 														<ChevronDownIcon />
-														<div className="flex-1 min-w-0">
-															<div className="font-semibold truncate">
-																{activePreviewBitstream?.name || "Preview"}
-															</div>
-															<div className="flex flex-wrap gap-x-4 gap-y-1 text-sm opacity-90">
-																{activePreviewBitstream?.metadata?.[
-																	"crvs.documentType"
-																]?.[0]?.value && (
-																	<span>
-																		<span className="font-medium">Type:</span>{" "}
-																		{
-																			activePreviewBitstream.metadata[
-																				"crvs.documentType"
-																			][0].value
-																		}
-																	</span>
-																)}
-																{activePreviewBitstream?.metadata?.[
-																	"crvs.document.status"
-																]?.[0]?.value && (
-																	<span>
-																		<span className="font-medium">Status:</span>{" "}
-																		{
-																			activePreviewBitstream.metadata[
-																				"crvs.document.status"
-																			][0].value
-																		}
-																	</span>
-																)}
-																{activePreviewBitstream?.sizeBytes && (
-																	<span>
-																		<span className="font-medium">Size:</span>{" "}
-																		{(
-																			activePreviewBitstream.sizeBytes / 1024
-																		).toFixed(1)}{" "}
-																		KB
-																	</span>
-																)}
-															</div>
+														<div>
+															<h2 className="text-lg font-semibold truncate text-ellipsis line-clamp-1">
+																{bitstreams?.length > 0
+																	? selectedBitstream?.name
+																	: "No Additional Files"}
+															</h2>
+															{bitstreams?.length > 0 && (
+																<div className="flex flex-wrap gap-x-4 gap-y-1 text-sm opacity-90 text-ellipsis line-clamp-1">
+																	{selectedBitstream?.metadata?.[
+																		"crvs.documentType"
+																	]?.[0]?.value && (
+																		<span>
+																			<span className="font-medium">Type:</span>{" "}
+																			{
+																				selectedBitstream.metadata[
+																					"crvs.documentType"
+																				][0].value
+																			}
+																		</span>
+																	)}
+																	{selectedBitstream?.metadata?.[
+																		"crvs.document.status"
+																	]?.[0]?.value && (
+																		<span>
+																			<span className="font-medium">
+																				Status:
+																			</span>{" "}
+																			{
+																				selectedBitstream.metadata[
+																					"crvs.document.status"
+																				][0].value
+																			}
+																		</span>
+																	)}
+																	{selectedBitstream?.sizeBytes && (
+																		<span>
+																			<span className="font-medium">Size:</span>{" "}
+																			{(
+																				selectedBitstream.sizeBytes / 1024
+																			).toFixed(1)}{" "}
+																			KB
+																		</span>
+																	)}
+																</div>
+															)}
 														</div>
 													</span>
 												</button>
-												<select
-													value={activePreviewBitstream?.uuid}
-													onChange={(e) =>
-														setActivePreviewBitstream(
-															allBitstreams.find(
-																(b) => b.uuid === e.target.value,
-															),
-														)
-													}
-													className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-												>
-													{allBitstreams.map((b, idx) => (
-														<option key={b.uuid} value={b.uuid}>
-															{idx === 0 ? "Primary: " : `File ${idx}: `}
-															{b.name}
-														</option>
-													))}
-												</select>
+												{bitstreams?.length > 0 && (
+													<select
+														value={selectedBitstream?.uuid}
+														onChange={(e) =>
+															setSelectedBitstream(
+																bitstreams.find(
+																	(b) => b.uuid === e.target.value,
+																),
+															)
+														}
+														className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+													>
+														{bitstreams.map((b) => (
+															<option
+																key={b.uuid}
+																value={b.uuid}
+																className="text-black"
+															>
+																{b.name}
+															</option>
+														))}
+													</select>
+												)}
 											</div>
 											{enableDownload &&
-												activePreviewBitstream &&
-												activePreviewUrl && (
+												bitstreams?.length > 0 &&
+												selectedBitstream &&
+												selectedBitstreamUrl && (
 													<a
-														href={activePreviewUrl}
+														href={selectedBitstreamUrl}
 														target="_blank"
 														rel="noopener noreferrer"
-														download={activePreviewBitstream.name}
-														className="p-1.5 rounded hover:bg-white/20 transition-colors"
+														download={selectedBitstream.name}
+														className="p-1.5 rounded hover:bg-white/20 transition-colors mt-0.5"
 														title="Download"
 													>
-														<Download className="w-4 h-4" />
+														<DownloadIcon className="w-4 h-4" />
 													</a>
 												)}
 										</div>
 									</div>
-									<div className="flex-1 overflow-auto p-4 bg-white flex flex-col">
+									<div className="flex-1 overflow-auto bg-white flex flex-col">
 										<div className="flex-1 overflow-auto flex items-center justify-center">
-											{renderBitstreamPreview(
-												activePreviewBitstream,
-												activePreviewUrl,
-												"No file selected",
-											)}
-										</div>
-									</div>
-								</div>
-
-								{/* Desktop: Two panels side by side */}
-								<div className="hidden lg:flex w-full h-full">
-									{/* Left: Primary Bitstream */}
-									<div className="flex flex-col w-1/2 h-full border-r overflow-hidden">
-										<div className="h-18 flex flex-col justify-center border-b bg-primary text-primary-foreground px-4 py-3">
-											<div className="flex items-center gap-2">
-												<h2 className="text-lg font-semibold truncate text-ellipsis line-clamp-1">
-													{primaryBitstream?.name || "Preview"}
-												</h2>
-												{enableDownload &&
-													primaryBitstream &&
-													primaryBitstreamUrl && (
-														<a
-															href={primaryBitstreamUrl}
-															target="_blank"
-															rel="noopener noreferrer"
-															download={primaryBitstream.name}
-															className="p-1.5 rounded hover:bg-white/20 transition-colors"
-															title="Download"
-														>
-															<Download className="w-4 h-4" />
-														</a>
-													)}
-											</div>
-											<div className="flex flex-wrap gap-x-4 gap-y-1 text-sm opacity-90 mt-1">
-												{primaryBitstream?.metadata?.["crvs.documentType"]?.[0]
-													?.value && (
-													<span>
-														<span className="font-medium">Type:</span>{" "}
-														{
-															primaryBitstream.metadata["crvs.documentType"][0]
-																.value
-														}
-													</span>
-												)}
-												{primaryBitstream?.metadata?.[
-													"crvs.document.status"
-												]?.[0]?.value && (
-													<span>
-														<span className="font-medium">Status:</span>{" "}
-														{
-															primaryBitstream.metadata[
-																"crvs.document.status"
-															][0].value
-														}
-													</span>
-												)}
-												{primaryBitstream?.sizeBytes && (
-													<span>
-														<span className="font-medium">Size:</span>{" "}
-														{(primaryBitstream.sizeBytes / 1024).toFixed(1)} KB
-													</span>
-												)}
-											</div>
-										</div>
-										<div className="flex-1 overflow-auto bg-white flex flex-col">
-											<div className="flex-1 overflow-auto flex items-center justify-center">
-												{renderBitstreamPreview(
-													primaryBitstream,
-													primaryBitstreamUrl,
-													"Primary file not found",
-												)}
-											</div>
-										</div>
-									</div>
-
-									{/* Right: Bundled Bitstreams */}
-									<div className="flex flex-col w-1/2 h-full overflow-hidden">
-										<div className="h-18 flex flex-col min-w-0 bg-primary text-primary-foreground px-4 py-3 border-b">
-											<div className="flex items-start">
-												<div className="relative inline-block">
-													<button
-														type="button"
-														className="w-full flex items-center justify-between px-3 py-0.5 text-left bg-primary/10 hover:bg-primary/20 text-primary-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-													>
-														<span className="flex items-center gap-4">
-															<ChevronDownIcon />
-															<div>
-																<h2 className="text-lg font-semibold truncate text-ellipsis line-clamp-1">
-																	{bundledBitstreams?.length > 0
-																		? selectedBitstream?.name ||
-																			primaryBitstream?.name
-																		: "No Additional Files"}
-																</h2>
-																{bundledBitstreams?.length > 0 && (
-																	<div className="flex flex-wrap gap-x-4 gap-y-1 text-sm opacity-90 text-ellipsis line-clamp-1">
-																		{selectedBitstream?.metadata?.[
-																			"crvs.documentType"
-																		]?.[0]?.value && (
-																			<span>
-																				<span className="font-medium">
-																					Type:
-																				</span>{" "}
-																				{
-																					selectedBitstream.metadata[
-																						"crvs.documentType"
-																					][0].value
-																				}
-																			</span>
-																		)}
-																		{selectedBitstream?.metadata?.[
-																			"crvs.document.status"
-																		]?.[0]?.value && (
-																			<span>
-																				<span className="font-medium">
-																					Status:
-																				</span>{" "}
-																				{
-																					selectedBitstream.metadata[
-																						"crvs.document.status"
-																					][0].value
-																				}
-																			</span>
-																		)}
-																		{selectedBitstream?.sizeBytes && (
-																			<span>
-																				<span className="font-medium">
-																					Size:
-																				</span>{" "}
-																				{(
-																					selectedBitstream.sizeBytes / 1024
-																				).toFixed(1)}{" "}
-																				KB
-																			</span>
-																		)}
-																	</div>
-																)}
-															</div>
-														</span>
-													</button>
-													{bundledBitstreams?.length > 0 && (
-														<select
-															value={selectedBitstream?.uuid}
-															onChange={(e) =>
-																setSelectedBitstream(
-																	bundledBitstreams.find(
-																		(b) => b.uuid === e.target.value,
-																	),
-																)
-															}
-															className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-														>
-															{bundledBitstreams.map((b) => (
-																<option key={b.uuid} value={b.uuid}>
-																	{b.name}
-																</option>
-															))}
-														</select>
-													)}
+											{bitstreams?.length > 0 ? (
+												renderBitstreamPreview(
+													selectedBitstream,
+													selectedBitstreamUrl,
+													"No additional files",
+												)
+											) : (
+												<div className="text-muted-foreground">
+													No additional files
 												</div>
-												{enableDownload &&
-													bundledBitstreams?.length > 0 &&
-													selectedBitstream &&
-													selectedBitstreamUrl && (
-														<a
-															href={selectedBitstreamUrl}
-															target="_blank"
-															rel="noopener noreferrer"
-															download={selectedBitstream.name}
-															className="p-1.5 rounded hover:bg-white/20 transition-colors mt-0.5"
-															title="Download"
-														>
-															<DownloadIcon className="w-4 h-4" />
-														</a>
-													)}
-											</div>
-										</div>
-										<div className="flex-1 overflow-auto bg-white flex flex-col">
-											<div className="flex-1 overflow-auto flex items-center justify-center">
-												{bundledBitstreams?.length > 0 ? (
-													renderBitstreamPreview(
-														selectedBitstream,
-														selectedBitstreamUrl,
-														"No additional files",
-													)
-												) : (
-													<div className="text-muted-foreground">
-														No additional files
-													</div>
-												)}
-											</div>
+											)}
 										</div>
 									</div>
 								</div>

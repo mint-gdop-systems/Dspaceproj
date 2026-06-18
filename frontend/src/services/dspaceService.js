@@ -934,27 +934,14 @@ class DSpaceService {
 
 	async getBitstreams(bundleId) {
 		try {
-			const [primaryRes, bundledRes] = await Promise.all([
-				this.fetchWithCsrf(
-					`${DSPACE_API_URL}/core/bundles/${bundleId}/primaryBitstream`,
-					{
-						headers: { Accept: "application/json" },
-					},
-				),
-				this.fetchWithCsrf(
-					`${DSPACE_API_URL}/core/bundles/${bundleId}/bitstreams`,
-					{
-						headers: { Accept: "application/json" },
-					},
-				),
-			]);
-
-			const primaryBitstream =
-				primaryRes.ok && primaryRes.status !== 204
-					? await primaryRes.json()
-					: null;
-			const bundledBitstreams = bundledRes.ok ? await bundledRes.json() : null;
-			return { primaryBitstream, bundledBitstreams };
+			const bitstreamsRes = await this.fetchWithCsrf(
+				`${DSPACE_API_URL}/core/bundles/${bundleId}/bitstreams`,
+				{
+					headers: { Accept: "application/json" },
+				},
+			);
+			const res = bitstreamsRes.ok ? await bitstreamsRes.json() : null;
+			return res._embedded.bitstreams;
 		} catch {
 			return null;
 		}
