@@ -14,6 +14,7 @@ import {
 	ChevronRight as RightIcon,
 	RotateCw,
 	Scissors,
+	ShieldAlertIcon,
 	Trash2Icon,
 	UploadIcon,
 	X,
@@ -21,6 +22,7 @@ import {
 	ZoomOut,
 } from "lucide-react";
 import { useRef } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -1408,6 +1410,32 @@ const MetadataEditor = () => {
 			setCollectionId(collections[0].uuid);
 		}
 	}, [collections, collectionId]);
+
+	if (!loadingCollections && collections.length === 0) {
+		return (
+			<div className="flex h-[calc(100vh-4rem)] items-center justify-center px-6">
+				<div className="max-w-md text-center">
+					<ShieldAlertIcon className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
+
+					<p className="mb-3 text-xl font-semibold">
+						You do not have permission to submit records.
+					</p>
+
+					<p className="text-sm text-muted-foreground">
+						No submission collections are currently assigned to your account. If
+						you believe you should have access, contact your system
+						administrator.
+					</p>
+
+					<div className="mt-8 space-x-4">
+						<Link to="/">
+							<Button>Go to Home Page</Button>
+						</Link>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden">
