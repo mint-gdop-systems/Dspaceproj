@@ -351,6 +351,44 @@ class DSpaceService {
 		};
 	}
 
+	async getCommunities(page = 0, size = 100) {
+		try {
+			const response = await this.fetchWithCsrf(
+				`${DSPACE_API_URL}/core/communities?page=${page}&size=${size}`,
+				{
+					headers: { Accept: "application/json" },
+				},
+			);
+
+			if (response.ok) {
+				const data = await response.json();
+				return data._embedded?.communities || [];
+			}
+			return [];
+		} catch {
+			return [];
+		}
+	}
+
+	async getCommunityCollections(communityUuid, page = 0, size = 100) {
+		try {
+			const response = await this.fetchWithCsrf(
+				`${DSPACE_API_URL}/core/communities/${communityUuid}/collections?page=${page}&size=${size}`,
+				{
+					headers: { Accept: "application/json" },
+				},
+			);
+
+			if (response.ok) {
+				const data = await response.json();
+				return data._embedded?.collections || [];
+			}
+			return [];
+		} catch {
+			return [];
+		}
+	}
+
 	async getCollections() {
 		try {
 			const response = await this.fetchWithCsrf(
@@ -823,7 +861,7 @@ class DSpaceService {
 		throw new Error(`Submission failed: ${response.status}`);
 	}
 
-	async searchItems(filters = {}, page = 0, size = 10) {
+	async searchItems(filters = {}, page = 0, size = 10, scope = null) {
 		try {
 			const params = new URLSearchParams({
 				page: String(page),
@@ -831,6 +869,11 @@ class DSpaceService {
 				dsoType: "item",
 				embed: "bundles,owningCollection/parentCommunity",
 			});
+
+			if (scope) {
+				params.append("scope", scope);
+			}
+
 			const queryParts = [];
 
 			Object.entries(filters).forEach(([key, filter]) => {

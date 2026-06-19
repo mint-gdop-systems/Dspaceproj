@@ -4,7 +4,7 @@ import {
 	FileTextIcon,
 	XIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { pdfjs } from "react-pdf";
 import { useAuth } from "@/contexts/auth-context";
 import { houseTypeOptions } from "../utils/constants";
@@ -22,6 +22,7 @@ import { FilterValueInput } from "@/components/resource/filter-value-input";
 import { DataTable } from "@/components/shared/data-table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
 	Select,
 	SelectContent,
@@ -37,8 +38,9 @@ export default function ResourceTable() {
 	const { user } = useAuth();
 	const [allResources, setAllResources] = useState([]);
 	const [loading, setLoading] = useState(false);
-	const [activeFilters, setActiveFilters] = useState({});
 	const [activeTab, setActiveTab] = useState("house");
+	const [selectedCommunityUuid, setSelectedCommunityUuid] = useState(null);
+	const [selectedCollectionUuid, setSelectedCollectionUuid] = useState(null);
 
 	const [columnFilters, setColumnFilters] = useState({
 		entityType: { value: "House", operator: "equals" },
@@ -64,57 +66,15 @@ export default function ResourceTable() {
 		totalElements: 0,
 	});
 
-	const filterSelectOptions = useMemo(() => {
-		if (!allResources || allResources.length === 0) {
-			return { parentCommunity: [], owningCollection: [] };
-		}
-
-		const pcCounts = {};
-		const ocCounts = {};
-
-		allResources.forEach((resource) => {
-			if (resource.parentCommunity) {
-				pcCounts[resource.parentCommunity] =
-					(pcCounts[resource.parentCommunity] || 0) + 1;
-			}
-			if (resource.owningCollection) {
-				ocCounts[resource.owningCollection] =
-					(ocCounts[resource.owningCollection] || 0) + 1;
-			}
-		});
-
-		return {
-			parentCommunity: Object.entries(pcCounts).sort((a, b) => b[1] - a[1]),
-			owningCollection: Object.entries(ocCounts).sort((a, b) => b[1] - a[1]),
-		};
-	}, [allResources]);
-
-	const filteredWoredaOptions = useMemo(() => {
-		if (!allResources || allResources.length === 0) return [];
-
-		const selectedSubCity = activeFilters.parentCommunity?.[0];
-		const filtered = selectedSubCity
-			? allResources.filter((r) => r.parentCommunity === selectedSubCity)
-			: allResources;
-
-		const counts = {};
-		filtered.forEach((resource) => {
-			if (resource.owningCollection) {
-				counts[resource.owningCollection] =
-					(counts[resource.owningCollection] || 0) + 1;
-			}
-		});
-
-		return Object.entries(counts).sort((a, b) => b[1] - a[1]);
-	}, [allResources, activeFilters.parentCommunity]);
-
 	const fetchAllResources = useCallback(async () => {
 		setLoading(true);
 		try {
+			const scope = selectedCollectionUuid || selectedCommunityUuid || null;
 			const response = await dspaceService.searchItems(
 				columnFilters,
 				pagination.number,
 				pagination.size,
+				scope,
 			);
 
 			const results = response.objects;
@@ -219,7 +179,13 @@ export default function ResourceTable() {
 		} finally {
 			setLoading(false);
 		}
-	}, [columnFilters, pagination.number, pagination.size]);
+	}, [
+		columnFilters,
+		pagination.number,
+		pagination.size,
+		selectedCommunityUuid,
+		selectedCollectionUuid,
+	]);
 
 	const handlePageChange = (newPage) => {
 		setPagination((prev) => ({ ...prev, number: newPage }));
@@ -320,19 +286,10 @@ export default function ResourceTable() {
 		}));
 	};
 
-	const handleFilterSelectChange = (category, value) => {
-		setActiveFilters((prev) => {
-			if (value === "all") {
-				const next = { ...prev };
-				delete next[category];
-				return next;
-			}
-			return { ...prev, [category]: [value] };
-		});
-	};
-
 	const handleTabChange = (nextTab) => {
 		setActiveTab(nextTab);
+		setSelectedCommunityUuid(null);
+		setSelectedCollectionUuid(null);
 		setPagination((prev) => ({ ...prev, number: 0 }));
 		onColumnFilterChange(() => ({
 			entityType: {
@@ -476,8 +433,8 @@ export default function ResourceTable() {
 								columnFilters.motherName?.value ||
 								columnFilters.fatherName?.value ||
 								columnFilters.gender?.value ||
-								activeFilters.parentCommunity ||
-								activeFilters.owningCollection) && (
+								selectedCommunityUuid ||
+								selectedCollectionUuid) && (
 								<Button
 									type="button"
 									onClick={() => {
@@ -495,7 +452,8 @@ export default function ResourceTable() {
 											fatherName: { value: "", operator: "contains" },
 											gender: { value: "", operator: "equals" },
 										}));
-										setActiveFilters({});
+										setSelectedCommunityUuid(null);
+										setSelectedCollectionUuid(null);
 									}}
 									variant="destructive"
 									size="sm"
@@ -538,50 +496,41 @@ export default function ResourceTable() {
 								<div className="h-8 flex items-center justify-between">
 									<FilterLabel htmlFor="filter-sub-city" label="Sub City" />
 								</div>
-								<Select
-									value={activeFilters.parentCommunity?.[0] || "all"}
-									onValueChange={(value) =>
-										handleFilterSelectChange("parentCommunity", value)
-									}
-								>
-									<SelectTrigger id="filter-sub-city" className="w-full">
-										<SelectValue placeholder="All Sub Cities" />
-									</SelectTrigger>
-									<SelectContent className="p-2">
-										<SelectItem value="all">All Sub Cities</SelectItem>
-										{filterSelectOptions.parentCommunity.map(
-											([name, count]) => (
-												<SelectItem key={name} value={name}>
-													{name} ({count})
-												</SelectItem>
-											),
-										)}
-									</SelectContent>
-								</Select>
+								<SearchableSelect
+									value={selectedCommunityUuid}
+									onChange={(uuid) => {
+										setSelectedCommunityUuid(uuid);
+										setSelectedCollectionUuid(null);
+										setPagination((prev) => ({ ...prev, number: 0 }));
+									}}
+									fetchOptions={() => dspaceService.getCommunities()}
+									placeholder="All Sub Cities"
+									allLabel="All Sub Cities"
+									searchPlaceholder="Search sub city..."
+								/>
 							</div>
 							{/* Woreda Filter */}
 							<div>
 								<div className="h-8 flex items-center justify-between">
 									<FilterLabel htmlFor="filter-woreda" label="Woreda" />
 								</div>
-								<Select
-									value={activeFilters.owningCollection?.[0] || "all"}
-									onValueChange={(value) =>
-										handleFilterSelectChange("owningCollection", value)
+								<SearchableSelect
+									value={selectedCollectionUuid}
+									onChange={(uuid) => {
+										setSelectedCollectionUuid(uuid);
+										setPagination((prev) => ({ ...prev, number: 0 }));
+									}}
+									fetchOptions={() =>
+										selectedCommunityUuid
+											? dspaceService.getCommunityCollections(
+													selectedCommunityUuid,
+												)
+											: dspaceService.getCollections()
 									}
-								>
-									<SelectTrigger id="filter-woreda" className="w-full">
-										<SelectValue placeholder="All Woredas" />
-									</SelectTrigger>
-									<SelectContent className="p-2">
-										<SelectItem value="all">All Woredas</SelectItem>
-										{filteredWoredaOptions.map(([name, count]) => (
-											<SelectItem key={name} value={name}>
-												{name} ({count})
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
+									placeholder="All Woredas"
+									allLabel="All Woredas"
+									searchPlaceholder="Search woreda..."
+								/>
 							</div>
 						</div>
 
