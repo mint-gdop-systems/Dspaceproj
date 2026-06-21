@@ -191,7 +191,7 @@ const MetadataEditor = () => {
     const parts = dateStr.trim().split(" ");
     if (parts.length === 3) {
       const day = parts[0].padStart(2, '0');
-      const monthName = parts[1];
+      const monthName = parts[1].trim();
       const year = parts[2];
       const month = ethioMonths[monthName];
       if (month && year && day) {
@@ -218,11 +218,21 @@ const MetadataEditor = () => {
   };
 
   const handlePickerDateChange = (date) => {
+    if (!date || typeof date !== 'string' || date.includes('undefined')) return;
+    
+    // Ignore incomplete dates like just the year
+    if (date.trim().length === 4 && !isNaN(date.trim())) {
+      return; 
+    }
+
     const formatted = formatEthioDateString(date);
-    setRegistrationAmDate(formatted);
-    if (formatted) {
-      const [y, m, d] = formatted.split('-');
-      setManualEthioDate(`${d}/${m}/${y}`);
+    if (formatted && formatted.includes('-')) {
+      const parts = formatted.split('-');
+      if (parts.length === 3) {
+        const [y, m, d] = parts;
+        setRegistrationAmDate(formatted);
+        setManualEthioDate(`${d}/${m}/${y}`);
+      }
     }
   };
 
@@ -248,6 +258,51 @@ const MetadataEditor = () => {
   // Rename Modal states
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [renameNewName, setRenameNewName] = useState("");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("metadataEditorState");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.collectionId) setCollectionId(parsed.collectionId);
+        if (parsed.title) setTitle(parsed.title);
+        if (parsed.description) setDescription(parsed.description);
+        if (parsed.fileNumber) setFileNumber(parsed.fileNumber);
+        if (parsed.caseType) setCaseType(parsed.caseType);
+        if (parsed.plaintiffs) setPlaintiffs(parsed.plaintiffs);
+        if (parsed.defendants) setDefendants(parsed.defendants);
+        if (parsed.caseRepresentatives) setCaseRepresentatives(parsed.caseRepresentatives);
+        if (parsed.lowerCourtFileNumber) setLowerCourtFileNumber(parsed.lowerCourtFileNumber);
+        if (parsed.caseStatus) setCaseStatus(parsed.caseStatus);
+        if (parsed.benchSession) setBenchSession(parsed.benchSession);
+        if (parsed.location) setLocation(parsed.location);
+        if (parsed.registrationDate) setRegistrationDate(parsed.registrationDate);
+        if (parsed.registrationAmDate) setRegistrationAmDate(parsed.registrationAmDate);
+        if (parsed.manualEthioDate) setManualEthioDate(parsed.manualEthioDate);
+        if (parsed.shelfNumber) setShelfNumber(parsed.shelfNumber);
+        if (parsed.rowNumber) setRowNumber(parsed.rowNumber);
+        if (parsed.colNumber) setColNumber(parsed.colNumber);
+        if (parsed.rfid) setRfid(parsed.rfid);
+      } catch (e) {
+        console.error("Failed to parse cached metadata", e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const stateToSave = {
+      collectionId, title, description, fileNumber, caseType,
+      plaintiffs, defendants, caseRepresentatives, lowerCourtFileNumber,
+      caseStatus, benchSession, location, registrationDate, registrationAmDate,
+      manualEthioDate, shelfNumber, rowNumber, colNumber, rfid
+    };
+    localStorage.setItem("metadataEditorState", JSON.stringify(stateToSave));
+  }, [
+    collectionId, title, description, fileNumber, caseType,
+    plaintiffs, defendants, caseRepresentatives, lowerCourtFileNumber,
+    caseStatus, benchSession, location, registrationDate, registrationAmDate,
+    manualEthioDate, shelfNumber, rowNumber, colNumber, rfid
+  ]);
 
   useEffect(() => {
     const fetchDspaceCollections = async () => {
@@ -419,6 +474,9 @@ const MetadataEditor = () => {
       await dspaceService.submitWorkspaceItem(workspaceItem);
 
       alert("Upload successful! Item submitted to workflow.");
+
+      // Clear the cache
+      localStorage.removeItem("metadataEditorState");
 
       // Reset form
       setFiles([]);

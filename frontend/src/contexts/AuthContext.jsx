@@ -63,6 +63,19 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    useEffect(() => {
+        let interval;
+        if (user && user.authenticated) {
+            // Heartbeat: Ping DSpace every 5 minutes to keep the session alive
+            interval = setInterval(() => {
+                dspaceService.checkAuthStatus().catch(err => console.error("Heartbeat failed", err));
+            }, 5 * 60 * 1000);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [user]);
+
     const login = async (email, password) => {
         try {
             // 1. Login to DSpace

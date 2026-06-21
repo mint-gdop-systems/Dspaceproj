@@ -77,6 +77,28 @@ class DSpaceService {
         return headers;
     }
 
+    async _fetch(url, options) {
+        const response = await fetch(url, options);
+        
+        // Extract token
+        const authHeader = response.headers.get('Authorization') || response.headers.get('authorization');
+        if (authHeader) {
+            this.authToken = authHeader;
+            localStorage.setItem('dspaceAuthToken', authHeader);
+        }
+        
+        // Extract CSRF token
+        const csrfToken = response.headers.get('DSPACE-XSRF-TOKEN') || 
+                          response.headers.get('XSRF-TOKEN') || 
+                          response.headers.get('X-XSRF-TOKEN');
+        if (csrfToken) {
+            this.csrfToken = csrfToken;
+        }
+
+        return response;
+    }
+
+
     async login(username, password) {
         try {
             if (!(await this.getCsrfToken())) {
@@ -144,7 +166,7 @@ class DSpaceService {
                 headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
             }
 
-            const response = await fetch(`${DSPACE_API_URL}/authn/status`, {
+            const response = await this._fetch(`${DSPACE_API_URL}/authn/status`, {
                 credentials: "include",
                 headers: headers,
             });
@@ -168,7 +190,7 @@ class DSpaceService {
                 headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
             }
             
-            const response = await fetch(`${DSPACE_API_URL}/core/collections`, {
+            const response = await this._fetch(`${DSPACE_API_URL}/core/collections`, {
                 credentials: "include",
                 headers: headers,
             });
@@ -256,7 +278,7 @@ class DSpaceService {
         }
 
         const url1 = `${DSPACE_API_URL}/core/collections/${collectionId}/items`;
-        const res1 = await fetch(url1, {
+        const res1 = await this._fetch(url1, {
             method: "POST",
             headers,
             credentials: "include",
@@ -269,7 +291,7 @@ class DSpaceService {
 
         if (res1.status === 404 || res1.status === 405) {
             const url2 = `${DSPACE_API_URL}/core/items`;
-            const res2 = await fetch(url2, {
+            const res2 = await this._fetch(url2, {
                 method: "POST",
                 headers,
                 credentials: "include",
@@ -299,7 +321,7 @@ class DSpaceService {
                 headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
             }
 
-            const response = await fetch(
+            const response = await this._fetch(
                 `${DSPACE_API_URL}/submission/workspaceitems?owningCollection=${collectionId}`,
                 {
                     method: "POST",
@@ -418,7 +440,7 @@ class DSpaceService {
                 };
 
                 try {
-                    const response = await fetch(`${DSPACE_API_URL}/submission/workspaceitems/${workspaceItemId}`, {
+                    const response = await this._fetch(`${DSPACE_API_URL}/submission/workspaceitems/${workspaceItemId}`, {
                         method: "PATCH",
                         headers: baseHeaders,
                         credentials: "include",
@@ -470,7 +492,7 @@ class DSpaceService {
                 headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
             }
 
-            const response = await fetch(
+            const response = await this._fetch(
                 `${DSPACE_API_URL}/submission/workspaceitems/${workspaceItemId}`,
                 {
                     method: "POST",
@@ -539,7 +561,7 @@ class DSpaceService {
             const url = `${DSPACE_API_URL}/core/bitstreams/${bitstreamUuid}`;
             console.log(`DSpace 9: Patching bitstream metadata at ${url}`);
 
-            const response = await fetch(url, {
+            const response = await this._fetch(url, {
                 method: "PATCH",
                 credentials: "include",
                 headers: headers,
@@ -575,7 +597,7 @@ class DSpaceService {
                 }
             ];
 
-            const response = await fetch(`${DSPACE_API_URL}/submission/workspaceitems/${workspaceItemId}`, {
+            const response = await this._fetch(`${DSPACE_API_URL}/submission/workspaceitems/${workspaceItemId}`, {
                 method: "PATCH",
                 headers: headers,
                 credentials: "include",
@@ -609,7 +631,7 @@ class DSpaceService {
             const id = typeof workspaceItemId === 'object' ? (workspaceItemId.id || workspaceItemId.uuid) : workspaceItemId;
             const workspaceUri = `${window.location.protocol}//${window.location.host}/server/api/submission/workspaceitems/${id}`;
 
-            const response = await fetch(`${DSPACE_API_URL}/workflow/workflowitems`, {
+            const response = await this._fetch(`${DSPACE_API_URL}/workflow/workflowitems`, {
                 method: "POST",
                 credentials: "include",
                 headers: headers,
@@ -639,7 +661,7 @@ class DSpaceService {
             if (token) {
                 headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
             }
-            const response = await fetch(`${DSPACE_API_URL}/discover/search/objects?${params}`, {
+            const response = await this._fetch(`${DSPACE_API_URL}/discover/search/objects?${params}`, {
                 credentials: "include",
                 headers: headers,
             });
@@ -661,7 +683,7 @@ class DSpaceService {
             if (token) {
                 headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
             }
-            const response = await fetch(`${DSPACE_API_URL}/core/items/${itemId}`, {
+            const response = await this._fetch(`${DSPACE_API_URL}/core/items/${itemId}`, {
                 credentials: "include",
                 headers: headers,
             });
@@ -674,7 +696,7 @@ class DSpaceService {
     async logout() {
         try {
             const headers = this.getCsrfHeaders({ "Content-Type": "application/x-www-form-urlencoded" });
-            await fetch(`${DSPACE_API_URL}/authn/logout`, { method: "POST", credentials: "include", headers: headers });
+            await this._fetch(`${DSPACE_API_URL}/authn/logout`, { method: "POST", credentials: "include", headers: headers });
         } catch (error) {
         } finally {
             this.isAuthenticated = false;
@@ -692,7 +714,7 @@ class DSpaceService {
             }
 
             const url = `${DSPACE_API_URL}/statistics/collectionstats?page=${page}&size=${size}`;
-            const response = await fetch(url, {
+            const response = await this._fetch(url, {
                 credentials: "include",
                 headers: headers,
             });
@@ -724,7 +746,7 @@ class DSpaceService {
                 headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
             }
 
-            const response = await fetch(
+            const response = await this._fetch(
                 `${DSPACE_API_URL}/submission/workspaceitems/search/findBySubmitter?uuid=${userUuid}`,
                 {
                     credentials: "include",
@@ -750,7 +772,7 @@ class DSpaceService {
                 headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
             }
 
-            const response = await fetch(
+            const response = await this._fetch(
                 `${DSPACE_API_URL}/core/collections/search/findSubmitAuthorized?page=${page}&size=${size}&query=&embed=parentCommunity`,
                 {
                     credentials: "include",
@@ -791,7 +813,7 @@ class DSpaceService {
                 headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
             }
 
-            const response = await fetch(`${DSPACE_API_URL}${url}`, {
+            const response = await this._fetch(`${DSPACE_API_URL}${url}`, {
                 credentials: "include",
                 headers: headers,
             });
@@ -814,7 +836,7 @@ class DSpaceService {
                 headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
             }
 
-            const response = await fetch(`${DSPACE_API_URL}${url}`, {
+            const response = await this._fetch(`${DSPACE_API_URL}${url}`, {
                 credentials: "include",
                 headers: headers,
             });
@@ -837,7 +859,7 @@ class DSpaceService {
                 headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
             }
 
-            const response = await fetch(
+            const response = await this._fetch(
                 `${DSPACE_API_URL}/core/items/${caseFileUuid}/relationships`,
                 {
                     credentials: "include",
@@ -861,7 +883,7 @@ class DSpaceService {
                     if (pathIndex === -1) continue;
                     const relativePath = rightItemHref.substring(pathIndex);
                     
-                    const itemResponse = await fetch(`${DSPACE_API_URL}${relativePath}`, {
+                    const itemResponse = await this._fetch(`${DSPACE_API_URL}${relativePath}`, {
                         credentials: "include",
                         headers: headers,
                     });
@@ -974,7 +996,7 @@ class DSpaceService {
                 }
             ];
 
-            const patchRes = await fetch(`${DSPACE_API_URL}/submission/workspaceitems/${wsItemId}`, {
+            const patchRes = await this._fetch(`${DSPACE_API_URL}/submission/workspaceitems/${wsItemId}`, {
                 method: "PATCH",
                 headers: patchHeaders,
                 credentials: "include",
@@ -991,7 +1013,7 @@ class DSpaceService {
             const newEventUuid = submittedItem.item?.uuid || submittedItem.uuid || submittedItem.id;
             if (!newEventUuid) throw new Error("Could not find submitted item UUID");
 
-            const relTypeRes = await fetch(`${DSPACE_API_URL}/core/relationshiptypes`, {
+            const relTypeRes = await this._fetch(`${DSPACE_API_URL}/core/relationshiptypes`, {
                 credentials: "include",
                 headers: headers
             });
@@ -1018,7 +1040,7 @@ class DSpaceService {
                 relationshipType: `${window.location.protocol}//${window.location.host}/server/api/core/relationshiptypes/${relationshipTypeId}`
             };
 
-            const relPostRes = await fetch(`${DSPACE_API_URL}/core/relationships`, {
+            const relPostRes = await this._fetch(`${DSPACE_API_URL}/core/relationships`, {
                 method: "POST",
                 headers: headers,
                 credentials: "include",
