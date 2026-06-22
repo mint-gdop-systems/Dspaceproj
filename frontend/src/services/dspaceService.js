@@ -413,21 +413,12 @@ class DSpaceService {
                 "legal.physical.rfid": "physicalLocationForm",
             };
 
-            const fieldExists = (sections, section, field) =>
-                !!sections?.[section]?.fields?.[field];
-
-
-            // DSpace 9 Debug Strategy: Send fields one by one to find the culprit
-            console.log("DSpace 9: Starting step-by-step metadata update to find the failing field...");
-
-            const results = [];
-            for (const update of metadataUpdates) {
+            // Bundle all fields into a single PATCH request for performance
+            const patchOps = metadataUpdates.map(update => {
                 const field = update.path;
                 const section = FIELD_SECTION_MAP[field] || "traditionalpageone";
-
-                // DSpace 7/8/9 value format: [{ value: "...", language: "..." }]
-                // We default to the form's language if available
-                const patchOp = {
+                
+                return {
                     op: "add",
                     path: `/sections/${section}/${field}`,
                     value: update.value.map(v => ({
@@ -436,42 +427,33 @@ class DSpaceService {
                         authority: null,
                         confidence: -1
                     }))
-
                 };
+            });
 
+            if (patchOps.length === 0) return true;
+
+            console.log("DSpace 9: Sending batched metadata update...");
+            
+            const response = await this._fetch(`${DSPACE_API_URL}/submission/workspaceitems/${workspaceItemId}`, {
+                method: "PATCH",
+                headers: baseHeaders,
+                credentials: "include",
+                body: JSON.stringify(patchOps),
+            });
+
+            if (!response.ok) {
+                let errorMsg = `Batch metadata update failed (${response.status})`;
                 try {
-                    const response = await this._fetch(`${DSPACE_API_URL}/submission/workspaceitems/${workspaceItemId}`, {
-                        method: "PATCH",
-                        headers: baseHeaders,
-                        credentials: "include",
-                        body: JSON.stringify([patchOp]),
-                    });
-
-                    if (!response.ok) {
-                        let errorMsg = `Field ${field} failed (${response.status})`;
-                        try {
-                            const errorObj = await response.json();
-                            if (errorObj.message) {
-                                errorMsg += `: ${errorObj.message}`;
-                            }
-                        } catch (e) { }
-                        console.error(`- Error patching ${field}:`, errorMsg);
-                        results.push({ field, success: false, error: errorMsg });
-                    } else {
-                        console.log(`- Successfully patched ${field}`);
-                        results.push({ field, success: true });
+                    const errorObj = await response.json();
+                    if (errorObj.message) {
+                        errorMsg += `: ${errorObj.message}`;
                     }
-                } catch (e) {
-                    console.error(`- Critical error on ${field}:`, e.message);
-                    results.push({ field, success: false, error: e.message });
-                }
+                } catch (e) { }
+                console.error("- Error patching metadata:", errorMsg);
+                throw new Error(errorMsg);
             }
-
-            const failures = results.filter(r => !r.success);
-            if (failures.length > 0) {
-                const failureDetails = failures.map(f => `${f.field}: ${f.error}`).join("\n");
-                throw new Error(`Metadata update partially failed:\n${failureDetails}`);
-            }
+            
+            console.log("- Successfully patched metadata");
 
             return true;
         } catch (error) {
