@@ -308,8 +308,7 @@ const Home = () => {
                     query: searchQuery || "*",
                     scope: collectionId,
                     page: "0",
-                    size: "100",
-                    embed: "owningCollection"
+                    size: "100"
                 });
 
                 const response = await fetch(

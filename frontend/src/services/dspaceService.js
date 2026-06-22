@@ -631,12 +631,11 @@ class DSpaceService {
 
     async searchItems(query, limit = 100) {
         try {
-            // Add embed=owningCollection to get collection details in one request
+            // Remove embed=owningCollection because it causes DSpace 9 backend to hang under load
             const params = new URLSearchParams({
                 query: query || "*",
                 page: "0",
-                size: String(limit),
-                embed: "owningCollection"
+                size: String(limit)
             });
             const headers = this.getCsrfHeaders({ Accept: "application/json" });
             const token = this.getStoredToken();
