@@ -658,6 +658,34 @@ class DSpaceService {
         }
     }
 
+    async getSearchTotal(query = "*") {
+        try {
+            // Fetch with size 1 and no embedding just to get the totalElements from the page metadata
+            const params = new URLSearchParams({
+                query: query,
+                page: "0",
+                size: "1",
+            });
+            const headers = this.getCsrfHeaders({ Accept: "application/json" });
+            const token = this.getStoredToken();
+            if (token) {
+                headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+            }
+            const response = await this._fetch(`${DSPACE_API_URL}/discover/search/objects?${params}`, {
+                credentials: "include",
+                headers: headers,
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                return data._embedded?.searchResult?.page?.totalElements || 0;
+            }
+            return 0;
+        } catch (error) {
+            return 0;
+        }
+    }
+
     async getItem(itemId) {
         try {
             const headers = this.getCsrfHeaders({ Accept: "application/json" });

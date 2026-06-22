@@ -216,11 +216,8 @@ const Home = () => {
             const collectionsList = await dspaceService.getCollections();
             const totalCols = collectionsList?.length || 0;
 
-            // 2. Fetch search objects and filter strictly for items
-            const searchObjects = await dspaceService.searchItems();
-            const totalCaseFiles = searchObjects?.filter(
-                obj => obj.dspaceObject?.type === 'item' || obj.type === 'item'
-            ).length || 0;
+            // 2. Fetch total items count quickly without loading embedded objects
+            const totalCaseFiles = await dspaceService.getSearchTotal();
 
             let mySubmissionsCount = 0;
             let allowedCollectionsCount = 0;
