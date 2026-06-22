@@ -52,12 +52,14 @@ export const AuthProvider = ({ children }) => {
             } else {
                 // Token might be expired
                 localStorage.removeItem('dspaceAuthToken');
+                localStorage.removeItem('dsAuthInfo');
                 setUser(null);
             }
         } catch (error) {
             console.error("Auth check failed", error);
             setUser(null);
             localStorage.removeItem('dspaceAuthToken');
+            localStorage.removeItem('dsAuthInfo');
         } finally {
             setLoading(false);
         }
@@ -75,6 +77,7 @@ export const AuthProvider = ({ children }) => {
                         setUser(null);
                         localStorage.removeItem('dspaceAuthToken');
                         localStorage.removeItem('djangoToken');
+                        localStorage.removeItem('dsAuthInfo');
                         clearInterval(interval);
                     }
                 } catch (err) {
@@ -141,11 +144,15 @@ export const AuthProvider = ({ children }) => {
             await dspaceService.logout();
             localStorage.removeItem('dspaceAuthToken');
             localStorage.removeItem('djangoToken');
+            localStorage.removeItem('dsAuthInfo');
+            localStorage.removeItem('metadataEditorState');
             setUser(null);
         } catch (error) {
             console.error('Logout error:', error);
             localStorage.removeItem('dspaceAuthToken');
             localStorage.removeItem('djangoToken');
+            localStorage.removeItem('dsAuthInfo');
+            localStorage.removeItem('metadataEditorState');
             setUser(null);
         }
     };
