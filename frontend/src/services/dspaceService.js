@@ -1,6 +1,31 @@
 // Use proxy to avoid CORS issues - proxy forwards /api/dspace to http://localhost:8080/server/api
 const DSPACE_API_URL = "/api/dspace";
 
+const extractBearerToken = (token) => {
+    if (!token) return null;
+    return token.startsWith("Bearer ") ? token.slice("Bearer ".length) : token;
+};
+
+const readTokenExpiration = (token) => {
+    const bearerToken = extractBearerToken(token);
+    if (!bearerToken) return null;
+
+    const [, payload] = bearerToken.split(".");
+    if (!payload) return null;
+
+    try {
+        const normalizedPayload = payload
+            .replace(/-/g, "+")
+            .replace(/_/g, "/")
+            .padEnd(Math.ceil(payload.length / 4) * 4, "=");
+        const decodedPayload = atob(normalizedPayload);
+        const data = JSON.parse(decodedPayload);
+        return typeof data.exp === "number" ? data.exp * 1000 : null;
+    } catch {
+        return null;
+    }
+};
+
 class DSpaceService {
     constructor() {
         this.isAuthenticated = false;
@@ -178,6 +203,50 @@ class DSpaceService {
             }
             return { authenticated: false };
         } catch (error) {
+            return { authenticated: false };
+        }
+    }
+
+    isTokenExpired(bufferMs = 0) {
+        const token = this.getStoredToken();
+        if (!token) return true;
+
+        const expirationTime = readTokenExpiration(token);
+        if (!expirationTime) return true;
+
+        return Date.now() + bufferMs >= expirationTime;
+    }
+
+    async refreshAuthentication() {
+        const currentToken = this.getStoredToken();
+        if (!currentToken) {
+            this.isAuthenticated = false;
+            return { authenticated: false };
+        }
+
+        const headers = this.getCsrfHeaders({ Accept: "application/json" });
+        headers["Authorization"] = currentToken.startsWith("Bearer ") ? currentToken : `Bearer ${currentToken}`;
+
+        try {
+            const response = await this._fetch(`${DSPACE_API_URL}/authn/login`, {
+                method: "POST",
+                credentials: "include",
+                headers: headers,
+            });
+
+            if (!response.ok || !this.authToken) {
+                this.isAuthenticated = false;
+                return { authenticated: false };
+            }
+
+            const status = await this.checkAuthStatus();
+            return {
+                ...status,
+                authenticated: status.authenticated !== false,
+                refreshed: true,
+            };
+        } catch (error) {
+            this.isAuthenticated = false;
             return { authenticated: false };
         }
     }

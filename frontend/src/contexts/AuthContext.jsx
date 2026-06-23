@@ -1,4 +1,8 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+
+const SESSION_CHECK_INTERVAL = 60 * 1000;
+const ACTIVE_SESSION_WINDOW = 5 * 60 * 1000;
+const REFRESH_BEFORE_EXPIRY = 10 * 60 * 1000;
 import dspaceService from '../services/dspaceService';
 import axios from 'axios';
 
@@ -21,8 +25,10 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
+    const lastActivityRef = useRef(Date.now());
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const hasUser = Boolean(user);
 
     useEffect(() => {
         checkAuth();
@@ -66,29 +72,75 @@ export const AuthProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        let interval;
-        if (user && user.authenticated) {
-            // Heartbeat: Ping DSpace every 5 minutes to keep the session alive
-            interval = setInterval(async () => {
-                try {
-                    const status = await dspaceService.checkAuthStatus();
-                    if (!status.authenticated) {
-                        console.warn("Backend session expired. Logging out.");
-                        setUser(null);
-                        localStorage.removeItem('dspaceAuthToken');
-                        localStorage.removeItem('djangoToken');
-                        localStorage.removeItem('dsAuthInfo');
-                        clearInterval(interval);
-                    }
-                } catch (err) {
-                    console.error("Heartbeat failed", err);
-                }
-            }, 5 * 60 * 1000);
-        }
-        return () => {
-            if (interval) clearInterval(interval);
+        const updateActivity = () => {
+            lastActivityRef.current = Date.now();
         };
-    }, [user]);
+        const activityEvents = [
+            "click",
+            "keydown",
+            "mousemove",
+            "scroll",
+            "touchstart",
+            "visibilitychange",
+        ];
+
+        activityEvents.forEach((eventName) => {
+            window.addEventListener(eventName, updateActivity, { passive: true });
+        });
+
+        return () => {
+            activityEvents.forEach((eventName) => {
+                window.removeEventListener(eventName, updateActivity);
+            });
+        };
+    }, []);
+
+    const clearAuthState = useCallback(() => {
+        setUser(null);
+        localStorage.removeItem('dspaceAuthToken');
+        localStorage.removeItem('djangoToken');
+        localStorage.removeItem('dsAuthInfo');
+    }, []);
+
+    const refreshSession = useCallback(async () => {
+        try {
+            const status = await dspaceService.refreshAuthentication();
+            if (status.authenticated) {
+                return true;
+            }
+        } catch (error) {
+            console.error("Session refresh failed", error);
+        }
+
+        clearAuthState();
+        return false;
+    }, [clearAuthState]);
+
+    useEffect(() => {
+        if (!hasUser) return;
+
+        const verifySession = async () => {
+            if (dspaceService.isTokenExpired()) {
+                clearAuthState();
+                return;
+            }
+
+            const userIsActive =
+                Date.now() - lastActivityRef.current <= ACTIVE_SESSION_WINDOW;
+            if (userIsActive && dspaceService.isTokenExpired(REFRESH_BEFORE_EXPIRY)) {
+                await refreshSession();
+                return;
+            }
+        };
+
+        verifySession();
+        const heartbeatInterval = setInterval(
+            verifySession,
+            SESSION_CHECK_INTERVAL,
+        );
+
+        return () => clearInterval(heartbeatInterval);
+    }, [hasUser, clearAuthState, refreshSession]);
 
     const login = async (email, password) => {
         try {
