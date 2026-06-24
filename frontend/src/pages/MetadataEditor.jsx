@@ -23,8 +23,8 @@ import {
   X,
 } from "lucide-react";
 import dspaceService from "../services/dspaceService";
-import { EthiopianDatePicker } from 'ethiopian-date-picker-and-converter';
-import 'ethiopian-date-picker-and-converter/dist/cjs/style.css';
+import { EthiopianDatePicker } from "ethiopian-date-picker-and-converter";
+import "ethiopian-date-picker-and-converter/dist/cjs/style.css";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -152,6 +152,7 @@ const MetadataEditor = () => {
 
   // Traditional Page One
   const [fileNumber, setFileNumber] = useState("");
+  const [fileNumberStatus, setFileNumberStatus] = useState("idle"); // idle | checking | valid | duplicate
   const [caseType, setCaseType] = useState("");
   const [plaintiffs, setPlaintiffs] = useState([""]);
   const [defendants, setDefendants] = useState([""]);
@@ -173,24 +174,24 @@ const MetadataEditor = () => {
   const formatEthioDateString = (dateStr) => {
     if (!dateStr) return dateStr;
     const ethioMonths = {
-      "መስከረም": "01",
-      "ጥቅምት": "02",
-      "ኅዳር": "03",
-      "ታኅሣሥ": "04",
-      "ጥር": "05",
-      "የካቲት": "06",
-      "መጋቢት": "07",
-      "ሚያዝያ": "08",
-      "ግንቦት": "09",
-      "ሰኔ": "10",
-      "ሐምሌ": "11",
-      "ነሐሴ": "12",
-      "ጳጉሜን": "13",
-      "ጳጉሜ": "13"
+      መስከረም: "01",
+      ጥቅምት: "02",
+      ኅዳር: "03",
+      ታኅሣሥ: "04",
+      ጥር: "05",
+      የካቲት: "06",
+      መጋቢት: "07",
+      ሚያዝያ: "08",
+      ግንቦት: "09",
+      ሰኔ: "10",
+      ሐምሌ: "11",
+      ነሐሴ: "12",
+      ጳጉሜን: "13",
+      ጳጉሜ: "13",
     };
     const parts = dateStr.trim().split(" ");
     if (parts.length === 3) {
-      const day = parts[0].padStart(2, '0');
+      const day = parts[0].padStart(2, "0");
       const monthName = parts[1].trim();
       const year = parts[2];
       const month = ethioMonths[monthName];
@@ -204,12 +205,12 @@ const MetadataEditor = () => {
   const handleManualEthioDateChange = (e) => {
     const val = e.target.value;
     setManualEthioDate(val);
-    
+
     // Parse DD/MM/YYYY
-    const parts = val.split('/');
+    const parts = val.split("/");
     if (parts.length === 3 && parts[2].length === 4) {
-      const day = parts[0].padStart(2, '0');
-      const month = parts[1].padStart(2, '0');
+      const day = parts[0].padStart(2, "0");
+      const month = parts[1].padStart(2, "0");
       const year = parts[2];
       setRegistrationAmDate(`${year}-${month}-${day}`);
     } else {
@@ -218,16 +219,16 @@ const MetadataEditor = () => {
   };
 
   const handlePickerDateChange = (date) => {
-    if (!date || typeof date !== 'string' || date.includes('undefined')) return;
-    
+    if (!date || typeof date !== "string" || date.includes("undefined")) return;
+
     // Ignore incomplete dates like just the year
     if (date.trim().length === 4 && !isNaN(date.trim())) {
-      return; 
+      return;
     }
 
     const formatted = formatEthioDateString(date);
-    if (formatted && formatted.includes('-')) {
-      const parts = formatted.split('-');
+    if (formatted && formatted.includes("-")) {
+      const parts = formatted.split("-");
       if (parts.length === 3) {
         const [y, m, d] = parts;
         setRegistrationAmDate(formatted);
@@ -271,13 +272,17 @@ const MetadataEditor = () => {
         if (parsed.caseType) setCaseType(parsed.caseType);
         if (parsed.plaintiffs) setPlaintiffs(parsed.plaintiffs);
         if (parsed.defendants) setDefendants(parsed.defendants);
-        if (parsed.caseRepresentatives) setCaseRepresentatives(parsed.caseRepresentatives);
-        if (parsed.lowerCourtFileNumber) setLowerCourtFileNumber(parsed.lowerCourtFileNumber);
+        if (parsed.caseRepresentatives)
+          setCaseRepresentatives(parsed.caseRepresentatives);
+        if (parsed.lowerCourtFileNumber)
+          setLowerCourtFileNumber(parsed.lowerCourtFileNumber);
         if (parsed.caseStatus) setCaseStatus(parsed.caseStatus);
         if (parsed.benchSession) setBenchSession(parsed.benchSession);
         if (parsed.location) setLocation(parsed.location);
-        if (parsed.registrationDate) setRegistrationDate(parsed.registrationDate);
-        if (parsed.registrationAmDate) setRegistrationAmDate(parsed.registrationAmDate);
+        if (parsed.registrationDate)
+          setRegistrationDate(parsed.registrationDate);
+        if (parsed.registrationAmDate)
+          setRegistrationAmDate(parsed.registrationAmDate);
         if (parsed.manualEthioDate) setManualEthioDate(parsed.manualEthioDate);
         if (parsed.shelfNumber) setShelfNumber(parsed.shelfNumber);
         if (parsed.rowNumber) setRowNumber(parsed.rowNumber);
@@ -291,17 +296,47 @@ const MetadataEditor = () => {
 
   useEffect(() => {
     const stateToSave = {
-      collectionId, title, description, fileNumber, caseType,
-      plaintiffs, defendants, caseRepresentatives, lowerCourtFileNumber,
-      caseStatus, benchSession, location, registrationDate, registrationAmDate,
-      manualEthioDate, shelfNumber, rowNumber, colNumber, rfid
+      collectionId,
+      title,
+      description,
+      fileNumber,
+      caseType,
+      plaintiffs,
+      defendants,
+      caseRepresentatives,
+      lowerCourtFileNumber,
+      caseStatus,
+      benchSession,
+      location,
+      registrationDate,
+      registrationAmDate,
+      manualEthioDate,
+      shelfNumber,
+      rowNumber,
+      colNumber,
+      rfid,
     };
     localStorage.setItem("metadataEditorState", JSON.stringify(stateToSave));
   }, [
-    collectionId, title, description, fileNumber, caseType,
-    plaintiffs, defendants, caseRepresentatives, lowerCourtFileNumber,
-    caseStatus, benchSession, location, registrationDate, registrationAmDate,
-    manualEthioDate, shelfNumber, rowNumber, colNumber, rfid
+    collectionId,
+    title,
+    description,
+    fileNumber,
+    caseType,
+    plaintiffs,
+    defendants,
+    caseRepresentatives,
+    lowerCourtFileNumber,
+    caseStatus,
+    benchSession,
+    location,
+    registrationDate,
+    registrationAmDate,
+    manualEthioDate,
+    shelfNumber,
+    rowNumber,
+    colNumber,
+    rfid,
   ]);
 
   useEffect(() => {
@@ -317,10 +352,36 @@ const MetadataEditor = () => {
   }, []);
 
   useEffect(() => {
-      if (!collectionId) {
-        setCaseType(""); // Clear if no collection is selected
+    if (!fileNumber) {
+      setFileNumberStatus("idle");
+      return;
+    }
+
+    setFileNumberStatus("checking");
+
+    let isCurrent = true;
+    const timer = setTimeout(async () => {
+      const currentFileNumber = fileNumber.trim();
+      const exists = await dspaceService.checkFileNumberExists(currentFileNumber);
+      if (!isCurrent) return;
+      if (exists) {
+        setFileNumberStatus("duplicate");
+      } else {
+        setFileNumberStatus("valid");
       }
-    }, [collectionId, collections]);
+    }, 500);
+
+    return () => {
+      isCurrent = false;
+      clearTimeout(timer);
+    };
+  }, [fileNumber]);
+
+  useEffect(() => {
+    if (!collectionId) {
+      setCaseType(""); // Clear if no collection is selected
+    }
+  }, [collectionId, collections]);
 
   const selectedFile = files.find((f) => f.id === selectedFileId);
 
@@ -329,13 +390,13 @@ const MetadataEditor = () => {
 
     const processedFiles = await Promise.all(
       uploadedFiles.map(async (file) => {
-        
         // 1. Strip the extension from the file name for the Title input
-        const titleWithoutExtension = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+        const titleWithoutExtension =
+          file.name.substring(0, file.name.lastIndexOf(".")) || file.name;
 
         // 2. Auto-calculate PDF pages
-        let calculatedPageCount = 1; 
-        if (file.type === 'application/pdf') {
+        let calculatedPageCount = 1;
+        if (file.type === "application/pdf") {
           try {
             const arrayBuffer = await file.arrayBuffer();
             // Make sure pdfjsLib is imported at the top of your file!
@@ -349,7 +410,7 @@ const MetadataEditor = () => {
         // 3. Return the fully constructed file object
         return {
           id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          name: file.name, 
+          name: file.name,
           type: file.type,
           size: file.size,
           lastModified: new Date(file.lastModified),
@@ -363,7 +424,7 @@ const MetadataEditor = () => {
             pageCount: calculatedPageCount, // Injected correctly here
           },
         };
-      })
+      }),
     );
 
     const updatedFiles = [...files, ...processedFiles];
@@ -413,6 +474,15 @@ const MetadataEditor = () => {
     }
 
     try {
+      setFileNumberStatus("checking");
+      const duplicateExists = await dspaceService.checkFileNumberExists(fileNumber);
+      if (duplicateExists) {
+        setFileNumberStatus("duplicate");
+        alert("Upload blocked: this case file number already exists.");
+        return;
+      }
+      setFileNumberStatus("valid");
+
       // 1. Create workspace item
       const workspaceItem =
         await dspaceService.createWorkspaceItem(collectionId);
@@ -458,8 +528,14 @@ const MetadataEditor = () => {
           fileItem.fileObject,
         );
         if (bitstream && bitstream.uuid) {
-          if (fileItem.id === primaryFileId || (!primaryFileId && files[0].id === fileItem.id)) {
-            await dspaceService.setWorkspaceItemPrimaryBitstream(workspaceItemId, bitstream.uuid);
+          if (
+            fileItem.id === primaryFileId ||
+            (!primaryFileId && files[0].id === fileItem.id)
+          ) {
+            await dspaceService.setWorkspaceItemPrimaryBitstream(
+              workspaceItemId,
+              bitstream.uuid,
+            );
           }
           await dspaceService.updateBitstreamMetadata(
             bitstream.uuid,
@@ -566,7 +642,6 @@ const MetadataEditor = () => {
       return url;
     }
   };
-
 
   // --- Rotate ---
   const handleRotate = async (angle) => {
@@ -932,7 +1007,12 @@ const MetadataEditor = () => {
             </div>
             <button
               onClick={handleFinalUpload}
-              disabled={uploading || files.length === 0}
+              disabled={
+                uploading ||
+                files.length === 0 ||
+                fileNumberStatus === "checking" ||
+                fileNumberStatus === "duplicate"
+              }
               className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:bg-gray-400"
             >
               {uploading ? "Uploading..." : "Submit"}
@@ -1004,444 +1084,486 @@ const MetadataEditor = () => {
                       <p className="text-xs text-gray-500 mt-1">
                         Primary identification is mandatory. [cite: 25]
                       </p>
+                      {fileNumberStatus === "checking" && (
+                        <p className="text-xs text-yellow-600 mt-1 flex items-center">
+                          <span className="w-3 h-3 mr-1 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin"></span>{" "}
+                          Checking...
+                        </p>
+                      )}
+                      {fileNumberStatus === "valid" && (
+                        <p className="text-xs text-green-600 mt-1 font-medium">
+                          ✓ Valid - no duplications
+                        </p>
+                      )}
+                      {fileNumberStatus === "duplicate" && (
+                        <p className="text-xs text-red-600 mt-1 font-medium">
+                          ✗ This case file already exists
+                        </p>
+                      )}
                     </div>
-                    <div>
-                      <label
-                        htmlFor="caseType"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        የጉዳዩ አይነት
-                        <span className="text-red-500 ml-1">*</span>
-                      </label>
-                      <select
-                        id="caseType"
-                        value={caseType}
-                        onChange={(e) => setCaseType(e.target.value)}
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                      >
-                        <option value="">Select Type</option>
-                        {VALUE_PAIRS.case_types.map((t) => (
-                          <option key={t.value} value={t.value}>
-                            {t.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <fieldset
+                      className="contents"
+                      disabled={
+                        fileNumberStatus !== "valid" && fileNumber !== ""
+                      }
+                    >
+                      <div>
+                        <label
+                          htmlFor="caseType"
+                          className="block text-sm font-medium text-gray-700"
+                        >
+                          የጉዳዩ አይነት
+                          <span className="text-red-500 ml-1">*</span>
+                        </label>
+                        <select
+                          id="caseType"
+                          value={caseType}
+                          onChange={(e) => setCaseType(e.target.value)}
+                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                        >
+                          <option value="">Select Type</option>
+                          {VALUE_PAIRS.case_types.map((t) => (
+                            <option key={t.value} value={t.value}>
+                              {t.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </fieldset>
                   </div>
-                  <div className="mt-4 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <RepeatableField
-                          label={
-                            <>
-                              ከሳሽ/አመልካች
-                              <span className="text-red-500 ml-1">*</span>
-                            </>
-                          }
-                          values={plaintiffs}
-                          setValues={setPlaintiffs}
-                          placeholder="Enter plaintiff name"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          The party initiating the legal action. (ከሳሽ ወይም አመልካች)
-                          [cite: 57, 73]
-                        </p>
-                      </div>
-                      <div>
-                        <RepeatableField
-                          label={
-                            <>
-                              ተከሳሽ/መልስ ሰጪ
-                              <span className="text-red-500 ml-1">*</span>
-                            </>
-                          }
-                          values={defendants}
-                          setValues={setDefendants}
-                          placeholder="Enter defendant name"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          The party against whom the action is brought. (ተከሳሽ ወይም
-                          መልስ ሰጪ) [cite: 57, 74]
-                        </p>
-                      </div>
-                    </div>
-
-                    <RepeatableField
-                      label="የሕግ ወኪል/ጠበቃ"
-                      values={caseRepresentatives}
-                      setValues={setCaseRepresentatives}
-                      placeholder="Enter representative name"
-                    />
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        መዝገቡ የተከፈተበት ቀን
-                      </label>
-                      <input
-                        type="date"
-                        value={registrationDate}
-                        onChange={(e) => setRegistrationDate(e.target.value)}
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        መዝገቡ የተከፈተበት ቀን (Ethiopian Date)
-                      </label>
-                      <div className="mt-1 relative flex items-center">
-                        <input
-                          type="text"
-                          placeholder="DD/MM/YYYY"
-                          value={manualEthioDate}
-                          onChange={handleManualEthioDateChange}
-                          className="block w-full p-2 border border-gray-300 rounded-md pr-10 focus:ring-1 focus:ring-blue-500"
-                        />
-                        <div className="absolute right-0 top-0 h-full w-10 flex items-center justify-center overflow-visible">
-                          <div className="ethiopian-calendar-fix ethiopian-picker-hidden-input absolute inset-0 z-20 w-full h-full flex items-center justify-center cursor-pointer">
-                            <EthiopianDatePicker 
-                              id="registrationAmDate" 
-                              placeholder="" 
-                              onDateChange={handlePickerDateChange} 
-                            />
-                          </div>
-                          <div className="z-10 text-gray-500 pointer-events-none">
-                            📅
-                          </div>
+                  <fieldset
+                    className="contents"
+                    disabled={fileNumberStatus !== "valid" && fileNumber !== ""}
+                  >
+                    <div className="mt-4 space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <RepeatableField
+                            label={
+                              <>
+                                ከሳሽ/አመልካች
+                                <span className="text-red-500 ml-1">*</span>
+                              </>
+                            }
+                            values={plaintiffs}
+                            setValues={setPlaintiffs}
+                            placeholder="Enter plaintiff name"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            The party initiating the legal action. (ከሳሽ ወይም
+                            አመልካች) [cite: 57, 73]
+                          </p>
+                        </div>
+                        <div>
+                          <RepeatableField
+                            label={
+                              <>
+                                ተከሳሽ/መልስ ሰጪ
+                                <span className="text-red-500 ml-1">*</span>
+                              </>
+                            }
+                            values={defendants}
+                            setValues={setDefendants}
+                            placeholder="Enter defendant name"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            The party against whom the action is brought. (ተከሳሽ
+                            ወይም መልስ ሰጪ) [cite: 57, 74]
+                          </p>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">Format: DD/MM/YYYY (or click icon)</p>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="border-t border-gray-200 pt-6">
-                  <h3 className="text-md font-semibold text-gray-800 mb-4">
-                    ተጨማሪ ዝርዝር መረጃ
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label
-                        htmlFor="lowerCourtFileNumber"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        የስር ፍርድ ቤት የመዝገብ ቁጥር
-                      </label>
-                      <input
-                        id="lowerCourtFileNumber"
-                        type="text"
-                        value={lowerCourtFileNumber}
-                        onChange={(e) => setLowerCourtFileNumber(e.target.value)}
-                        required
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                        placeholder="የስር ፍርድ ቤት መዝገብ ቁጥር..."
+                      <RepeatableField
+                        label="የሕግ ወኪል/ጠበቃ"
+                        values={caseRepresentatives}
+                        setValues={setCaseRepresentatives}
+                        placeholder="Enter representative name"
                       />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="caseStatus"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        የመዝገቡ ሁኔታ
-                      </label>
-                      <select
-                        id="caseStatus"
-                        value={caseStatus}
-                        onChange={(e) => setCaseStatus(e.target.value)}
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                      >
-                        <option value="">Select Status</option>
-                        {VALUE_PAIRS.case_status_types.map((s) => (
-                          <option key={s.value} value={s.value}>
-                            {s.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="benchSession"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        ችሎት
-                      </label>
-                      <select
-                        id="benchSession"
-                        value={benchSession}
-                        onChange={(e) => setBenchSession(e.target.value)}
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                      >
-                        <option value="">Select Bench</option>
-                        {VALUE_PAIRS.court_adjured_locations.map((loc) => (
-                          <option key={loc.value} value={loc.value}>
-                            {loc.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <label
-                      htmlFor="description"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      የሰነዱ ዝርዝር መግለጫ
-                    </label>
-                    <textarea
-                      id="description"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      rows="3"
-                      className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                      placeholder="ስለ ሰነዱ አጭር መግለጫ እዚህ ያስገቡ..."
-                    ></textarea>
-                  </div>
-                </div>
 
-                <div className="border-t border-gray-200 pt-6">
-                  <h3 className="text-md font-semibold text-gray-800 mb-4">
-                    የመዝገቡ መገኛ እና መደርደሪያ
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label
-                        htmlFor="location"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        የመዝገቡ መገኛ
-                      </label>
-                      <select
-                        id="location"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                      >
-                        <option value="">Select Location</option>
-                        {VALUE_PAIRS.court_locations.map((loc) => (
-                          <option key={loc.value} value={loc.value}>
-                            {loc.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="shelfNumber"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        የመደርደሪያ ቁጥር
-                      </label>
-                      <input
-                        id="shelfNumber"
-                        type="text"
-                        value={shelfNumber}
-                        onChange={(e) => setShelfNumber(e.target.value)}
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="rowNumber"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        የረድፍ ቁጥር
-                      </label>
-                      <input
-                        id="rowNumber"
-                        type="text"
-                        value={rowNumber}
-                        onChange={(e) => setRowNumber(e.target.value)}
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="colNumber"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        አምድ ቁጥር
-                      </label>
-                      <input
-                        id="colNumber"
-                        type="text"
-                        value={colNumber}
-                        onChange={(e) => setColNumber(e.target.value)}
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="rfid"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        RFID Tag
-                      </label>
-                      <input
-                        id="rfid"
-                        type="text"
-                        value={rfid}
-                        onChange={(e) => setRfid(e.target.value)}
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* File List Section */}
-                <div className="border-t border-gray-200 pt-6">
-                  <label className="block text-sm font-bold text-gray-800 mb-4 uppercase tracking-tighter">
-                    መዝገብ ፋይሎች
-                  </label>
-                  {files.length > 0 ? (
-                    <div className="space-y-6">
-                      {files.map((file) => (
-                        <div
-                          key={file.id}
-                          className={`p-4 rounded-lg border-2 transition-all ${
-                            selectedFileId === file.id
-                              ? "border-blue-400 bg-blue-50/30"
-                              : "border-gray-200 bg-white shadow-sm"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
-                            <div className="flex items-center overflow-hidden">
-                              <div className="mr-3 p-2 bg-gray-100 rounded-md text-gray-600">
-                                {getFileIcon(file.type)}
-                              </div>
-                              <div className="flex flex-col">
-                                <span
-                                  className="text-sm font-bold truncate max-w-[200px]"
-                                  title={file.name}
-                                >
-                                  {file.name}
-                                </span>
-                                <span className="text-[10px] text-gray-400">
-                                  {formatFileSize(file.size)}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-3">
-                              <label className="inline-flex items-center cursor-pointer">
-                                <input
-                                  type="radio"
-                                  name="primaryFile"
-                                  checked={
-                                    primaryFileId === file.id ||
-                                    (!primaryFileId && files[0].id === file.id)
-                                  }
-                                  onChange={() => setPrimaryFileId(file.id)}
-                                  className="form-radio h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                                />
-                                <span className="ml-2 text-xs text-gray-600 font-bold uppercase tracking-tight">
-                                  Set as Primary
-                                </span>
-                              </label>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (
-                                    window.confirm(
-                                      "Are you sure you want to remove this file?"
-                                    )
-                                  ) {
-                                    const newFiles = files.filter(
-                                      (f) => f.id !== file.id
-                                    );
-                                    setFiles(newFiles);
-                                    if (selectedFileId === file.id)
-                                      setSelectedFileId(null);
-                                  }
-                                }}
-                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Updated Grid Layout */}
-                          <div className="grid grid-cols-2 gap-4">
-                            {/* Title - Now takes 1 column instead of 2 */}
-                            <div>
-                              <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">
-                                Title
-                              </label>
-                              <input
-                                type="text"
-                                value={file.metadata.title}
-                                onChange={(e) => {
-                                  const newFiles = [...files];
-                                  const idx = newFiles.findIndex(
-                                    (f) => f.id === file.id
-                                  );
-                                  newFiles[idx].metadata.title = e.target.value;
-                                  setFiles(newFiles);
-                                }}
-                                className="w-full text-sm p-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 outline-none h-9"
-                                placeholder="File Name"
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          መዝገቡ የተከፈተበት ቀን
+                        </label>
+                        <input
+                          type="date"
+                          value={registrationDate}
+                          onChange={(e) => setRegistrationDate(e.target.value)}
+                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          መዝገቡ የተከፈተበት ቀን (Ethiopian Date)
+                        </label>
+                        <div className="mt-1 relative flex items-center">
+                          <input
+                            type="text"
+                            placeholder="DD/MM/YYYY"
+                            value={manualEthioDate}
+                            onChange={handleManualEthioDateChange}
+                            className="block w-full p-2 border border-gray-300 rounded-md pr-10 focus:ring-1 focus:ring-blue-500"
+                          />
+                          <div className="absolute right-0 top-0 h-full w-10 flex items-center justify-center overflow-visible">
+                            <div className="ethiopian-calendar-fix ethiopian-picker-hidden-input absolute inset-0 z-20 w-full h-full flex items-center justify-center cursor-pointer">
+                              <EthiopianDatePicker
+                                id="registrationAmDate"
+                                placeholder=""
+                                onDateChange={handlePickerDateChange}
                               />
                             </div>
-                            <div>
-                              <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">
-                                የሰነዱ ዓይነት
-                              </label>
-                              <select
-                                value={file.metadata.type}
-                                onChange={(e) => {
-                                  const newFiles = [...files];
-                                  const idx = newFiles.findIndex(
-                                    (f) => f.id === file.id
-                                  );
-                                  newFiles[idx].metadata.type = e.target.value;
-                                  setFiles(newFiles);
-                                }}
-                                className="w-full text-xs p-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 outline-none h-9"
-                              >
-                                <option value="">Select Type</option>
-                                {VALUE_PAIRS.document_types.map((opt) => (
-                                  <option key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-
-                            {/* Description - Takes full width below */}
-                            <div className="col-span-2">
-                              <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">
-                                መግለጫ
-                              </label>
-                              <textarea
-                                value={file.metadata.description}
-                                onChange={(e) => {
-                                  const newFiles = [...files];
-                                  const idx = newFiles.findIndex(
-                                    (f) => f.id === file.id
-                                  );
-                                  newFiles[idx].metadata.description =
-                                    e.target.value;
-                                  setFiles(newFiles);
-                                }}
-                                rows="2"
-                                className="w-full text-sm p-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 outline-none min-h-[60px]"
-                                placeholder="ስለ ሰነዱ አጭር መግለጫ እዚህ ያስገቡ..."
-                              ></textarea>
+                            <div className="z-10 text-gray-500 pointer-events-none">
+                              📅
                             </div>
                           </div>
                         </div>
-                      ))}
+                        <p className="text-xs text-gray-400 mt-1">
+                          Format: DD/MM/YYYY (or click icon)
+                        </p>
+                      </div>
                     </div>
-                  ) : (
-                    <p className="text-sm text-gray-500 italic">
-                      No files selected.
-                    </p>
-                  )}
+                  </fieldset>
                 </div>
+
+                <fieldset
+                  className="contents"
+                  disabled={fileNumberStatus !== "valid" && fileNumber !== ""}
+                >
+                  <div className="border-t border-gray-200 pt-6">
+                    <h3 className="text-md font-semibold text-gray-800 mb-4">
+                      ተጨማሪ ዝርዝር መረጃ
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label
+                          htmlFor="lowerCourtFileNumber"
+                          className="block text-sm font-medium text-gray-700"
+                        >
+                          የስር ፍርድ ቤት የመዝገብ ቁጥር
+                        </label>
+                        <input
+                          id="lowerCourtFileNumber"
+                          type="text"
+                          value={lowerCourtFileNumber}
+                          onChange={(e) =>
+                            setLowerCourtFileNumber(e.target.value)
+                          }
+                          required
+                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                          placeholder="የስር ፍርድ ቤት መዝገብ ቁጥር..."
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="caseStatus"
+                          className="block text-sm font-medium text-gray-700"
+                        >
+                          የመዝገቡ ሁኔታ
+                        </label>
+                        <select
+                          id="caseStatus"
+                          value={caseStatus}
+                          onChange={(e) => setCaseStatus(e.target.value)}
+                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                        >
+                          <option value="">Select Status</option>
+                          {VALUE_PAIRS.case_status_types.map((s) => (
+                            <option key={s.value} value={s.value}>
+                              {s.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="benchSession"
+                          className="block text-sm font-medium text-gray-700"
+                        >
+                          ችሎት
+                        </label>
+                        <select
+                          id="benchSession"
+                          value={benchSession}
+                          onChange={(e) => setBenchSession(e.target.value)}
+                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        >
+                          <option value="">Select Bench</option>
+                          {VALUE_PAIRS.court_adjured_locations.map((loc) => (
+                            <option key={loc.value} value={loc.value}>
+                              {loc.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <label
+                        htmlFor="description"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        የሰነዱ ዝርዝር መግለጫ
+                      </label>
+                      <textarea
+                        id="description"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        rows="3"
+                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                        placeholder="ስለ ሰነዱ አጭር መግለጫ እዚህ ያስገቡ..."
+                      ></textarea>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-gray-200 pt-6">
+                    <h3 className="text-md font-semibold text-gray-800 mb-4">
+                      የመዝገቡ መገኛ እና መደርደሪያ
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label
+                          htmlFor="location"
+                          className="block text-sm font-medium text-gray-700"
+                        >
+                          የመዝገቡ መገኛ
+                        </label>
+                        <select
+                          id="location"
+                          value={location}
+                          onChange={(e) => setLocation(e.target.value)}
+                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                        >
+                          <option value="">Select Location</option>
+                          {VALUE_PAIRS.court_locations.map((loc) => (
+                            <option key={loc.value} value={loc.value}>
+                              {loc.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="shelfNumber"
+                          className="block text-sm font-medium text-gray-700"
+                        >
+                          የመደርደሪያ ቁጥር
+                        </label>
+                        <input
+                          id="shelfNumber"
+                          type="text"
+                          value={shelfNumber}
+                          onChange={(e) => setShelfNumber(e.target.value)}
+                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="rowNumber"
+                          className="block text-sm font-medium text-gray-700"
+                        >
+                          የረድፍ ቁጥር
+                        </label>
+                        <input
+                          id="rowNumber"
+                          type="text"
+                          value={rowNumber}
+                          onChange={(e) => setRowNumber(e.target.value)}
+                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="colNumber"
+                          className="block text-sm font-medium text-gray-700"
+                        >
+                          አምድ ቁጥር
+                        </label>
+                        <input
+                          id="colNumber"
+                          type="text"
+                          value={colNumber}
+                          onChange={(e) => setColNumber(e.target.value)}
+                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="rfid"
+                          className="block text-sm font-medium text-gray-700"
+                        >
+                          RFID Tag
+                        </label>
+                        <input
+                          id="rfid"
+                          type="text"
+                          value={rfid}
+                          onChange={(e) => setRfid(e.target.value)}
+                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* File List Section */}
+                  <div className="border-t border-gray-200 pt-6">
+                    <label className="block text-sm font-bold text-gray-800 mb-4 uppercase tracking-tighter">
+                      መዝገብ ፋይሎች
+                    </label>
+                    {files.length > 0 ? (
+                      <div className="space-y-6">
+                        {files.map((file) => (
+                          <div
+                            key={file.id}
+                            className={`p-4 rounded-lg border-2 transition-all ${
+                              selectedFileId === file.id
+                                ? "border-blue-400 bg-blue-50/30"
+                                : "border-gray-200 bg-white shadow-sm"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
+                              <div className="flex items-center overflow-hidden">
+                                <div className="mr-3 p-2 bg-gray-100 rounded-md text-gray-600">
+                                  {getFileIcon(file.type)}
+                                </div>
+                                <div className="flex flex-col">
+                                  <span
+                                    className="text-sm font-bold truncate max-w-[200px]"
+                                    title={file.name}
+                                  >
+                                    {file.name}
+                                  </span>
+                                  <span className="text-[10px] text-gray-400">
+                                    {formatFileSize(file.size)}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-3">
+                                <label className="inline-flex items-center cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name="primaryFile"
+                                    checked={
+                                      primaryFileId === file.id ||
+                                      (!primaryFileId &&
+                                        files[0].id === file.id)
+                                    }
+                                    onChange={() => setPrimaryFileId(file.id)}
+                                    className="form-radio h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                  />
+                                  <span className="ml-2 text-xs text-gray-600 font-bold uppercase tracking-tight">
+                                    Set as Primary
+                                  </span>
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (
+                                      window.confirm(
+                                        "Are you sure you want to remove this file?",
+                                      )
+                                    ) {
+                                      const newFiles = files.filter(
+                                        (f) => f.id !== file.id,
+                                      );
+                                      setFiles(newFiles);
+                                      if (selectedFileId === file.id)
+                                        setSelectedFileId(null);
+                                    }
+                                  }}
+                                  className="p-1.5 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Updated Grid Layout */}
+                            <div className="grid grid-cols-2 gap-4">
+                              {/* Title - Now takes 1 column instead of 2 */}
+                              <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">
+                                  Title
+                                </label>
+                                <input
+                                  type="text"
+                                  value={file.metadata.title}
+                                  onChange={(e) => {
+                                    const newFiles = [...files];
+                                    const idx = newFiles.findIndex(
+                                      (f) => f.id === file.id,
+                                    );
+                                    newFiles[idx].metadata.title =
+                                      e.target.value;
+                                    setFiles(newFiles);
+                                  }}
+                                  className="w-full text-sm p-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 outline-none h-9"
+                                  placeholder="File Name"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">
+                                  የሰነዱ ዓይነት
+                                </label>
+                                <select
+                                  value={file.metadata.type}
+                                  onChange={(e) => {
+                                    const newFiles = [...files];
+                                    const idx = newFiles.findIndex(
+                                      (f) => f.id === file.id,
+                                    );
+                                    newFiles[idx].metadata.type =
+                                      e.target.value;
+                                    setFiles(newFiles);
+                                  }}
+                                  className="w-full text-xs p-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 outline-none h-9"
+                                >
+                                  <option value="">Select Type</option>
+                                  {VALUE_PAIRS.document_types.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                      {opt.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {/* Description - Takes full width below */}
+                              <div className="col-span-2">
+                                <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">
+                                  መግለጫ
+                                </label>
+                                <textarea
+                                  value={file.metadata.description}
+                                  onChange={(e) => {
+                                    const newFiles = [...files];
+                                    const idx = newFiles.findIndex(
+                                      (f) => f.id === file.id,
+                                    );
+                                    newFiles[idx].metadata.description =
+                                      e.target.value;
+                                    setFiles(newFiles);
+                                  }}
+                                  rows="2"
+                                  className="w-full text-sm p-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 outline-none min-h-[60px]"
+                                  placeholder="ስለ ሰነዱ አጭር መግለጫ እዚህ ያስገቡ..."
+                                ></textarea>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 italic">
+                        No files selected.
+                      </p>
+                    )}
+                  </div>
+                </fieldset>
               </form>
             ) : (
               <div className="text-center text-gray-500 pt-16">
                 <FileText size={48} className="mx-auto mb-4" />
                 <h3 className="text-lg font-semibold">የተመረጠ ፋይል የለም</h3>
-                <p>እባክዎ መጀመሪያ ፋይል ይጫኑ (Upload)፤ ከዚያም ሜታዳታውን ለማስተካከል ፋይሉን ይምረጡ።</p>
+                <p>
+                  እባክዎ መጀመሪያ ፋይል ይጫኑ (Upload)፤ ከዚያም ሜታዳታውን ለማስተካከል ፋይሉን ይምረጡ።
+                </p>
               </div>
             )}
           </div>

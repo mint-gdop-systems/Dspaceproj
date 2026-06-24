@@ -726,7 +726,15 @@ class DSpaceService {
         }
     }
 
-    async getSearchTotal(query = "*") {
+    buildExactMetadataQuery(field, value) {
+        const escapedValue = String(value)
+            .trim()
+            .replace(/\\/g, "\\\\")
+            .replace(/"/g, '\\"');
+        return `${field}:"${escapedValue}"`;
+    }
+
+    async getSearchTotal(query = "*", options = {}) {
         try {
             // Fetch with size 1 and no embedding just to get the totalElements from the page metadata
             const params = new URLSearchParams({
@@ -734,6 +742,9 @@ class DSpaceService {
                 page: "0",
                 size: "1",
             });
+            if (options.configuration) {
+                params.set("configuration", options.configuration);
+            }
             const headers = this.getCsrfHeaders({ Accept: "application/json" });
             const token = this.getStoredToken();
             if (token) {
@@ -751,6 +762,27 @@ class DSpaceService {
             return 0;
         } catch (error) {
             return 0;
+        }
+    }
+
+    async checkFileNumberExists(fileNumber) {
+        const normalizedFileNumber = String(fileNumber || "").trim();
+        if (!normalizedFileNumber) return false;
+        try {
+            const query = this.buildExactMetadataQuery("legal.case.fileNumber", normalizedFileNumber);
+            const totals = await Promise.all([
+                // Archived/public item index.
+                this.getSearchTotal(query),
+                // DSpace 9 in-progress indexes. workflowAdmin is the global admin workflow view;
+                // workflow/workspace catch what the current user is allowed to see.
+                this.getSearchTotal(query, { configuration: "workspace" }),
+                this.getSearchTotal(query, { configuration: "workflow" }),
+                this.getSearchTotal(query, { configuration: "workflowAdmin" }),
+            ]);
+            return totals.some((total) => total > 0);
+        } catch (error) {
+            console.error("Error checking file number existence", error);
+            return false;
         }
     }
 
