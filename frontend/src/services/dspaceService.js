@@ -698,7 +698,7 @@ class DSpaceService {
         }
     }
 
-    async searchItems(query, limit = 100) {
+    async searchItems(query, limit = 20) {
         try {
             // Remove embed=owningCollection because it causes DSpace 9 backend to hang under load
             const params = new URLSearchParams({
