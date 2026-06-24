@@ -295,6 +295,39 @@ const MetadataEditor = () => {
   }, []);
 
   useEffect(() => {
+    // Only search on the frontend if the user is authenticated
+    if (!dspaceService.isAuthenticated && !dspaceService.getStoredToken()) {
+      setFileNumberStatus("idle");
+      return;
+    }
+
+    // Only check if we have a file number
+    if (!fileNumber || fileNumber.trim() === "") {
+      setFileNumberStatus("idle");
+      return;
+    }
+
+    setFileNumberStatus("checking");
+
+    let isCurrent = true;
+    const timer = setTimeout(async () => {
+      const currentFileNumber = fileNumber.trim();
+      const exists = await dspaceService.checkFileNumberExists(currentFileNumber);
+      if (!isCurrent) return;
+      if (exists) {
+        setFileNumberStatus("duplicate");
+      } else {
+        setFileNumberStatus("valid");
+      }
+    }, 500);
+
+    return () => {
+      isCurrent = false;
+      clearTimeout(timer);
+    };
+  }, [fileNumber]);
+
+  useEffect(() => {
     const stateToSave = {
       collectionId,
       title,
@@ -351,31 +384,7 @@ const MetadataEditor = () => {
     fetchDspaceCollections();
   }, []);
 
-  useEffect(() => {
-    if (!fileNumber) {
-      setFileNumberStatus("idle");
-      return;
-    }
 
-    setFileNumberStatus("checking");
-
-    let isCurrent = true;
-    const timer = setTimeout(async () => {
-      const currentFileNumber = fileNumber.trim();
-      const exists = await dspaceService.checkFileNumberExists(currentFileNumber);
-      if (!isCurrent) return;
-      if (exists) {
-        setFileNumberStatus("duplicate");
-      } else {
-        setFileNumberStatus("valid");
-      }
-    }, 500);
-
-    return () => {
-      isCurrent = false;
-      clearTimeout(timer);
-    };
-  }, [fileNumber]);
 
   useEffect(() => {
     if (!collectionId) {

@@ -769,6 +769,11 @@ class DSpaceService {
         const normalizedFileNumber = String(fileNumber || "").trim();
         if (!normalizedFileNumber) return false;
         try {
+            const endpointResult = await this.checkFileNumberExistsViaEndpoint(normalizedFileNumber);
+            if (endpointResult !== null) {
+                return endpointResult;
+            }
+
             const query = this.buildExactMetadataQuery("legal.case.fileNumber", normalizedFileNumber);
             const totals = await Promise.all([
                 // Archived/public item index.
@@ -783,6 +788,35 @@ class DSpaceService {
         } catch (error) {
             console.error("Error checking file number existence", error);
             return false;
+        }
+    }
+
+    async checkFileNumberExistsViaEndpoint(fileNumber) {
+        try {
+            const params = new URLSearchParams({ fileNumber });
+            const headers = this.getCsrfHeaders({ Accept: "application/json" });
+            const token = this.getStoredToken();
+            if (token) {
+                headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+            }
+
+            const response = await this._fetch(`${DSPACE_API_URL}/legal/casefiles/exists?${params}`, {
+                credentials: "include",
+                headers: headers,
+            });
+
+            if (response.status === 404 || response.status === 405) {
+                return null;
+            }
+            if (!response.ok) {
+                throw new Error(`File number endpoint failed: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.exists === true;
+        } catch (error) {
+            console.warn("Falling back to Discovery duplicate check", error);
+            return null;
         }
     }
 
