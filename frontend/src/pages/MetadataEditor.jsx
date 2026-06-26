@@ -408,8 +408,8 @@ const MetadataEditor = () => {
         if (file.type === "application/pdf") {
           try {
             const arrayBuffer = await file.arrayBuffer();
-            // Make sure pdfjsLib is imported at the top of your file!
-            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+            // Use the imported `pdfjs` from react-pdf to read PDF metadata
+            const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
             calculatedPageCount = pdf.numPages;
           } catch (error) {
             console.error("Error calculating PDF pages:", error);
@@ -921,6 +921,7 @@ const MetadataEditor = () => {
       alert("Merge error");
     }
   };
+  const isSectionDisabled = fileNumberStatus !== "valid" && fileNumber !== "";
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
@@ -1112,11 +1113,9 @@ const MetadataEditor = () => {
                     </div>
                     <fieldset
                       className="contents"
-                      disabled={
-                        fileNumberStatus !== "valid" && fileNumber !== ""
-                      }
+                      disabled={isSectionDisabled}
                     >
-                      <div>
+                      <div className={`transition-opacity duration-200 ${isSectionDisabled ? "opacity-50 pointer-events-none" : ""}`}>
                         <label
                           htmlFor="caseType"
                           className="block text-sm font-medium text-gray-700"
@@ -1128,7 +1127,7 @@ const MetadataEditor = () => {
                           id="caseType"
                           value={caseType}
                           onChange={(e) => setCaseType(e.target.value)}
-                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
                         >
                           <option value="">Select Type</option>
                           {VALUE_PAIRS.case_types.map((t) => (
@@ -1142,9 +1141,9 @@ const MetadataEditor = () => {
                   </div>
                   <fieldset
                     className="contents"
-                    disabled={fileNumberStatus !== "valid" && fileNumber !== ""}
+                    disabled={isSectionDisabled}
                   >
-                    <div className="mt-4 space-y-4">
+                    <div className={`mt-4 space-y-4 transition-opacity duration-200 ${isSectionDisabled ? "opacity-50 pointer-events-none" : ""}`}>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <RepeatableField
@@ -1160,7 +1159,7 @@ const MetadataEditor = () => {
                           />
                           <p className="text-xs text-gray-500 mt-1">
                             The party initiating the legal action. (ከሳሽ ወይም
-                            አመልካች) [cite: 57, 73]
+                            አመልካች)
                           </p>
                         </div>
                         <div>
@@ -1177,7 +1176,7 @@ const MetadataEditor = () => {
                           />
                           <p className="text-xs text-gray-500 mt-1">
                             The party against whom the action is brought. (ተከሳሽ
-                            ወይም መልስ ሰጪ) [cite: 57, 74]
+                            ወይም መልስ ሰጪ)
                           </p>
                         </div>
                       </div>
@@ -1197,7 +1196,7 @@ const MetadataEditor = () => {
                           type="date"
                           value={registrationDate}
                           onChange={(e) => setRegistrationDate(e.target.value)}
-                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
                         />
                       </div>
                       <div>
@@ -1210,7 +1209,7 @@ const MetadataEditor = () => {
                             placeholder="DD/MM/YYYY"
                             value={manualEthioDate}
                             onChange={handleManualEthioDateChange}
-                            className="block w-full p-2 border border-gray-300 rounded-md pr-10 focus:ring-1 focus:ring-blue-500"
+                            className="block w-full p-2 border border-gray-300 rounded-md pr-10 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                           />
                           <div className="absolute right-0 top-0 h-full w-10 flex items-center justify-center overflow-visible">
                             <div className="ethiopian-calendar-fix ethiopian-picker-hidden-input absolute inset-0 z-20 w-full h-full flex items-center justify-center cursor-pointer">
@@ -1232,12 +1231,11 @@ const MetadataEditor = () => {
                     </div>
                   </fieldset>
                 </div>
-
                 <fieldset
                   className="contents"
-                  disabled={fileNumberStatus !== "valid" && fileNumber !== ""}
+                  disabled={isSectionDisabled}
                 >
-                  <div className="border-t border-gray-200 pt-6">
+                  <div className={`border-t border-gray-200 pt-6 transition-opacity duration-200 ${isSectionDisabled ? "opacity-50 pointer-events-none" : ""}`}>
                     <h3 className="text-md font-semibold text-gray-800 mb-4">
                       ተጨማሪ ዝርዝር መረጃ
                     </h3>
@@ -1257,7 +1255,7 @@ const MetadataEditor = () => {
                             setLowerCourtFileNumber(e.target.value)
                           }
                           required
-                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
                           placeholder="የስር ፍርድ ቤት መዝገብ ቁጥር..."
                         />
                       </div>
@@ -1272,7 +1270,7 @@ const MetadataEditor = () => {
                           id="caseStatus"
                           value={caseStatus}
                           onChange={(e) => setCaseStatus(e.target.value)}
-                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
                         >
                           <option value="">Select Status</option>
                           {VALUE_PAIRS.case_status_types.map((s) => (
@@ -1293,7 +1291,7 @@ const MetadataEditor = () => {
                           id="benchSession"
                           value={benchSession}
                           onChange={(e) => setBenchSession(e.target.value)}
-                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                         >
                           <option value="">Select Bench</option>
                           {VALUE_PAIRS.court_adjured_locations.map((loc) => (
@@ -1316,13 +1314,13 @@ const MetadataEditor = () => {
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         rows="3"
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
                         placeholder="ስለ ሰነዱ አጭር መግለጫ እዚህ ያስገቡ..."
                       ></textarea>
                     </div>
                   </div>
 
-                  <div className="border-t border-gray-200 pt-6">
+                  <div className={`border-t border-gray-200 pt-6 transition-opacity duration-200 ${isSectionDisabled ? "opacity-50 pointer-events-none" : ""}`}>
                     <h3 className="text-md font-semibold text-gray-800 mb-4">
                       የመዝገቡ መገኛ እና መደርደሪያ
                     </h3>
@@ -1338,7 +1336,7 @@ const MetadataEditor = () => {
                           id="location"
                           value={location}
                           onChange={(e) => setLocation(e.target.value)}
-                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
                         >
                           <option value="">Select Location</option>
                           {VALUE_PAIRS.court_locations.map((loc) => (
@@ -1360,7 +1358,7 @@ const MetadataEditor = () => {
                           type="text"
                           value={shelfNumber}
                           onChange={(e) => setShelfNumber(e.target.value)}
-                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
                         />
                       </div>
                       <div>
@@ -1375,7 +1373,7 @@ const MetadataEditor = () => {
                           type="text"
                           value={rowNumber}
                           onChange={(e) => setRowNumber(e.target.value)}
-                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
                         />
                       </div>
                       <div>
@@ -1390,7 +1388,7 @@ const MetadataEditor = () => {
                           type="text"
                           value={colNumber}
                           onChange={(e) => setColNumber(e.target.value)}
-                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
                         />
                       </div>
                       <div>
@@ -1405,14 +1403,14 @@ const MetadataEditor = () => {
                           type="text"
                           value={rfid}
                           onChange={(e) => setRfid(e.target.value)}
-                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
                         />
                       </div>
                     </div>
                   </div>
 
                   {/* File List Section */}
-                  <div className="border-t border-gray-200 pt-6">
+                  <div className={`border-t border-gray-200 pt-6 transition-opacity duration-200 ${isSectionDisabled ? "opacity-50 pointer-events-none" : ""}`}>
                     <label className="block text-sm font-bold text-gray-800 mb-4 uppercase tracking-tighter">
                       መዝገብ ፋይሎች
                     </label>
@@ -1421,11 +1419,10 @@ const MetadataEditor = () => {
                         {files.map((file) => (
                           <div
                             key={file.id}
-                            className={`p-4 rounded-lg border-2 transition-all ${
-                              selectedFileId === file.id
-                                ? "border-blue-400 bg-blue-50/30"
-                                : "border-gray-200 bg-white shadow-sm"
-                            }`}
+                            className={`p-4 rounded-lg border-2 transition-all ${selectedFileId === file.id
+                              ? "border-blue-400 bg-blue-50/30"
+                              : "border-gray-200 bg-white shadow-sm"
+                              }`}
                           >
                             <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
                               <div className="flex items-center overflow-hidden">
@@ -1503,7 +1500,7 @@ const MetadataEditor = () => {
                                       e.target.value;
                                     setFiles(newFiles);
                                   }}
-                                  className="w-full text-sm p-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 outline-none h-9"
+                                  className="w-full text-sm p-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 outline-none h-9 disabled:bg-gray-100 disabled:cursor-not-allowed"
                                   placeholder="File Name"
                                 />
                               </div>
@@ -1522,7 +1519,7 @@ const MetadataEditor = () => {
                                       e.target.value;
                                     setFiles(newFiles);
                                   }}
-                                  className="w-full text-xs p-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 outline-none h-9"
+                                  className="w-full text-xs p-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 outline-none h-9 disabled:bg-gray-100 disabled:cursor-not-allowed"
                                 >
                                   <option value="">Select Type</option>
                                   {VALUE_PAIRS.document_types.map((opt) => (
@@ -1550,7 +1547,7 @@ const MetadataEditor = () => {
                                     setFiles(newFiles);
                                   }}
                                   rows="2"
-                                  className="w-full text-sm p-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 outline-none min-h-[60px]"
+                                  className="w-full text-sm p-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 outline-none min-h-[60px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                                   placeholder="ስለ ሰነዱ አጭር መግለጫ እዚህ ያስገቡ..."
                                 ></textarea>
                               </div>
@@ -1565,6 +1562,7 @@ const MetadataEditor = () => {
                     )}
                   </div>
                 </fieldset>
+
               </form>
             ) : (
               <div className="text-center text-gray-500 pt-16">
@@ -1898,8 +1896,8 @@ const MetadataEditor = () => {
             )}
           </div>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 
