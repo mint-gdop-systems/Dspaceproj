@@ -463,8 +463,8 @@ const MetadataEditor = () => {
   const [primaryFileId, setPrimaryFileId] = useState(null);
 
   const handleFinalUpload = async () => {
-    if (uploading || files.length === 0) {
-      alert("Please select files to upload.");
+    if (uploading || files.length !== 2) {
+      alert("Exactly 2 files are required before submitting. Current count: " + files.length);
       return;
     }
 
@@ -927,9 +927,10 @@ const MetadataEditor = () => {
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Top Bar */}
       <div className="bg-white border-b border-gray-300 p-3">
-        <div className="flex items-center justify-between">
-          <h1 className="text-lg font-bold text-gray-800 ml-4">Upload File</h1>
-          <div className="flex items-center space-x-3 mr-4">
+        <div className="flex flex-col">
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg font-bold text-gray-800 ml-4">Upload File</h1>
+            <div className="flex items-center space-x-3 mr-4">
             <label className="flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer text-sm">
               <Upload className="w-3 h-3 mr-1" />
               Upload Files
@@ -1015,19 +1016,27 @@ const MetadataEditor = () => {
                 </div>
               )}
             </div>
-            <button
-              onClick={handleFinalUpload}
-              disabled={
-                uploading ||
-                files.length === 0 ||
-                fileNumberStatus === "checking" ||
-                fileNumberStatus === "duplicate"
-              }
-              className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:bg-gray-400"
-            >
-              {uploading ? "Uploading..." : "Submit"}
-            </button>
+              <button
+                onClick={handleFinalUpload}
+                disabled={
+                  uploading ||
+                  files.length !== 2 ||
+                  fileNumberStatus === "checking" ||
+                  fileNumberStatus === "duplicate"
+                }
+                className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:bg-gray-400"
+              >
+                {uploading ? "Uploading..." : "Submit"}
+              </button>
+            </div>
           </div>
+          {files.length !== 2 && (
+            <div className="flex justify-end mr-4 mt-2">
+              <span className="text-sm text-red-600 font-medium bg-red-50 px-2 py-1 rounded">
+                Exactly 2 files are required before submitting. Current count: {files.length}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
