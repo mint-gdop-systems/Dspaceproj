@@ -61,10 +61,10 @@ const VALUE_PAIRS = {
   document_types: [
     { label: "በዳኛ የተሰራ", value: "በዳኛ የተሰራ" },
     { label: "ልዩ ልዩ", value: "ልዩ ልዩ" },
-    { label: "የመልስ መልስ", value: "የመልስ መልስ" },
-    { label: "ሰበር መልስ እና ማስረጃ", value: "ሰበር መልስ እና ማስረጃ" },
-    { label: "ሰበር ማመልከቻ እና ማስረጃ", value: "ሰበር ማመልከቻ እና ማስረጃ" },
-    { label: "የስር ፍርድ ቤት ውሳኔ", value: "የስር ፍርድ ቤት ውሳኔ" },
+    // { label: "የመልስ መልስ", value: "የመልስ መልስ" },
+    // { label: "ሰበር መልስ እና ማስረጃ", value: "ሰበር መልስ እና ማስረጃ" },
+    // { label: "ሰበር ማመልከቻ እና ማስረጃ", value: "ሰበር ማመልከቻ እና ማስረጃ" },
+    // { label: "የስር ፍርድ ቤት ውሳኔ", value: "የስር ፍርድ ቤት ውሳኔ" },
   ],
   // active_status_types: [
   //   { label: "Active", value: "Active" },
