@@ -473,6 +473,17 @@ const MetadataEditor = () => {
       return;
     }
 
+    if (!benchSession) {
+      alert("Please select a Bench (ችሎት) before submitting.");
+      return;
+    }
+
+    const hasMissingDocType = files.some(file => !file.metadata.type);
+    if (hasMissingDocType) {
+      alert("Please select a Document Type (የሰነዱ ዓይነት) for all files before submitting.");
+      return;
+    }
+
     setUploading(true);
 
     // Check if user is authenticated with DSpace
@@ -1295,9 +1306,11 @@ const MetadataEditor = () => {
                           className="block text-sm font-medium text-gray-700"
                         >
                           ችሎት
+                          <span className="text-red-500 ml-1">*</span>
                         </label>
                         <select
                           id="benchSession"
+                          required
                           value={benchSession}
                           onChange={(e) => setBenchSession(e.target.value)}
                           className="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
@@ -1516,8 +1529,10 @@ const MetadataEditor = () => {
                               <div>
                                 <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">
                                   የሰነዱ ዓይነት
+                                  <span className="text-red-500 ml-1">*</span>
                                 </label>
                                 <select
+                                  required
                                   value={file.metadata.type}
                                   onChange={(e) => {
                                     const newFiles = [...files];
