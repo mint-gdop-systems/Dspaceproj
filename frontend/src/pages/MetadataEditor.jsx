@@ -468,8 +468,23 @@ const MetadataEditor = () => {
       return;
     }
 
-    if (!fileNumber || !collectionId) {
-      alert("Please fill mandatory fields: Case Number and Collection.");
+    if (!collectionId) {
+      alert("Please select a Collection (የመዝገብ አይነት) before submitting.");
+      return;
+    }
+
+    if (!fileNumber) {
+      alert("Please enter a Case Number (የመዝገብ ቁጥር) before submitting.");
+      return;
+    }
+
+    if (!caseType) {
+      alert("Please select a Case Type (የሰነዱ ዓይነት) before submitting.");
+      return;
+    }
+
+    if (!registrationAmDate) {
+      alert("Please select a Registration Date in Ethiopian Date  (መዝገቡ የተከፈተበት ቀን) before submitting.");
       return;
     }
 
@@ -1222,6 +1237,7 @@ const MetadataEditor = () => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
                           መዝገቡ የተከፈተበት ቀን (Ethiopian Date)
+                          <span className="text-red-500 ml-1">*</span>
                         </label>
                         <div className="mt-1 relative flex items-center">
                           <input
