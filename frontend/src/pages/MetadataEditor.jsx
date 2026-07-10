@@ -33,6 +33,7 @@ const VALUE_PAIRS = {
     { label: "ፍትሐብሔር", value: "ፍትሐብሔር" },
     { label: "ወንጀል", value: "ወንጀል" },
     { label: "ስራ ክርክር", value: "ስራ ክርክር" },
+    { label: "አፈፃፀም", value: "አፈፃፀም" },
   ],
   // case_levels: [
   //   { label: "Registrar (ሬጅስትራር)", value: "Registrar" },
@@ -49,18 +50,19 @@ const VALUE_PAIRS = {
     { label: "የወረቀት ፋይል (Physical File Only)", value: "Physical" },
     { label: "ድብልቅ (Hybrid/Both)", value: "Hybrid" },
   ],
-  document_sections: [
-    { label: "1. Pleadings (የአቤቱታ/የክስ ክፍል)", value: "Pleadings" },
-    {
-      label: "2. Orders & Minutes (የቃለ-ጉባኤ እና የትዕዛዝ ክፍል)",
-      value: "Orders_Minutes",
-    },
-    { label: "3. Evidence (የማስረጃ ክፍል)", value: "Evidence" },
-    { label: "4. Administrative (የአስተዳደር ክፍል)", value: "Administrative" },
-  ],
+  // document_sections: [
+  //   { label: "1. Pleadings (የአቤቱታ/የክስ ክፍል)", value: "Pleadings" },
+  //   {
+  //     label: "2. Orders & Minutes (የቃለ-ጉባኤ እና የትዕዛዝ ክፍል)",
+  //     value: "Orders_Minutes",
+  //   },
+  //   { label: "3. Evidence (የማስረጃ ክፍል)", value: "Evidence" },
+  //   { label: "4. Administrative (የአስተዳደር ክፍል)", value: "Administrative" },
+  // ],
   document_types: [
     { label: "በዳኛ የተሰራ", value: "በዳኛ የተሰራ" },
     { label: "ልዩ ልዩ", value: "ልዩ ልዩ" },
+    { label: "በጽ/ቤቱ የተሰራ", value: "በጽ/ቤቱ የተሰራ" },
     // { label: "የመልስ መልስ", value: "የመልስ መልስ" },
     // { label: "ሰበር መልስ እና ማስረጃ", value: "ሰበር መልስ እና ማስረጃ" },
     // { label: "ሰበር ማመልከቻ እና ማስረጃ", value: "ሰበር ማመልከቻ እና ማስረጃ" },
@@ -73,7 +75,7 @@ const VALUE_PAIRS = {
   court_locations: [
     { label: "6 ኪሎ", value: "6 ኪሎ" },
     { label: "4 ኪሎ", value: "4 ኪሎ" },
-    { label: "ፍርድ አፈፃፀም ያሬድ ት/ት ቤት ፊት ለፊት", value: "ፍርድ አፈፃፀም" },
+    { label: "ፍርድ አፈፃፀም ጽ/ቤት ልደታ", value: "ፍርድ አፈፃፀም" },
   ],
   court_adjured_locations: [
     { label: "የውዝፍ መዛግብት ሰበር ችሎት", value: "የውዝፍ መዛግብት ሰበር ችሎት" },
@@ -91,6 +93,7 @@ const VALUE_PAIRS = {
     { label: "4ኛ አጣሪ ሰበር ችሎት", value: "4ኛ አጣሪ ሰበር ችሎት" },
     { label: "ወንጀል ችሎት 1ኛ", value: "ወንጀል ችሎት 1ኛ" },
     { label: "ወንጀል ችሎት 2ኛ", value: "ወንጀል ችሎት 2ኛ" },
+    { label: "ፍርድ አፈፃፀም", value: "ፍርድ አፈፃፀም" },
   ],
 };
 
@@ -1184,7 +1187,7 @@ const MetadataEditor = () => {
                           <RepeatableField
                             label={
                               <>
-                                ከሳሽ/አመልካች
+                                ከሳሽ/አመልካች/የፍርድ ባለመብት
                                 <span className="text-red-500 ml-1">*</span>
                               </>
                             }
@@ -1201,7 +1204,7 @@ const MetadataEditor = () => {
                           <RepeatableField
                             label={
                               <>
-                                ተከሳሽ/መልስ ሰጪ
+                                ተከሳሽ/መልስ ሰጪ/የፍርድ ባለዕዳ
                                 <span className="text-red-500 ml-1">*</span>
                               </>
                             }
