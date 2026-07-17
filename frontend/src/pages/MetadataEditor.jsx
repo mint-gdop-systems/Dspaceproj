@@ -400,8 +400,6 @@ const MetadataEditor = () => {
   // Check if any file is greater than 50 MB (50 * 1024 * 1024 bytes)
   const hasLargeFile = files.some((file) => file.size > 50 * 1024 * 1024);
 
-  console.log(hasLargeFile);
-
   const handleFileUpload = async (event) => {
     const uploadedFiles = Array.from(event.target.files || []);
 
@@ -411,20 +409,21 @@ const MetadataEditor = () => {
         const titleWithoutExtension =
           file.name.substring(0, file.name.lastIndexOf(".")) || file.name;
 
-        // 2. Auto-calculate PDF pages
-        let calculatedPageCount = 1;
-        if (file.type === "application/pdf") {
-          try {
-            const arrayBuffer = await file.arrayBuffer();
-            // Use the imported `pdfjs` from react-pdf to read PDF metadata
-            const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-            calculatedPageCount = pdf.numPages;
-            console.log(`Calculated page count for ${file.name}: ${calculatedPageCount}`);
-            console.log(`packages page count for ${file.name}: ${pdf.numPages}`);
-          } catch (error) {
-            console.error("Error calculating PDF pages:", error);
-          }
-        }
+        // // 2. Auto-calculate PDF pages
+        // let calculatedPageCount = 1;
+        // if (file.type === "application/pdf") {
+        //   try {
+        //     const arrayBuffer = await file.arrayBuffer();
+        //     // Use the imported `pdfjs` from react-pdf to read PDF metadata
+        //     const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+        //     calculatedPageCount = pdf.numPages;
+        //     console.log(`Calculated page count for ${file.name}: ${calculatedPageCount}`);
+        //     console.log(`packages page count for ${file.name}: ${pdf.numPages}`);
+        //   } catch (error) {
+        //     calculatedPageCount=
+        //     console.error("Error calculating PDF pages:", error);
+        //   }
+        // }
 
         // 3. Return the fully constructed file object
         return {
@@ -440,7 +439,7 @@ const MetadataEditor = () => {
             title: titleWithoutExtension,
             type: "",
             description: "",
-            pageCount: calculatedPageCount, // Injected correctly here
+            pageCount: null,
           },
         };
       }),
@@ -1058,8 +1057,8 @@ const MetadataEditor = () => {
                   uploading ||
                   files.length !== 2 ||
                   fileNumberStatus === "checking" ||
-                  fileNumberStatus === "duplicate" ||
-                  hasLargeFile === true
+                  fileNumberStatus === "duplicate"
+                  // hasLargeFile === true
                 }
                 className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:bg-gray-400"
               >
@@ -1075,13 +1074,13 @@ const MetadataEditor = () => {
             </div>
           )}
           {/* New check for file size limits */}
-          {hasLargeFile && (
+          {/* {hasLargeFile && (
             <div className="flex justify-end mr-4 mt-2">
               <span className="text-sm text-red-600 font-medium bg-red-50 px-2 py-1 rounded">
                 One or more files exceed the 50 MB size limit. Please compress large files before submitting.
               </span>
             </div>
-          )}
+          )} */}
         </div>
       </div>
 
