@@ -397,6 +397,10 @@ const MetadataEditor = () => {
   }, [collectionId, collections]);
 
   const selectedFile = files.find((f) => f.id === selectedFileId);
+  // Check if any file is greater than 50 MB (50 * 1024 * 1024 bytes)
+  const hasLargeFile = files.some((file) => file.size > 50 * 1024 * 1024);
+
+  console.log(hasLargeFile);
 
   const handleFileUpload = async (event) => {
     const uploadedFiles = Array.from(event.target.files || []);
@@ -415,6 +419,8 @@ const MetadataEditor = () => {
             // Use the imported `pdfjs` from react-pdf to read PDF metadata
             const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
             calculatedPageCount = pdf.numPages;
+            console.log(`Calculated page count for ${file.name}: ${calculatedPageCount}`);
+            console.log(`packages page count for ${file.name}: ${pdf.numPages}`);
           } catch (error) {
             console.error("Error calculating PDF pages:", error);
           }
@@ -1052,7 +1058,8 @@ const MetadataEditor = () => {
                   uploading ||
                   files.length !== 2 ||
                   fileNumberStatus === "checking" ||
-                  fileNumberStatus === "duplicate"
+                  fileNumberStatus === "duplicate" ||
+                  hasLargeFile === true
                 }
                 className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:bg-gray-400"
               >
@@ -1064,6 +1071,14 @@ const MetadataEditor = () => {
             <div className="flex justify-end mr-4 mt-2">
               <span className="text-sm text-red-600 font-medium bg-red-50 px-2 py-1 rounded">
                 Exactly 2 files are required before submitting. Current count: {files.length}
+              </span>
+            </div>
+          )}
+          {/* New check for file size limits */}
+          {hasLargeFile && (
+            <div className="flex justify-end mr-4 mt-2">
+              <span className="text-sm text-red-600 font-medium bg-red-50 px-2 py-1 rounded">
+                One or more files exceed the 50 MB size limit. Please compress large files before submitting.
               </span>
             </div>
           )}
