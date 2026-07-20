@@ -29,72 +29,49 @@ import "ethiopian-date-picker-and-converter/dist/cjs/style.css";
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 const VALUE_PAIRS = {
-  case_types: [
-    { label: "ፍትሐብሔር", value: "ፍትሐብሔር" },
-    { label: "ወንጀል", value: "ወንጀል" },
-    { label: "ስራ ክርክር", value: "ስራ ክርክር" },
-    { label: "አፈፃፀም", value: "አፈፃፀም" },
-  ],
-  // case_levels: [
-  //   { label: "Registrar (ሬጅስትራር)", value: "Registrar" },
-  //   { label: "Screening (ቅድመ ምርመራ)", value: "Screening" },
-  //   { label: "Litigation (የችሎት ክርክር)", value: "Litigation" },
-  //   { label: "Archive (መዝገብ ቤት)", value: "Archive" },
-  // ],
-  case_status_types: [
-    { label: "በሂደት ላይ", value: "በሂደት ላይ" },
-    { label: "የተዘጋ", value: "የተዘጋ" },
-  ],
-  record_formats: [
-    { label: "የኤሌክትሮኒክ ፋይል (E-File Only)", value: "Electronic" },
-    { label: "የወረቀት ፋይል (Physical File Only)", value: "Physical" },
-    { label: "ድብልቅ (Hybrid/Both)", value: "Hybrid" },
-  ],
-  // document_sections: [
-  //   { label: "1. Pleadings (የአቤቱታ/የክስ ክፍል)", value: "Pleadings" },
-  //   {
-  //     label: "2. Orders & Minutes (የቃለ-ጉባኤ እና የትዕዛዝ ክፍል)",
-  //     value: "Orders_Minutes",
-  //   },
-  //   { label: "3. Evidence (የማስረጃ ክፍል)", value: "Evidence" },
-  //   { label: "4. Administrative (የአስተዳደር ክፍል)", value: "Administrative" },
-  // ],
-  document_types: [
-    { label: "በዳኛ የተሰራ", value: "በዳኛ የተሰራ" },
-    { label: "ልዩ ልዩ", value: "ልዩ ልዩ" },
-    { label: "በጽ/ቤቱ የተሰራ", value: "በጽ/ቤቱ የተሰራ" },
-    // { label: "የመልስ መልስ", value: "የመልስ መልስ" },
-    // { label: "ሰበር መልስ እና ማስረጃ", value: "ሰበር መልስ እና ማስረጃ" },
-    // { label: "ሰበር ማመልከቻ እና ማስረጃ", value: "ሰበር ማመልከቻ እና ማስረጃ" },
-    // { label: "የስር ፍርድ ቤት ውሳኔ", value: "የስር ፍርድ ቤት ውሳኔ" },
-  ],
-  // active_status_types: [
-  //   { label: "Active", value: "Active" },
-  //   { label: "Inactive", value: "Inactive" },
-  // ],
-  court_locations: [
+  dars_branch_locations: [
     { label: "6 ኪሎ", value: "6 ኪሎ" },
     { label: "4 ኪሎ", value: "4 ኪሎ" },
-    { label: "ፍርድ አፈፃፀም ጽ/ቤት ልደታ", value: "ፍርድ አፈፃፀም" },
   ],
-  court_adjured_locations: [
-    { label: "የውዝፍ መዛግብት ሰበር ችሎት", value: "የውዝፍ መዛግብት ሰበር ችሎት" },
-    { label: "1ኛ ሰበር ችሎት", value: "1ኛ ሰበር ችሎት" },
-    { label: "2ኛ ሰበር ችሎት", value: "2ኛ ሰበር ችሎት" },
-    { label: "3ኛ ሰበር ችሎት", value: "3ኛ ሰበር ችሎት" },
-    { label: "4ኛ ሰበር ችሎት", value: "4ኛ ሰበር ችሎት" },
-    { label: "ፍትሐብሔር 1ኛ ችሎት", value: "ፍትሐብሔር 1ኛ ችሎት" },
-    { label: "ፍትሐብሔር 2ኛ ችሎት", value: "ፍትሐብሔር 2ኛ ችሎት" },
-    { label: "ፍትሐብሔር 3ኛ ችሎት", value: "ፍትሐብሔር 3ኛ ችሎት" },
-    { label: "ፍትሐብሔር 4ኛ ችሎት", value: "ፍትሐብሔር 4ኛ ችሎት" },
-    { label: "ፍትሐብሔር 5ኛ ችሎት", value: "ፍትሐብሔር 5ኛ ችሎት" },
-    { label: "1ኛ አጣሪ ሰበር ችሎት", value: "1ኛ አጣሪ ሰበር ችሎት" },
-    { label: "2ኛ አጣሪ ሰበር ችሎት", value: "2ኛ አጣሪ ሰበር ችሎት" },
-    { label: "3ኛ አጣሪ ሰበር ችሎት", value: "3ኛ አጣሪ ሰበር ችሎት" },
-    { label: "4ኛ አጣሪ ሰበር ችሎት", value: "4ኛ አጣሪ ሰበር ችሎት" },
-    { label: "ወንጀል ችሎት 1ኛ", value: "ወንጀል ችሎት 1ኛ" },
-    { label: "ወንጀል ችሎት 2ኛ", value: "ወንጀል ችሎት 2ኛ" },
-    { label: "ፍርድ አፈፃፀም", value: "ፍርድ አፈፃፀም" },
+  regions_list: [
+    { label: "አዲስ አበባ", value: "አዲስ አበባ" },
+    { label: "ድሬዳዋ", value: "ድሬዳዋ" },
+    { label: "ኦሮሚያ", value: "ኦሮሚያ" },
+    { label: "አማራ", value: "አማራ" },
+    { label: "ሶማሌ", value: "ሶማሌ" },
+    { label: "ትግራይ", value: "ትግራይ" },
+    { label: "አፋር", value: "አፋር" },
+    { label: "ሲዳማ", value: "ሲዳማ" },
+    { label: "ቤኒሻንጉል-ጉሙዝ", value: "ቤኒሻንጉል-ጉሙዝ" },
+    { label: "ጋምቤላ", value: "ጋምቤላ" },
+    { label: "ሐረሪ", value: "ሐረሪ" },
+    { label: "ደቡብ ምዕራብ ኢትዮጵያ ሕዝቦች", value: "ደቡብ ምዕራብ ኢትዮጵያ ሕዝቦች" },
+    { label: "ደቡብ ኢትዮጵያ", value: "ደቡብ ኢትዮጵያ" },
+    { label: "ማዕከላዊ ኢትዮጵያ", value: "ማዕከላዊ ኢትዮጵያ" },
+  ],
+  dars_customer_types: [
+    { label: "ግለሰብ (Individual)", value: "individual" },
+    { label: "ድርጅት (Organization)", value: "organization" },
+  ],
+  dars_service_types: [
+    { label: "የሽያጭ ውሎች (Sales Contracts)", value: "sales" },
+    { label: "የስጦታ ውሎች (Gift Contracts)", value: "gifts" },
+    { label: "የብድር ውሎች (Loan Contracts)", value: "loans" },
+    { label: "የውክልና ውሎች (Power of Attorney)", value: "poa" },
+    { label: "የኑዛዜና የውጭ ጉዳይ ሰነዶች (Wills & Foreign Affairs)", value: "wills_foreign" },
+    { label: "የድርጅትና ማህበራት ሰነዶች (Corporate & Assoc.)", value: "corporate" },
+  ],
+  case_types_sales: [
+    { label: "የመኪና ሽያጭ (Vehicle Sale)", value: "vehicle_sale" },
+    { label: "የቤት ሽያጭ (House Sale)", value: "house_sale" },
+  ],
+  case_types_gifts: [
+    { label: "ተሽከርካሪ ስጦታ (Vehicle Gift)", value: "vehicle_gift" },
+    { label: "የማይንቀሳቀስ ንብረት ስጦታ (Property Gift)", value: "property_gift" },
+  ],
+  case_types_loans: [
+    { label: "ብድር ያለመያዣ (Unsecured Loan)", value: "unsecured_loan" },
+    { label: "ብድር በመያዣ (Secured Loan)", value: "secured_loan" },
   ],
 };
 
@@ -157,23 +134,72 @@ const MetadataEditor = () => {
   // Traditional Page One
   const [fileNumber, setFileNumber] = useState("");
   const [fileNumberStatus, setFileNumberStatus] = useState("idle"); // idle | checking | valid | duplicate
-  const [caseType, setCaseType] = useState("");
+  const [activeEntityType, setActiveEntityType] = useState("");
   const [plaintiffs, setPlaintiffs] = useState([""]);
   const [defendants, setDefendants] = useState([""]);
   const [caseRepresentatives, setCaseRepresentatives] = useState([""]);
-
-  // Traditional Page Two
-  const [lowerCourtFileNumber, setLowerCourtFileNumber] = useState("");
-  const [caseStatus, setCaseStatus] = useState("");
-  const [benchSession, setBenchSession] = useState("");
-  const [location, setLocation] = useState("");
-  const [registrationDate, setRegistrationDate] = useState("");
-  const [registrationAmDate, setRegistrationAmDate] = useState("");
   const [manualEthioDate, setManualEthioDate] = useState("");
-  const [shelfNumber, setShelfNumber] = useState("");
-  const [rowNumber, setRowNumber] = useState("");
-  const [colNumber, setColNumber] = useState("");
-  const [rfid, setRfid] = useState("");
+
+  // DARIS Dynamic Fields
+  const [extraFields, setExtraFields] = useState({
+    branchLocation: "",
+    region: "",
+    registrationDate: "",
+    registrationAmDate: "",
+    giverType: "",
+    receiverType: "",
+    femaleCount: "",
+    maleCount: "",
+    caseType: "",
+    
+    // Vehicle
+    vehicleLibre: "",
+    vehiclePlate: "",
+    vehicleChassis: "",
+    vehicleMotor: "",
+    
+    // Property
+    propertyCarta: "",
+    propertyCartaDate: "",
+    propertyHouseNumber: "",
+    propertyArea: "",
+    
+    // Financial/Loan
+    estimatedValue: "",
+    saleValue: "",
+    loanAmount: "",
+    loanStartDate: "",
+    loanEndDate: "",
+    
+    // Corporate/Revocations
+    organizationName: "",
+    organizationType: "",
+    tin: "",
+    phone: "",
+    totalContribution: "",
+    totalShares: "",
+    capital: "",
+    meetingAgenda: "",
+    meetingPlace: "",
+    meetingTime: "",
+    meetingDecision: "",
+    revokedNumber: "",
+    
+    // Spatial extensions
+    city: "",
+    subcity: "",
+    woreda: "",
+    kebele: "",
+    
+    // Officers
+    dataEncoderName: "",
+    investigatorName: "",
+    stampOfficerName: "",
+  });
+
+  const updateExtraField = (field, value) => {
+    setExtraFields(prev => ({ ...prev, [field]: value }));
+  };
 
   const formatEthioDateString = (dateStr) => {
     if (!dateStr) return dateStr;
@@ -216,9 +242,9 @@ const MetadataEditor = () => {
       const day = parts[0].padStart(2, "0");
       const month = parts[1].padStart(2, "0");
       const year = parts[2];
-      setRegistrationAmDate(`${year}-${month}-${day}`);
+      updateExtraField("registrationAmDate", `${year}-${month}-${day}`);
     } else {
-      setRegistrationAmDate(""); // clear if invalid
+      updateExtraField("registrationAmDate", ""); // clear if invalid
     }
   };
 
@@ -235,7 +261,7 @@ const MetadataEditor = () => {
       const parts = formatted.split("-");
       if (parts.length === 3) {
         const [y, m, d] = parts;
-        setRegistrationAmDate(formatted);
+        updateExtraField("registrationAmDate", formatted);
         setManualEthioDate(`${d}/${m}/${y}`);
       }
     }
@@ -273,25 +299,12 @@ const MetadataEditor = () => {
         if (parsed.title) setTitle(parsed.title);
         if (parsed.description) setDescription(parsed.description);
         if (parsed.fileNumber) setFileNumber(parsed.fileNumber);
-        if (parsed.caseType) setCaseType(parsed.caseType);
         if (parsed.plaintiffs) setPlaintiffs(parsed.plaintiffs);
         if (parsed.defendants) setDefendants(parsed.defendants);
         if (parsed.caseRepresentatives)
           setCaseRepresentatives(parsed.caseRepresentatives);
-        if (parsed.lowerCourtFileNumber)
-          setLowerCourtFileNumber(parsed.lowerCourtFileNumber);
-        if (parsed.caseStatus) setCaseStatus(parsed.caseStatus);
-        if (parsed.benchSession) setBenchSession(parsed.benchSession);
-        if (parsed.location) setLocation(parsed.location);
-        if (parsed.registrationDate)
-          setRegistrationDate(parsed.registrationDate);
-        if (parsed.registrationAmDate)
-          setRegistrationAmDate(parsed.registrationAmDate);
         if (parsed.manualEthioDate) setManualEthioDate(parsed.manualEthioDate);
-        if (parsed.shelfNumber) setShelfNumber(parsed.shelfNumber);
-        if (parsed.rowNumber) setRowNumber(parsed.rowNumber);
-        if (parsed.colNumber) setColNumber(parsed.colNumber);
-        if (parsed.rfid) setRfid(parsed.rfid);
+        if (parsed.extraFields) setExtraFields(parsed.extraFields);
       } catch (e) {
         console.error("Failed to parse cached metadata", e);
       }
@@ -337,21 +350,12 @@ const MetadataEditor = () => {
       title,
       description,
       fileNumber,
-      caseType,
+      activeEntityType,
       plaintiffs,
       defendants,
       caseRepresentatives,
-      lowerCourtFileNumber,
-      caseStatus,
-      benchSession,
-      location,
-      registrationDate,
-      registrationAmDate,
       manualEthioDate,
-      shelfNumber,
-      rowNumber,
-      colNumber,
-      rfid,
+      extraFields,
     };
     localStorage.setItem("metadataEditorState", JSON.stringify(stateToSave));
   }, [
@@ -359,21 +363,12 @@ const MetadataEditor = () => {
     title,
     description,
     fileNumber,
-    caseType,
+    activeEntityType,
     plaintiffs,
     defendants,
     caseRepresentatives,
-    lowerCourtFileNumber,
-    caseStatus,
-    benchSession,
-    location,
-    registrationDate,
-    registrationAmDate,
     manualEthioDate,
-    shelfNumber,
-    rowNumber,
-    colNumber,
-    rfid,
+    extraFields,
   ]);
 
   useEffect(() => {
@@ -392,7 +387,31 @@ const MetadataEditor = () => {
 
   useEffect(() => {
     if (!collectionId) {
-      setCaseType(""); // Clear if no collection is selected
+      setActiveEntityType(""); // Clear if no collection is selected
+    } else {
+      const selectedCollection = collections.find((c) => c.uuid === collectionId);
+      if (selectedCollection) {
+        // In DSpace 7+, entityType is typically available either in embedded entityType or in metadata
+        let type = "";
+        if (selectedCollection._embedded?.entityType) {
+            type = selectedCollection._embedded.entityType.label || selectedCollection._embedded.entityType.id || "";
+        } else if (selectedCollection.metadata && selectedCollection.metadata["dspace.entity.type"]) {
+            type = selectedCollection.metadata["dspace.entity.type"][0].value;
+        } else {
+            // Fallback inference from name if REST API didn't embed it properly
+            const name = selectedCollection.name || "";
+            if (name.includes("Vehicle Sales")) type = "VehicleSale";
+            else if (name.includes("Real Estate Sales")) type = "HouseSale";
+            else if (name.includes("Vehicle Gifts")) type = "VehicleGift";
+            else if (name.includes("Property Gifts")) type = "HouseGift";
+            else if (name.includes("Unsecured Loans")) type = "LoanUnsecured";
+            else if (name.includes("Secured Loans")) type = "LoanSecured";
+            else if (name.includes("Power of Attorney")) type = "PowerOfAttorney";
+            else if (name.includes("Wills")) type = "Will";
+            else if (name.includes("Corporate")) type = "CorporateArticles";
+        }
+        setActiveEntityType(type);
+      }
     }
   }, [collectionId, collections]);
 
@@ -487,26 +506,18 @@ const MetadataEditor = () => {
       return;
     }
 
-    if (!caseType) {
-      alert("Please select a Case Type (የሰነዱ ዓይነት) before submitting.");
-      return;
+    if (!activeEntityType && fileNumber) {
+      // It's okay if activeEntityType is empty for standard collections, but warn if missing
+      console.warn("No active entity type determined for this collection.");
     }
 
-    if (!registrationAmDate) {
-      alert("Please select a Registration Date in Ethiopian Date  (መዝገቡ የተከፈተበት ቀን) before submitting.");
-      return;
-    }
 
-    if (!benchSession) {
-      alert("Please select a Bench (ችሎት) before submitting.");
-      return;
-    }
 
-    const hasMissingDocType = files.some(file => !file.metadata.type);
-    if (hasMissingDocType) {
-      alert("Please select a Document Type (የሰነዱ ዓይነት) for all files before submitting.");
-      return;
-    }
+    // const hasMissingDocType = files.some(file => !file.metadata.type);
+    // if (hasMissingDocType) {
+    //   alert("Please select a Document Type (የሰነዱ ዓይነት) for all files before submitting.");
+    //   return;
+    // }
 
     setUploading(true);
 
@@ -536,25 +547,18 @@ const MetadataEditor = () => {
       const metadata = {
         title: title || fileNumber, // Fallback if no specific title
         description: description,
-        // language: language,
-        // Traditional Page 1
-        fileNumber,
-        caseType,
-        plaintiff: plaintiffs.filter((p) => p.trim()),
-        defendant: defendants.filter((d) => d.trim()),
-        caseRepresentative: caseRepresentatives.filter((r) => r.trim()),
-        registrationDate,
-        registrationAmDate,
-        // Traditional Page 2
-        lowerCourtFileNumber,
-        caseStatus,
-        benchSession,
-        // Physical location step
-        location,
-        shelfNumber,
-        rowNumber,
-        colNumber,
-        rfid,
+        documentNumber: fileNumber,
+        contractDate: extraFields.registrationDate || extraFields.registrationAmDate,
+        branchLocation: extraFields.branchLocation,
+        region: extraFields.region,
+        
+        // DARIS Page 2
+        giverName: plaintiffs.filter((p) => p.trim()),
+        receiverName: defendants.filter((d) => d.trim()),
+        officerName: caseRepresentatives.filter((r) => r.trim()),
+        
+        activeEntityType,
+        ...extraFields,
       };
 
       await dspaceService.updateMetadata(workspaceItemId, metadata);
@@ -605,21 +609,53 @@ const MetadataEditor = () => {
       setTitle("");
       setDescription("");
       setFileNumber("");
-      setCaseType("");
       setPlaintiffs([""]);
       setDefendants([""]);
       setCaseRepresentatives([""]);
-      setRegistrationDate("");
-      setRegistrationAmDate("");
       setManualEthioDate("");
-      setLowerCourtFileNumber("");
-      setCaseStatus("");
-      setLocation("");
-      setBenchSession("");
-      setShelfNumber("");
-      setRowNumber("");
-      setColNumber("");
-      setRfid("");
+      setExtraFields({
+        branchLocation: "",
+        region: "",
+        registrationDate: "",
+        registrationAmDate: "",
+        giverType: "",
+        receiverType: "",
+        femaleCount: "",
+        maleCount: "",
+        caseType: "",
+        vehicleLibre: "",
+        vehiclePlate: "",
+        vehicleChassis: "",
+        vehicleMotor: "",
+        propertyCarta: "",
+        propertyCartaDate: "",
+        propertyHouseNumber: "",
+        propertyArea: "",
+        estimatedValue: "",
+        saleValue: "",
+        loanAmount: "",
+        loanStartDate: "",
+        loanEndDate: "",
+        organizationName: "",
+        organizationType: "",
+        tin: "",
+        phone: "",
+        totalContribution: "",
+        totalShares: "",
+        capital: "",
+        meetingAgenda: "",
+        meetingPlace: "",
+        meetingTime: "",
+        meetingDecision: "",
+        revokedNumber: "",
+        city: "",
+        subcity: "",
+        woreda: "",
+        kebele: "",
+        dataEncoderName: "",
+        investigatorName: "",
+        stampOfficerName: "",
+      });
     } catch (e) {
       console.error("Critical upload error:", e);
       alert(`Upload failed: ${e.message}`);
@@ -1133,7 +1169,7 @@ const MetadataEditor = () => {
                         htmlFor="fileNumber"
                         className="block text-sm font-medium text-gray-700"
                       >
-                        የመዝገብ ቁጥር
+                        የሰነድ ቁጥር (Document Number)
                         <span className="text-red-500 ml-1">*</span>
                       </label>
                       <input
@@ -1145,7 +1181,7 @@ const MetadataEditor = () => {
                         className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        Primary identification is mandatory. [cite: 25]
+                        Primary identification is mandatory.
                       </p>
                       {fileNumberStatus === "checking" && (
                         <p className="text-xs text-yellow-600 mt-1 flex items-center">
@@ -1160,312 +1196,377 @@ const MetadataEditor = () => {
                       )}
                       {fileNumberStatus === "duplicate" && (
                         <p className="text-xs text-red-600 mt-1 font-medium">
-                          ✗ This case file already exists
+                          ✗ This document number already exists
                         </p>
                       )}
                     </div>
-                    <fieldset
-                      className="contents"
-                      disabled={isSectionDisabled}
-                    >
-                      <div className={`transition-opacity duration-200 ${isSectionDisabled ? "opacity-50 pointer-events-none" : ""}`}>
-                        <label
-                          htmlFor="caseType"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          የጉዳዩ አይነት
-                          <span className="text-red-500 ml-1">*</span>
-                        </label>
-                        <select
-                          id="caseType"
-                          value={caseType}
-                          onChange={(e) => setCaseType(e.target.value)}
-                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        >
-                          <option value="">Select Type</option>
-                          {VALUE_PAIRS.case_types.map((t) => (
-                            <option key={t.value} value={t.value}>
-                              {t.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </fieldset>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        የውል ቀን (Contract/Registration Date)
+                      </label>
+                      <input
+                        type="date"
+                        value={extraFields.registrationDate}
+                        onChange={(e) => updateExtraField("registrationDate", e.target.value)}
+                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      />
+                    </div>
                   </div>
+
+                  {/* DARIS Page 1 Spatial & Demographics */}
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        ቅርንጫፍ (Branch Location)
+                      </label>
+                      <select
+                        value={extraFields.branchLocation}
+                        onChange={(e) => updateExtraField("branchLocation", e.target.value)}
+                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      >
+                        <option value="">Select Branch</option>
+                        {(VALUE_PAIRS.dars_branch_locations || []).map((loc) => (
+                          <option key={loc.value} value={loc.value}>
+                            {loc.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        የአባሪ ብዛት (Attachments)
+                      </label>
+                      <input
+                        type="text"
+                        value={extraFields.attachments || ""}
+                        onChange={(e) => updateExtraField("attachments", e.target.value)}
+                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">ሴት ብዛት (Female Count)</label>
+                      <input type="number" value={extraFields.femaleCount} onChange={(e) => updateExtraField("femaleCount", e.target.value)} className="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">ወንድ ብዛት (Male Count)</label>
+                      <input type="number" value={extraFields.maleCount} onChange={(e) => updateExtraField("maleCount", e.target.value)} className="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
+                    </div>
+                  </div>
+
                   <fieldset
                     className="contents"
                     disabled={isSectionDisabled}
                   >
                     <div className={`mt-4 space-y-4 transition-opacity duration-200 ${isSectionDisabled ? "opacity-50 pointer-events-none" : ""}`}>
+                      <h3 className="text-md font-semibold text-gray-800 mb-4 border-t pt-4">
+                        የደንበኞች መረጃ (Parties Info)
+                      </h3>
                       <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <RepeatableField
-                            label={
-                              <>
-                                ከሳሽ/አመልካች/የፍርድ ባለመብት
-                                <span className="text-red-500 ml-1">*</span>
-                              </>
-                            }
-                            values={plaintiffs}
-                            setValues={setPlaintiffs}
-                            placeholder="Enter plaintiff name"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">
-                            The party initiating the legal action. (ከሳሽ ወይም
-                            አመልካች)
-                          </p>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">የውል ሰጪ ደንበኛ አይነት (Giver Type)</label>
+                            <select value={extraFields.giverType} onChange={(e) => updateExtraField("giverType", e.target.value)} className="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                              <option value="">Select Type</option>
+                              {(VALUE_PAIRS.dars_customer_types || []).map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <RepeatableField label={<>ውል ሰጪ ስም (Giver Name)<span className="text-red-500 ml-1">*</span></>} values={plaintiffs} setValues={setPlaintiffs} placeholder="Enter giver name" />
+                          </div>
                         </div>
-                        <div>
-                          <RepeatableField
-                            label={
-                              <>
-                                ተከሳሽ/መልስ ሰጪ/የፍርድ ባለዕዳ
-                                <span className="text-red-500 ml-1">*</span>
-                              </>
-                            }
-                            values={defendants}
-                            setValues={setDefendants}
-                            placeholder="Enter defendant name"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">
-                            The party against whom the action is brought. (ተከሳሽ
-                            ወይም መልስ ሰጪ)
-                          </p>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">የውል ተቀባይ ደንበኛ አይነት (Receiver Type)</label>
+                            <select value={extraFields.receiverType} onChange={(e) => updateExtraField("receiverType", e.target.value)} className="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                              <option value="">Select Type</option>
+                              {(VALUE_PAIRS.dars_customer_types || []).map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <RepeatableField label={<>ውል ተቀባይ ስም (Receiver Name)<span className="text-red-500 ml-1">*</span></>} values={defendants} setValues={setDefendants} placeholder="Enter receiver name" />
+                          </div>
                         </div>
                       </div>
-
-                      <RepeatableField
-                        label="የሕግ ወኪል/ጠበቃ"
-                        values={caseRepresentatives}
-                        setValues={setCaseRepresentatives}
-                        placeholder="Enter representative name"
-                      />
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          መዝገቡ የተከፈተበት ቀን
-                        </label>
-                        <input
-                          type="date"
-                          value={registrationDate}
-                          onChange={(e) => setRegistrationDate(e.target.value)}
-                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          መዝገቡ የተከፈተበት ቀን (Ethiopian Date)
-                          <span className="text-red-500 ml-1">*</span>
-                        </label>
-                        <div className="mt-1 relative flex items-center">
-                          <input
-                            type="text"
-                            placeholder="DD/MM/YYYY"
-                            value={manualEthioDate}
-                            onChange={handleManualEthioDateChange}
-                            className="block w-full p-2 border border-gray-300 rounded-md pr-10 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                          />
-                          <div className="absolute right-0 top-0 h-full w-10 flex items-center justify-center overflow-visible">
-                            <div className="ethiopian-calendar-fix ethiopian-picker-hidden-input absolute inset-0 z-20 w-full h-full flex items-center justify-center cursor-pointer">
-                              <EthiopianDatePicker
-                                id="registrationAmDate"
-                                placeholder=""
-                                onDateChange={handlePickerDateChange}
-                              />
+                      
+                      {activeEntityType === 'VehicleSale' || activeEntityType === 'VehicleGift' ? (
+                        <div className="mt-4 p-4 border rounded bg-blue-50">
+                          <h4 className="font-bold text-blue-900 mb-2">የተሽከርካሪ መረጃ (Vehicle Info)</h4>
+                          <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                              <label className="block text-sm">የጉዳይ አይነት (Case Type)</label>
+                              <select value={extraFields.caseType} onChange={(e) => updateExtraField("caseType", e.target.value)} className="w-full p-2 border rounded">
+                                <option value="">Select Case Type</option>
+                                {(VALUE_PAIRS[activeEntityType === 'VehicleSale' ? 'case_types_sales' : 'case_types_gifts'] || []).map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                              </select>
                             </div>
-                            <div className="z-10 text-gray-500 pointer-events-none">
-                              📅
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm">Libre / ሊብሬ</label>
+                              <input type="text" value={extraFields.vehicleLibre} onChange={(e) => updateExtraField("vehicleLibre", e.target.value)} className="w-full p-2 border rounded" placeholder="Identifier..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">Plate / የሰሌዳ ቁጥር</label>
+                              <input type="text" value={extraFields.vehiclePlate} onChange={(e) => updateExtraField("vehiclePlate", e.target.value)} className="w-full p-2 border rounded" placeholder="Plate..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">Chassis / ቻንሲ ቁጥር</label>
+                              <input type="text" value={extraFields.vehicleChassis} onChange={(e) => updateExtraField("vehicleChassis", e.target.value)} className="w-full p-2 border rounded" placeholder="Chassis..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">Motor / ሞተር ቁጥር</label>
+                              <input type="text" value={extraFields.vehicleMotor} onChange={(e) => updateExtraField("vehicleMotor", e.target.value)} className="w-full p-2 border rounded" placeholder="Motor..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">የግምት ዋጋ (Est. Value)</label>
+                              <input type="number" value={extraFields.estimatedValue} onChange={(e) => updateExtraField("estimatedValue", e.target.value)} className="w-full p-2 border rounded" placeholder="Amount..." />
+                            </div>
+                            {activeEntityType === 'VehicleSale' && (
+                              <div>
+                                <label className="block text-sm">የተሸጠበት ዋጋ (Sale Value)</label>
+                                <input type="number" value={extraFields.saleValue} onChange={(e) => updateExtraField("saleValue", e.target.value)} className="w-full p-2 border rounded" placeholder="Amount..." />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : activeEntityType === 'HouseSale' || activeEntityType === 'HouseGift' ? (
+                        <div className="mt-4 p-4 border rounded bg-green-50">
+                          <h4 className="font-bold text-green-900 mb-2">የንብረት መረጃ (Property Info)</h4>
+                          <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                              <label className="block text-sm">የጉዳይ አይነት (Case Type)</label>
+                              <select value={extraFields.caseType} onChange={(e) => updateExtraField("caseType", e.target.value)} className="w-full p-2 border rounded">
+                                <option value="">Select Case Type</option>
+                                {(VALUE_PAIRS[activeEntityType === 'HouseSale' ? 'case_types_sales' : 'case_types_gifts'] || []).map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                              </select>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm">Carta / ካርታ</label>
+                              <input type="text" value={extraFields.propertyCarta} onChange={(e) => updateExtraField("propertyCarta", e.target.value)} className="w-full p-2 border rounded" placeholder="Identifier..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">ካርታ የተሰጠበት (Carta Date)</label>
+                              <input type="date" value={extraFields.propertyCartaDate} onChange={(e) => updateExtraField("propertyCartaDate", e.target.value)} className="w-full p-2 border rounded" />
+                            </div>
+                            <div>
+                              <label className="block text-sm">ክልል (Region)</label>
+                              <select value={extraFields.region} onChange={(e) => updateExtraField("region", e.target.value)} className="w-full p-2 border rounded bg-white shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed">
+                                <option value="">Select Region</option>
+                                {(VALUE_PAIRS.regions_list || []).map((loc) => <option key={loc.value} value={loc.value}>{loc.label}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm">ከተማ (City)</label>
+                              <input type="text" value={extraFields.city} onChange={(e) => updateExtraField("city", e.target.value)} className="w-full p-2 border rounded" placeholder="City..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">ክፍለ ከተማ (Sub-city)</label>
+                              <input type="text" value={extraFields.subcity} onChange={(e) => updateExtraField("subcity", e.target.value)} className="w-full p-2 border rounded" placeholder="Sub-city..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">ወረዳ (Woreda)</label>
+                              <input type="text" value={extraFields.woreda} onChange={(e) => updateExtraField("woreda", e.target.value)} className="w-full p-2 border rounded" placeholder="Woreda..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">ቀበሌ (Kebele)</label>
+                              <input type="text" value={extraFields.kebele} onChange={(e) => updateExtraField("kebele", e.target.value)} className="w-full p-2 border rounded" placeholder="Kebele..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">House Number / የቤት ቁጥር</label>
+                              <input type="text" value={extraFields.propertyHouseNumber} onChange={(e) => updateExtraField("propertyHouseNumber", e.target.value)} className="w-full p-2 border rounded" placeholder="House Num..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">የቦታ ስፋት (Area sqm)</label>
+                              <input type="text" value={extraFields.propertyArea} onChange={(e) => updateExtraField("propertyArea", e.target.value)} className="w-full p-2 border rounded" placeholder="Area..." />
+                            </div>
+                            {activeEntityType === 'HouseSale' && (
+                              <div>
+                                <label className="block text-sm">የተሸጠበት ዋጋ (Sale Value)</label>
+                                <input type="number" value={extraFields.saleValue} onChange={(e) => updateExtraField("saleValue", e.target.value)} className="w-full p-2 border rounded" placeholder="Amount..." />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : activeEntityType === 'LoanUnsecured' || activeEntityType === 'LoanSecured' ? (
+                        <div className="mt-4 p-4 border rounded bg-purple-50">
+                          <h4 className="font-bold text-purple-900 mb-2">የብድር መረጃ (Loan Info)</h4>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm">የጉዳይ አይነት (Case Type)</label>
+                              <select value={extraFields.caseType} onChange={(e) => updateExtraField("caseType", e.target.value)} className="w-full p-2 border rounded">
+                                <option value="">Select Case Type</option>
+                                {(VALUE_PAIRS.case_types_loans || []).map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm">Loan Amount / የብድር መጠን</label>
+                              <input type="number" value={extraFields.loanAmount} onChange={(e) => updateExtraField("loanAmount", e.target.value)} className="w-full p-2 border rounded" placeholder="Amount..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">ብድር መጀመርያ ቀን (Start Date)</label>
+                              <input type="date" value={extraFields.loanStartDate} onChange={(e) => updateExtraField("loanStartDate", e.target.value)} className="w-full p-2 border rounded" />
+                            </div>
+                            <div>
+                              <label className="block text-sm">ብድር ማብቂያ ቀን (End Date)</label>
+                              <input type="date" value={extraFields.loanEndDate} onChange={(e) => updateExtraField("loanEndDate", e.target.value)} className="w-full p-2 border rounded" />
                             </div>
                           </div>
                         </div>
-                        <p className="text-xs text-gray-400 mt-1">
-                          Format: DD/MM/YYYY (or click icon)
-                        </p>
+                      ) : activeEntityType === 'PowerOfAttorney' || activeEntityType === 'POARevocation' || activeEntityType === 'LoanClearance' ? (
+                        <div className="mt-4 p-4 border rounded bg-yellow-50">
+                          <h4 className="font-bold text-yellow-900 mb-2">{activeEntityType === 'PowerOfAttorney' ? 'የውክልና መረጃ (POA Info)' : 'የስረዛ መረጃ (Revocation Info)'}</h4>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm">የጉዳይ አይነት (Case Type)</label>
+                              <select value={extraFields.caseType} onChange={(e) => updateExtraField("caseType", e.target.value)} className="w-full p-2 border rounded">
+                                <option value="">Select Case Type</option>
+                                {(VALUE_PAIRS.case_types_poa || []).map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                              </select>
+                            </div>
+                            {(activeEntityType === 'POARevocation' || activeEntityType === 'LoanClearance') && (
+                              <div>
+                                <label className="block text-sm">የተሻረው ውክልና/ኑዛዜ ቁጥር (Revoked Doc Number)</label>
+                                <input type="text" value={extraFields.revokedNumber} onChange={(e) => updateExtraField("revokedNumber", e.target.value)} className="w-full p-2 border rounded" placeholder="Doc Num..." />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : activeEntityType === 'CorporateArticles' ? (
+                        <div className="mt-4 p-4 border rounded bg-gray-100">
+                          <h4 className="font-bold text-gray-900 mb-2">የድርጅት መረጃ (Corporate Info)</h4>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm">Organization Name / የድርጅት ስም</label>
+                              <input type="text" value={extraFields.organizationName} onChange={(e) => updateExtraField("organizationName", e.target.value)} className="w-full p-2 border rounded" placeholder="Name..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">የጉዳዩ አይነት (Case Type)</label>
+                              <select value={extraFields.caseType} onChange={(e) => updateExtraField("caseType", e.target.value)} className="w-full p-2 border rounded">
+                                <option value="">Select Case Type</option>
+                                {(VALUE_PAIRS.case_types_auth || []).map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm">የማህበሩ አይነት (Assoc. Type)</label>
+                              <input type="text" value={extraFields.organizationType} onChange={(e) => updateExtraField("organizationType", e.target.value)} className="w-full p-2 border rounded" placeholder="Type..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">TIN / የግብር ከፋይ መለያ ቁጥር</label>
+                              <input type="text" value={extraFields.tin} onChange={(e) => updateExtraField("tin", e.target.value)} className="w-full p-2 border rounded" placeholder="TIN..." />
+                            </div>
+                            
+                            {/* Spatial fields for Corporate Articles */}
+                            <div>
+                              <label className="block text-sm">ክልል (Region)</label>
+                              <select value={extraFields.region} onChange={(e) => updateExtraField("region", e.target.value)} className="w-full p-2 border rounded bg-white shadow-sm">
+                                <option value="">Select Region</option>
+                                {(VALUE_PAIRS.regions_list || []).map((loc) => <option key={loc.value} value={loc.value}>{loc.label}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm">ከተማ (City)</label>
+                              <input type="text" value={extraFields.city} onChange={(e) => updateExtraField("city", e.target.value)} className="w-full p-2 border rounded" placeholder="City..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">ክፍለ ከተማ (Sub-city)</label>
+                              <input type="text" value={extraFields.subcity} onChange={(e) => updateExtraField("subcity", e.target.value)} className="w-full p-2 border rounded" placeholder="Sub-city..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">ወረዳ (Woreda)</label>
+                              <input type="text" value={extraFields.woreda} onChange={(e) => updateExtraField("woreda", e.target.value)} className="w-full p-2 border rounded" placeholder="Woreda..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">ቀበሌ (Kebele)</label>
+                              <input type="text" value={extraFields.kebele} onChange={(e) => updateExtraField("kebele", e.target.value)} className="w-full p-2 border rounded" placeholder="Kebele..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">House Number / የቤት ቁጥር</label>
+                              <input type="text" value={extraFields.propertyHouseNumber} onChange={(e) => updateExtraField("propertyHouseNumber", e.target.value)} className="w-full p-2 border rounded" placeholder="House Num..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">ስልክ ቁጥር (Phone No)</label>
+                              <input type="text" value={extraFields.phone} onChange={(e) => updateExtraField("phone", e.target.value)} className="w-full p-2 border rounded" placeholder="Phone..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">ጠቅላላ መዋጮ (Total Contribution)</label>
+                              <input type="text" value={extraFields.totalContribution} onChange={(e) => updateExtraField("totalContribution", e.target.value)} className="w-full p-2 border rounded" placeholder="Contribution..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">ጠቅላላ የአክሲዮን ብዛት (Total Shares)</label>
+                              <input type="text" value={extraFields.totalShares} onChange={(e) => updateExtraField("totalShares", e.target.value)} className="w-full p-2 border rounded" placeholder="Shares..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">ካፒታል (Capital)</label>
+                              <input type="text" value={extraFields.capital} onChange={(e) => updateExtraField("capital", e.target.value)} className="w-full p-2 border rounded" placeholder="Capital..." />
+                            </div>
+                          </div>
+                        </div>
+                      ) : activeEntityType === 'CorporateMinutes' ? (
+                        <div className="mt-4 p-4 border rounded bg-gray-100">
+                          <h4 className="font-bold text-gray-900 mb-2">የስብሰባ ቃለ-ጉባኤ (Corporate Minutes)</h4>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm">የማህበሩ ስም (Assoc. Name)</label>
+                              <input type="text" value={extraFields.organizationName} onChange={(e) => updateExtraField("organizationName", e.target.value)} className="w-full p-2 border rounded" placeholder="Name..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">የጉዳዩ አይነት (Case Type)</label>
+                              <select value={extraFields.caseType} onChange={(e) => updateExtraField("caseType", e.target.value)} className="w-full p-2 border rounded">
+                                <option value="">Select Case Type</option>
+                                {(VALUE_PAIRS.case_types_auth || []).map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                              </select>
+                            </div>
+                            <div className="col-span-2">
+                              <label className="block text-sm">የስብሰባ አጀንዳ (Agenda)</label>
+                              <textarea value={extraFields.meetingAgenda} onChange={(e) => updateExtraField("meetingAgenda", e.target.value)} className="w-full p-2 border rounded" rows="2" placeholder="Agenda..."></textarea>
+                            </div>
+                            <div>
+                              <label className="block text-sm">ስብሰባ የተካሄደበት ቦታ (Place)</label>
+                              <input type="text" value={extraFields.meetingPlace} onChange={(e) => updateExtraField("meetingPlace", e.target.value)} className="w-full p-2 border rounded" placeholder="Place..." />
+                            </div>
+                            <div>
+                              <label className="block text-sm">የስብሰባ ሰአት (Time)</label>
+                              <input type="text" value={extraFields.meetingTime} onChange={(e) => updateExtraField("meetingTime", e.target.value)} className="w-full p-2 border rounded" placeholder="Time..." />
+                            </div>
+                            <div className="col-span-2">
+                              <label className="block text-sm">ውሳኔ (Decision)</label>
+                              <textarea value={extraFields.meetingDecision} onChange={(e) => updateExtraField("meetingDecision", e.target.value)} className="w-full p-2 border rounded" rows="2" placeholder="Decision..."></textarea>
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {/* DARIS Page 3 */}
+                      <div className="border-t border-gray-200 pt-6 mt-6">
+                        <h3 className="text-md font-semibold text-gray-800 mb-4">
+                          የሰራተኞች መረጃ (Officers Info)
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">መዝጋቢ (Data Encoder Name)</label>
+                            <input type="text" value={extraFields.dataEncoderName} onChange={(e) => updateExtraField("dataEncoderName", e.target.value)} className="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Encoder Name..." />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">የኦፊሰር ስም (Officer Name)</label>
+                            <input type="text" value={extraFields.officerName} onChange={(e) => updateExtraField("officerName", e.target.value)} className="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Officer Name..." />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">ያጣሪ ስም (Investigator Name)</label>
+                            <input type="text" value={extraFields.investigatorName} onChange={(e) => updateExtraField("investigatorName", e.target.value)} className="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Investigator Name..." />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">የማህተም እደላ (Stamp Duty Officer)</label>
+                            <input type="text" value={extraFields.stampOfficerName} onChange={(e) => updateExtraField("stampOfficerName", e.target.value)} className="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Stamp Officer Name..." />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </fieldset>
                 </div>
-                <fieldset
-                  className="contents"
-                  disabled={isSectionDisabled}
-                >
-                  <div className={`border-t border-gray-200 pt-6 transition-opacity duration-200 ${isSectionDisabled ? "opacity-50 pointer-events-none" : ""}`}>
-                    <h3 className="text-md font-semibold text-gray-800 mb-4">
-                      ተጨማሪ ዝርዝር መረጃ
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label
-                          htmlFor="lowerCourtFileNumber"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          የስር ፍርድ ቤት የመዝገብ ቁጥር
-                        </label>
-                        <input
-                          id="lowerCourtFileNumber"
-                          type="text"
-                          value={lowerCourtFileNumber}
-                          onChange={(e) =>
-                            setLowerCourtFileNumber(e.target.value)
-                          }
-                          required
-                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
-                          placeholder="የስር ፍርድ ቤት መዝገብ ቁጥር..."
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="caseStatus"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          የመዝገቡ ሁኔታ
-                        </label>
-                        <select
-                          id="caseStatus"
-                          value={caseStatus}
-                          onChange={(e) => setCaseStatus(e.target.value)}
-                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        >
-                          <option value="">Select Status</option>
-                          {VALUE_PAIRS.case_status_types.map((s) => (
-                            <option key={s.value} value={s.value}>
-                              {s.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="benchSession"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          ችሎት
-                          <span className="text-red-500 ml-1">*</span>
-                        </label>
-                        <select
-                          id="benchSession"
-                          required
-                          value={benchSession}
-                          onChange={(e) => setBenchSession(e.target.value)}
-                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        >
-                          <option value="">Select Bench</option>
-                          {VALUE_PAIRS.court_adjured_locations.map((loc) => (
-                            <option key={loc.value} value={loc.value}>
-                              {loc.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <div className="mt-4">
-                      <label
-                        htmlFor="description"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        የሰነዱ ዝርዝር መግለጫ
-                      </label>
-                      <textarea
-                        id="description"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        rows="3"
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        placeholder="ስለ ሰነዱ አጭር መግለጫ እዚህ ያስገቡ..."
-                      ></textarea>
-                    </div>
-                  </div>
-
-                  <div className={`border-t border-gray-200 pt-6 transition-opacity duration-200 ${isSectionDisabled ? "opacity-50 pointer-events-none" : ""}`}>
-                    <h3 className="text-md font-semibold text-gray-800 mb-4">
-                      የመዝገቡ መገኛ እና መደርደሪያ
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label
-                          htmlFor="location"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          የመዝገቡ መገኛ
-                        </label>
-                        <select
-                          id="location"
-                          value={location}
-                          onChange={(e) => setLocation(e.target.value)}
-                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        >
-                          <option value="">Select Location</option>
-                          {VALUE_PAIRS.court_locations.map((loc) => (
-                            <option key={loc.value} value={loc.value}>
-                              {loc.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="shelfNumber"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          የመደርደሪያ ቁጥር
-                        </label>
-                        <input
-                          id="shelfNumber"
-                          type="text"
-                          value={shelfNumber}
-                          onChange={(e) => setShelfNumber(e.target.value)}
-                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="rowNumber"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          የረድፍ ቁጥር
-                        </label>
-                        <input
-                          id="rowNumber"
-                          type="text"
-                          value={rowNumber}
-                          onChange={(e) => setRowNumber(e.target.value)}
-                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="colNumber"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          አምድ ቁጥር
-                        </label>
-                        <input
-                          id="colNumber"
-                          type="text"
-                          value={colNumber}
-                          onChange={(e) => setColNumber(e.target.value)}
-                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="rfid"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          RFID Tag
-                        </label>
-                        <input
-                          id="rfid"
-                          type="text"
-                          value={rfid}
-                          onChange={(e) => setRfid(e.target.value)}
-                          className="mt-1 block w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* File List Section */}
                   <div className={`border-t border-gray-200 pt-6 transition-opacity duration-200 ${isSectionDisabled ? "opacity-50 pointer-events-none" : ""}`}>
                     <label className="block text-sm font-bold text-gray-800 mb-4 uppercase tracking-tighter">
                       መዝገብ ፋይሎች
@@ -1563,7 +1664,7 @@ const MetadataEditor = () => {
                               <div>
                                 <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">
                                   የሰነዱ ዓይነት
-                                  <span className="text-red-500 ml-1">*</span>
+                                  {/* <span className="text-red-500 ml-1">*</span> */}
                                 </label>
                                 <select
                                   required
@@ -1580,7 +1681,7 @@ const MetadataEditor = () => {
                                   className="w-full text-xs p-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 outline-none h-9 disabled:bg-gray-100 disabled:cursor-not-allowed"
                                 >
                                   <option value="">Select Type</option>
-                                  {VALUE_PAIRS.document_types.map((opt) => (
+                                  {(VALUE_PAIRS.document_types || []).map((opt) => (
                                     <option key={opt.value} value={opt.value}>
                                       {opt.label}
                                     </option>
@@ -1619,7 +1720,6 @@ const MetadataEditor = () => {
                       </p>
                     )}
                   </div>
-                </fieldset>
 
               </form>
             ) : (

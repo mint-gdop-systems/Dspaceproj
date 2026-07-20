@@ -19,7 +19,7 @@ const Footer = () => {
                 </div>
 
                 <div className="border-t border-gray-600 mt-8 pt-4 text-center text-sm">
-                    <p>&copy; {new Date().getFullYear()} የፌዴራል ጠቅላይ ፍርድ። ሁሉም መብቶች ተጠብቀዋል።</p>
+                    <p>&copy; {new Date().getFullYear()} የሰነዶች ማረጋገጫና ምዝገባ አገልግሎት። ሁሉም መብቶች ተጠብቀዋል።</p>
                 </div>
             </div>
         </footer>

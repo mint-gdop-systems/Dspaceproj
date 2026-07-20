@@ -259,7 +259,7 @@ class DSpaceService {
                 headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
             }
             
-            const response = await this._fetch(`${DSPACE_API_URL}/core/collections`, {
+            const response = await this._fetch(`${DSPACE_API_URL}/core/collections?embed=entityType`, {
                 credentials: "include",
                 headers: headers,
             });
@@ -423,25 +423,60 @@ class DSpaceService {
 
             const metadataUpdates = [];
             const dcFields = {
-                "legal.case.fileNumber": metadata.fileNumber,
-                "legal.case.type": metadata.caseType,
-                "legal.case.plaintiff": metadata.plaintiff,
-                "legal.case.defendant": metadata.defendant,
-                "legal.case.representative": metadata.caseRepresentative,
-                "legal.date.registration": metadata.registrationDate,
-                "legal.date.registrationAm": metadata.registrationAmDate,
-                
-                // "legal.case.level": metadata.caseLevel,
-                "legal.lowerCourt.fileNumber": metadata.lowerCourtFileNumber,
-                "legal.case.status": metadata.caseStatus,
-                "legal.bench.session": metadata.benchSession,
-                "dc.description": metadata.description,
-                "legal.location": metadata.location,
+                "dars.document.number": metadata.documentNumber,
+                "dars.document.date": metadata.contractDate,
+                "dars.branch.location": metadata.branchLocation,
+                "dars.spatial.region": metadata.region,
+                "dars.spatial.city": metadata.city,
+                "dars.spatial.subcity": metadata.subcity,
+                "dars.spatial.woreda": metadata.woreda,
+                "dars.spatial.kebele": metadata.kebele,
 
-                "legal.physical.shelfNumber": metadata.shelfNumber,
-                "legal.physical.rowNumber": metadata.rowNumber,
-                "legal.physical.colNumber": metadata.colNumber,
-                "legal.physical.rfid": metadata.rfid,
+                "dars.giver.name": metadata.giverName,
+                "dars.giver.type": metadata.giverType,
+                "dars.receiver.name": metadata.receiverName,
+                "dars.receiver.type": metadata.receiverType,
+                "dars.demographics.femaleCount": metadata.femaleCount,
+                "dars.demographics.maleCount": metadata.maleCount,
+
+                "dars.service.type": metadata.serviceType,
+                "dars.case.type": metadata.caseType,
+
+                "dars.vehicle.libre": metadata.vehicleLibre,
+                "dars.vehicle.plate": metadata.vehiclePlate,
+                "dars.vehicle.chassis": metadata.vehicleChassis,
+                "dars.vehicle.motor": metadata.vehicleMotor,
+
+                "dars.property.carta": metadata.propertyCarta,
+                "dars.property.cartaDate": metadata.propertyCartaDate,
+                "dars.property.houseNumber": metadata.propertyHouseNumber,
+                "dars.property.area": metadata.propertyArea,
+
+                "dars.financial.estimatedValue": metadata.estimatedValue,
+                "dars.financial.saleValue": metadata.saleValue,
+                "dars.financial.capital": metadata.capital,
+                "dars.financial.totalContribution": metadata.totalContribution,
+                "dars.financial.totalShares": metadata.totalShares,
+                "dars.loan.startDate": metadata.loanStartDate,
+                "dars.loan.endDate": metadata.loanEndDate,
+                "dars.loan.amount": metadata.loanAmount,
+
+                "dars.organization.name": metadata.organizationName,
+                "dars.organization.type": metadata.organizationType,
+                "dars.organization.tin": metadata.tin,
+                "dars.contact.phone": metadata.phone,
+
+                "dars.meeting.agenda": metadata.meetingAgenda,
+                "dars.meeting.place": metadata.meetingPlace,
+                "dars.meeting.time": metadata.meetingTime,
+                "dars.meeting.decision": metadata.meetingDecision,
+
+                "dars.document.revokedNumber": metadata.revokedNumber,
+
+                "dars.officer.name": metadata.officerName,
+                "dars.dataEncoder.name": metadata.dataEncoderName,
+                "dars.investigator.name": metadata.investigatorName,
+                "dars.stampOfficer.name": metadata.stampOfficerName,
             };
 
             for (const [field, raw] of Object.entries(dcFields)) {
@@ -450,7 +485,6 @@ class DSpaceService {
                 const cleaned = vals.map((v) => String(v).trim()).filter(Boolean);
 
                 if (cleaned.length > 0) {
-                    // We'll map to the correct section in the batch step
                     metadataUpdates.push({
                         op: "replace",
                         path: field,
@@ -462,32 +496,110 @@ class DSpaceService {
             if (metadataUpdates.length === 0) return true;
 
             const FIELD_SECTION_MAP = {
-                "legal.case.fileNumber": "traditionalpageone",
-                "legal.case.type": "traditionalpageone",
-                "legal.case.plaintiff": "traditionalpageone",
-                "legal.case.defendant": "traditionalpageone",
-                "legal.case.representative": "traditionalpageone",
-                "legal.date.registration": "traditionalpageone",
+                "dars.document.number": "darisCommonPageOne",
+                "dars.document.date": "darisCommonPageOne",
+                "dars.branch.location": "darisCommonPageOne",
+                "dars.document.attachments": "darisCommonPageOne",
+                "dars.document.revokedNumber": "revocationForm",
+                
+                "dars.giver.name": "darisCommonPageTwo",
+                "dars.giver.type": "darisCommonPageTwo",
+                "dars.receiver.name": "darisCommonPageTwo",
+                "dars.receiver.type": "darisCommonPageTwo",
+                "dars.demographics.femaleCount": "darisCommonPageOne",
+                "dars.demographics.maleCount": "darisCommonPageOne",
+                "dars.organization.name": "corporateArticlesForm",
+                "dars.organization.type": "corporateArticlesForm",
+                "dars.organization.tin": "corporateArticlesForm",
+                "dars.contact.phone": "corporateArticlesForm",
 
-                // "legal.case.level": "traditionalpagetwo",
-                "legal.lowerCourt.fileNumber": "traditionalpagetwo",
-                "legal.case.status": "traditionalpagetwo",
-                "legal.bench.session": "traditionalpagetwo",
-                "dc.description": "traditionalpagetwo",
-
-                "legal.location": "physicalLocationForm",
-                "legal.physical.shelfNumber": "physicalLocationForm",
-                "legal.physical.rowNumber": "physicalLocationForm",
-                "legal.physical.colNumber": "physicalLocationForm",
-                "legal.physical.rfid": "physicalLocationForm",
+                "dars.officer.name": "darisCommonPageThree",
+                "dars.dataEncoder.name": "darisCommonPageThree",
+                "dars.investigator.name": "darisCommonPageThree",
+                "dars.stampOfficer.name": "darisCommonPageThree",
             };
 
-            // Bundle all fields into a single PATCH request for performance
-            const patchOps = metadataUpdates.map(update => {
-                const field = update.path;
-                const section = FIELD_SECTION_MAP[field] || "traditionalpageone";
+            // Dynamic Asset Forms mapping (simplified, defaults to specific form if not in common pages)
+            const getSectionForField = (field, metadata) => {
+                if (FIELD_SECTION_MAP[field]) return FIELD_SECTION_MAP[field];
                 
-                return {
+                // Common dynamic fallback for spatial fields depending on entity type
+                if (field.startsWith("dars.spatial.")) {
+                     if (metadata.activeEntityType === "CorporateArticles") return "corporateArticlesForm";
+                     return metadata.activeEntityType === "HouseGift" ? "propertyGiftForm" : "propertySaleForm";
+                }
+                
+                if (field === "dars.case.type") {
+                    if (metadata.activeEntityType === "VehicleGift") return "vehicleGiftForm";
+                    if (metadata.activeEntityType === "VehicleSale") return "vehicleSaleForm";
+                    if (metadata.activeEntityType === "HouseGift") return "propertyGiftForm";
+                    if (metadata.activeEntityType === "HouseSale") return "propertySaleForm";
+                    if (metadata.activeEntityType === "LoanUnsecured" || metadata.activeEntityType === "LoanSecured") return "loanForm";
+                    if (metadata.activeEntityType === "PowerOfAttorney" || metadata.activeEntityType === "POARevocation" || metadata.activeEntityType === "LoanClearance") return "revocationForm";
+                    if (metadata.activeEntityType === "CorporateArticles") return "corporateArticlesForm";
+                    if (metadata.activeEntityType === "CorporateMinutes") return "corporateMinutesForm";
+                    return "darisCommonPageOne";
+                }
+
+                // Route dynamic fields based on entity type
+                if (field.startsWith("dars.vehicle.")) {
+                    return metadata.activeEntityType === "VehicleGift" ? "vehicleGiftForm" : "vehicleSaleForm";
+                }
+                if (field.startsWith("dars.property.")) {
+                    return metadata.activeEntityType === "HouseGift" ? "propertyGiftForm" : "propertySaleForm";
+                }
+                if (field === "dars.financial.saleValue") {
+                    if (metadata.activeEntityType === "HouseSale") return "propertySaleForm";
+                    if (metadata.activeEntityType === "VehicleSale") return "vehicleSaleForm";
+                    return "loanForm";
+                }
+                if (field === "dars.financial.estimatedValue") {
+                    if (metadata.activeEntityType === "HouseGift") return "propertyGiftForm";
+                    if (metadata.activeEntityType === "HouseSale") return "propertySaleForm";
+                    if (metadata.activeEntityType === "VehicleGift") return "vehicleGiftForm";
+                    if (metadata.activeEntityType === "VehicleSale") return "vehicleSaleForm";
+                    return "loanForm";
+                }
+                if (field === "dars.financial.capital" || field === "dars.financial.totalContribution" || field === "dars.financial.totalShares") {
+                    return "corporateArticlesForm";
+                }
+                if (field.startsWith("dars.loan.")) {
+                    return "loanForm";
+                }
+                if (field.startsWith("dars.meeting.")) return "corporateMinutesForm";
+                if (field.startsWith("dars.organization.") || field.startsWith("dars.contact.")) return "corporateArticlesForm";
+                
+                return "darisCommonPageOne";
+            };
+
+            // Determine allowed sections based on activeEntityType to avoid invalid path errors on DSpace
+            const allowedSections = new Set([
+                "darisCommonPageOne",
+                "darisCommonPageTwo",
+                "darisCommonPageThree"
+            ]);
+            if (metadata.activeEntityType === "VehicleSale") allowedSections.add("vehicleSaleForm");
+            else if (metadata.activeEntityType === "VehicleGift") allowedSections.add("vehicleGiftForm");
+            else if (metadata.activeEntityType === "HouseSale") allowedSections.add("propertySaleForm");
+            else if (metadata.activeEntityType === "HouseGift") allowedSections.add("propertyGiftForm");
+            else if (metadata.activeEntityType === "LoanUnsecured" || metadata.activeEntityType === "LoanSecured") allowedSections.add("loanForm");
+            else if (metadata.activeEntityType === "PowerOfAttorney") allowedSections.add("poaForm");
+            else if (metadata.activeEntityType === "POARevocation" || metadata.activeEntityType === "LoanClearance") allowedSections.add("revocationForm");
+            else if (metadata.activeEntityType === "CorporateArticles") allowedSections.add("corporateArticlesForm");
+            else if (metadata.activeEntityType === "CorporateMinutes") allowedSections.add("corporateMinutesForm");
+
+            // Bundle all fields into a single PATCH request for performance
+            const patchOps = [];
+            for (const update of metadataUpdates) {
+                const field = update.path;
+                const section = getSectionForField(field, metadata);
+                
+                if (!allowedSections.has(section)) {
+                    console.warn(`Ignoring field ${field} because section ${section} is not active for entity type ${metadata.activeEntityType}`);
+                    continue;
+                }
+
+                patchOps.push({
                     op: "add",
                     path: `/sections/${section}/${field}`,
                     value: update.value.map(v => ({
@@ -496,12 +608,12 @@ class DSpaceService {
                         authority: null,
                         confidence: -1
                     }))
-                };
-            });
+                });
+            }
 
             if (patchOps.length === 0) return true;
 
-            console.log("DSpace 9: Sending batched metadata update...");
+            console.log("DSpace 9: Sending batched metadata update...", JSON.stringify(patchOps, null, 2));
             
             const response = await this._fetch(`${DSPACE_API_URL}/submission/workspaceitems/${workspaceItemId}`, {
                 method: "PATCH",
@@ -774,7 +886,7 @@ class DSpaceService {
                 return endpointResult;
             }
 
-            const query = this.buildExactMetadataQuery("legal.case.fileNumber", normalizedFileNumber);
+            const query = this.buildExactMetadataQuery("dars.document.number", normalizedFileNumber);
             const totals = await Promise.all([
                 // Archived/public item index.
                 this.getSearchTotal(query),
@@ -800,7 +912,7 @@ class DSpaceService {
                 headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
             }
 
-            const response = await this._fetch(`${DSPACE_API_URL}/legal/casefiles/exists?${params}`, {
+            const response = await this._fetch(`${DSPACE_API_URL}/dars/document/exists?${params}`, {
                 credentials: "include",
                 headers: headers,
             });
