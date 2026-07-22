@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
-import { useAuth } from "../contexts/AuthContext";
-import { Search } from "lucide-react";
+// import { useAuth } from "../contexts/AuthContext";
+// import { Search } from "lucide-react";
 
 // Configure pdfjs worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -9,9 +9,9 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
-const ResourceTable = ({ resources, loading, onCirculationClick }) => {
-    const { user } = useAuth();
-    const isAuthenticated = !!user;
+const ResourceTable = ({ resources, loading }) => {
+    // const { user } = useAuth();
+    // const isAuthenticated = !!user;
     const [previewLoading, setPreviewLoading] = useState({});
     const [showPreviewModal, setShowPreviewModal] = useState(false);
     const [previewUrl, setPreviewUrl] = useState("");
@@ -40,17 +40,15 @@ const ResourceTable = ({ resources, loading, onCirculationClick }) => {
     const handlePreview = async (resource, e) => {
         e.stopPropagation();
         let url = "";
-        if (resource.source === "dspace") {
-            // Prefer UUID for the preview URL to avoid handle slashes breaking paths
-            const itemUuid = resource.id || resource.external_id;
-            if (resource.preview_url) {
-                url = resource.preview_url;
-            } else if (itemUuid && !itemUuid.includes("/")) {
-                url = `/api/resources/dspace-bitstream/${itemUuid}/`;
-            } else if (resource.id && resource.id.startsWith("dspace_")) {
-                const cleanUuid = resource.id.replace("dspace_", "");
-                url = `/api/resources/dspace-bitstream/${cleanUuid}/`;
-            }
+        // Prefer UUID for the preview URL to avoid handle slashes breaking paths
+        const itemUuid = resource.id || resource.external_id;
+        if (resource.preview_url) {
+            url = resource.preview_url;
+        } else if (itemUuid && !itemUuid.includes("/")) {
+            url = `/api/resources/dspace-bitstream/${itemUuid}/`;
+        } else if (resource.id && resource.id.startsWith("dspace_")) {
+            const cleanUuid = resource.id.replace("dspace_", "");
+            url = `/api/resources/dspace-bitstream/${cleanUuid}/`;
         }
 
         if (url) {
@@ -62,20 +60,13 @@ const ResourceTable = ({ resources, loading, onCirculationClick }) => {
     };
 
     const handleRowClick = (resource) => {
-        if (resource.source === "koha") {
-            window.open(
-                `http://127.0.0.1:8085/cgi-bin/koha/catalogue/detail.pl?biblionumber=${resource.external_id}`,
-                "_blank",
-            );
-        } else if (resource.source === "dspace") {
-            const isHandle = resource.external_id && resource.external_id.includes("/");
-            const path = isHandle ? "handle" : "items";
-            const baseUrl = import.meta.env.DSPACE_FRONTEND_URL || "http://localhost:4000";
-            window.open(
-                `${baseUrl}/${path}/${resource.external_id}`,
-                "_blank",
-            );
-        }
+        const isHandle = resource.external_id && resource.external_id.includes("/");
+        const path = isHandle ? "handle" : "items";
+        const baseUrl = import.meta.env.DSPACE_FRONTEND_URL || "http://localhost:4000";
+        window.open(
+            `${baseUrl}/${path}/${resource.external_id}`,
+            "_blank",
+        );
     };
 
     if (loading) {
@@ -116,40 +107,38 @@ const ResourceTable = ({ resources, loading, onCirculationClick }) => {
 
     return (
         <div className="bg-white rounded-lg border border-gray-200 p-2">
-            <div className="mb-6">
-
-
+            <div className="mb-4">
             </div>
 
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50 border-b-2 border-[#265A91]">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            {/* <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                                 ርዕስ
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            </th> */}
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                                 የሰነድ ቁጥር
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                                 የውል ቀን
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                                 ውል ሰጪ
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                                 ውል ተቀባይ
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                                 የሰነድ አይነት
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                                 ቅርንጫፍ
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                                 ሁኔታ
                             </th>
-                            <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                                 ተግባራት
                             </th>
                         </tr>
@@ -161,77 +150,55 @@ const ResourceTable = ({ resources, loading, onCirculationClick }) => {
                                 className="hover:bg-blue-50/50 cursor-pointer transition-colors"
                                 onClick={() => handleRowClick(resource)}
                             >
-                                <td className="px-6 py-4 max-w-xs">
-                                    <div className="text-sm font-semibold text-[#265A91] hover:underline truncate" title={resource.title}>
-                                        {resource.title || "—"}
+                                {/* <td className="px-6 py-4 max-w-xs">
+
+                                </td> */}
+                                <td className="px-6 py-4 text-sm text-gray-700 font-medium whitespace-nowrap">
+                                    {resource.file_number || "—"}
+                                    <div className="flex flex-col space-y-1">
+                                        {resource.entity_type && (
+                                            <span className="inline-flex w-max items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                                {resource.entity_type}
+                                            </span>
+                                        )}
                                     </div>
                                 </td>
-                                <td className="px-6 py-4 text-sm text-gray-700 font-medium">
-                                    {resource.file_number || resource.complaint_number || "—"}
+                                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
+                                    {resource.document_date || "—"}
                                 </td>
-                                <td className="px-6 py-4 text-sm text-gray-700">
-                                    {resource.contract_date || resource.registration_date || "—"}
+                                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
+                                    {resource.plaintiff || "—"}
                                 </td>
-                                <td className="px-6 py-4 text-sm text-gray-700">
-                                    {resource.giver_name || resource.plaintiff || "—"}
+                                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
+                                    {resource.defendant || "—"}
                                 </td>
-                                <td className="px-6 py-4 text-sm text-gray-700">
-                                    {resource.receiver_name || resource.defendant || "—"}
+                                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
+                                    {resource.service_type || "—"}
                                 </td>
-                                <td className="px-6 py-4 text-sm text-gray-700">
-                                    {resource.document_type || resource.bench_session || "—"}
+                                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
+                                    {resource.branch || "—"}
                                 </td>
-                                <td className="px-6 py-4 text-sm text-gray-700">
-                                    {resource.branch || resource.location || "—"}
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-700">
+                                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
                                     <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
                                         {resource.case_status || "የተመዘገበ"}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-center">
                                     <div className="flex items-center justify-center space-x-2">
-                                        {resource.source === "dspace" && (
-                                            <>
-                                                <button
-                                                    onClick={(e) => handlePreview(resource, e)}
-                                                    disabled={previewLoading[resource.id]}
-                                                    className="px-3 py-1 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center cursor-pointer"
-                                                >
-                                                    {previewLoading[resource.id] ? (
-                                                        <>
-                                                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
-                                                            በመጫን ላይ...
-                                                        </>
-                                                    ) : (
-                                                        "ቅድመ እይታ"
-                                                    )}
-                                                </button>
-                                                {isAuthenticated && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onCirculationClick(resource);
-                                                        }}
-                                                        className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 cursor-pointer"
-                                                    >
-                                                        የስርጭት ሁነቶች
-                                                    </button>
-                                                )}
-                                            </>
-                                        )}
-                                        {resource.source === "koha" && (
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleRowClick(resource);
-                                                }}
-                                                className="px-3 py-1 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 cursor-pointer flex items-center gap-1"
-                                            >
-                                                <Search className="w-3 h-3" />
-                                                በካታሎግ ውስጥ ይመልከቱ
-                                            </button>
-                                        )}
+                                        <button
+                                            onClick={(e) => handlePreview(resource, e)}
+                                            disabled={previewLoading[resource.id]}
+                                            className="px-3 py-1 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center cursor-pointer"
+                                        >
+                                            {previewLoading[resource.id] ? (
+                                                <>
+                                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                                                    በመጫን ላይ...
+                                                </>
+                                            ) : (
+                                                "ቅድመ እይታ"
+                                            )}
+                                        </button>
                                     </div>
                                 </td>
                             </tr>

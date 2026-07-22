@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { pdfjs } from "react-pdf";
+// import { pdfjs } from "react-pdf";
 
 export const useMetadataFiles = () => {
   const [files, setFiles] = useState([]);

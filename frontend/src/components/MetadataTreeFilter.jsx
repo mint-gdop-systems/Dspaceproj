@@ -57,10 +57,9 @@ const TreeNode = ({ label, category, items, expandedNodes, selectedFilters, togg
 
 const MetadataTreeFilter = ({ resources, onFilterChange, selectedFilters = {}, onClearFilters, className = "" }) => {
     const [expandedNodes, setExpandedNodes] = useState({
-        case_type: true,
-        case_status: true,
-        location: true,
-        registration_date: true,
+        service_type: true,
+        branch: true,
+        document_date: true,
     });
 
     // Dynamically extract metadata options from resources
@@ -68,32 +67,27 @@ const MetadataTreeFilter = ({ resources, onFilterChange, selectedFilters = {}, o
         if (!resources || resources.length === 0) return {};
 
         const options = {
-            case_type: {},
-            case_status: {},
-            location: {},
-            registration_date: {},
+            service_type: {},
+            branch: {},
+            document_date: {},
         };
 
         resources.forEach(resource => {
-            if (resource.case_type) {
-                options.case_type[resource.case_type] = (options.case_type[resource.case_type] || 0) + 1;
+            if (resource.service_type) {
+                options.service_type[resource.service_type] = (options.service_type[resource.service_type] || 0) + 1;
             }
-            if (resource.case_status) {
-                options.case_status[resource.case_status] = (options.case_status[resource.case_status] || 0) + 1;
+            if (resource.branch) {
+                options.branch[resource.branch] = (options.branch[resource.branch] || 0) + 1;
             }
-            if (resource.location) {
-                options.location[resource.location] = (options.location[resource.location] || 0) + 1;
-            }
-            if (resource.registration_date) {
-                options.registration_date[resource.registration_date] = (options.registration_date[resource.registration_date] || 0) + 1;
+            if (resource.document_date) {
+                options.document_date[resource.document_date] = (options.document_date[resource.document_date] || 0) + 1;
             }
         });
 
         return {
-            case_type: Object.entries(options.case_type).sort((a, b) => b[1] - a[1]),
-            case_status: Object.entries(options.case_status).sort((a, b) => b[1] - a[1]),
-            location: Object.entries(options.location).sort((a, b) => b[1] - a[1]),
-            registration_date: Object.entries(options.registration_date).sort((a, b) => b[0].localeCompare(a[0])),
+            service_type: Object.entries(options.service_type).sort((a, b) => b[1] - a[1]),
+            branch: Object.entries(options.branch).sort((a, b) => b[1] - a[1]),
+            document_date: Object.entries(options.document_date).sort((a, b) => b[0].localeCompare(a[0])),
         };
     }, [resources]);
 
@@ -160,16 +154,13 @@ const MetadataTreeFilter = ({ resources, onFilterChange, selectedFilters = {}, o
             </div>
 
             <div className="p-3 max-h-[calc(100vh-300px)] overflow-y-auto custom-scrollbar">
-                <TreeNode label="የጉዳዩ ዓይነት (Case Type)" category="case_type" items={filterOptions.case_type} {...sharedProps} />
+                <TreeNode label="የጉዳዩ ዓይነት (Case Type)" category="service_type" items={filterOptions.service_type} {...sharedProps} />
                 <div className="border-b border-dashed border-gray-200 my-2 mx-2"></div>
 
-                <TreeNode label="የመዝገቡ ደረጃ (Case Status)" category="case_status" items={filterOptions.case_status} {...sharedProps} />
+                <TreeNode label="የሰነዱ መገኛ (branch)" category="branch" items={filterOptions.branch} {...sharedProps} />
                 <div className="border-b border-dashed border-gray-200 my-2 mx-2"></div>
 
-                <TreeNode label="የፍርድ ቤት ቦታ (Location)" category="location" items={filterOptions.location} {...sharedProps} />
-                <div className="border-b border-dashed border-gray-200 my-2 mx-2"></div>
-
-                <TreeNode label="የምዝገባ ቀን (Registration Date)" category="registration_date" items={filterOptions.registration_date} {...sharedProps} />
+                <TreeNode label="የተዋዋሉበት ቀን" category="document_date" items={filterOptions.document_date} {...sharedProps} />
             </div>
         </div>
     );

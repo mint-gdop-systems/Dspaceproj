@@ -77,10 +77,7 @@ export const useHomeData = () => {
             const mappedResults = (await dspaceService.searchItems(query))
                 .filter(item => {
                     const indexableObject = item._embedded?.indexableObject;
-                    if (indexableObject?.type !== 'item') return false;
-                    const metadata = indexableObject?.metadata || {};
-                    const entityType = metadata["dspace.entity.type"]?.[0]?.value;
-                    return entityType === "CaseFile";
+                    return indexableObject?.type === 'item';
                 })
                 .map(item => {
                     const metadata = item._embedded?.indexableObject?.metadata || {};
@@ -132,21 +129,17 @@ export const useHomeData = () => {
                         issn: getVal("dc.identifier.issn"),
                         subjects: getValList("dc.subject"),
                         format: getVal("dc.format"),
-                        bench_session: getVal("legal.bench.session"),
-                        complaint_number: getVal("legal.case.complaintNumber"),
-                        file_number: getVal("legal.case.fileNumber"),
-                        lower_court_file_number: getVal("legal.lowerCourt.fileNumber"),
-                        case_document_type: getVal("legal.document.type"),
-                        location: getVal("legal.location"),
-                        case_status: getVal("legal.case.status"),
-                        case_type: getVal("legal.case.type"),
-                        registration_date: getVal("legal.date.registration"),
-                        plaintiff: getVal("legal.case.plaintiff"),
-                        defendant: getVal("legal.case.defendant"),
-                        shelf_number: getVal("legal.physical.shelfNumber"),
-                        row_number: getVal("legal.physical.rowNumber"),
-                        col_number: getVal("legal.physical.colNumber"),
-                        rfid: getVal("legal.physical.rfid"),
+                        entity_type: getVal("dspace.entity.type"),
+                        file_number: getVal("dars.document.number"),
+                        case_document_type: getVal("dars.document.type"),
+                        branch: getVal("dars.branch.location"),
+                        case_status: getVal("dars.case.status"),
+                        service_type: getVal("dars.case.type"),
+                        document_date: getVal("dars.document.date"),
+                        plaintiff: getValList("dars.giver.name"),
+                        defendant: getValList("dars.receiver.name"),
+                        city: getVal("dars.spatial.city"),
+                        subcity: getVal("dars.spatial.subcity"),
                     };
                 });
 
@@ -287,10 +280,7 @@ export const useHomeData = () => {
                     const transformedItems = items
                         .filter(item => {
                             const indexableObject = item._embedded?.indexableObject;
-                            if (indexableObject?.type !== 'item') return false;
-                            const metadata = indexableObject?.metadata || {};
-                            const entityType = metadata["dspace.entity.type"]?.[0]?.value;
-                            return entityType === "CaseFile";
+                            return indexableObject?.type === 'item';
                         })
                         .map(item => {
                             const metadata = item._embedded?.indexableObject?.metadata || {};
@@ -324,21 +314,17 @@ export const useHomeData = () => {
                                 collection_name: collectionName,
                                 external_id: item._embedded?.indexableObject?.handle || item._embedded?.indexableObject?.uuid,
                                 language: getVal("dc.language"),
-                                bench_session: getVal("legal.bench.session"),
-                                complaint_number: getVal("legal.case.complaintNumber"),
-                                file_number: getVal("legal.case.fileNumber"),
-                                lower_court_file_number: getVal("legal.lowerCourt.fileNumber"),
-                                case_document_type: getVal("legal.document.type"),
-                                location: getVal("legal.location"),
-                                case_status: getVal("legal.case.status"),
-                                case_type: getVal("legal.case.type"),
-                                registration_date: getVal("legal.date.registration"),
-                                plaintiff: getVal("legal.case.plaintiff"),
-                                defendant: getVal("legal.case.defendant"),
-                                shelf_number: getVal("legal.physical.shelfNumber"),
-                                row_number: getVal("legal.physical.rowNumber"),
-                                col_number: getVal("legal.physical.colNumber"),
-                                rfid: getVal("legal.physical.rfid"),
+                                entity_type: getVal("dspace.entity.type"),
+                                file_number: getVal("dars.document.number"),
+                                case_document_type: getVal("dars.document.type"),
+                                branch: getVal("dars.branch.location"),
+                                case_status: getVal("dars.case.status"),
+                                service_type: getVal("dars.case.type"),
+                                document_date: getVal("dars.document.date"),
+                                plaintiff: getVal("dars.giver.name"),
+                                defendant: getVal("dars.receiver.name"),
+                                city: getVal("dars.spatial.city"),
+                                subcity: getVal("dars.spatial.subcity"),
                             };
                         });
 

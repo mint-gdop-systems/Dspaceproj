@@ -423,6 +423,7 @@ class DSpaceService {
 
             const metadataUpdates = [];
             const dcFields = {
+                "dc.title": metadata.title,
                 "dars.document.number": metadata.documentNumber,
                 "dars.document.date": metadata.contractDate,
                 "dars.branch.location": metadata.branchLocation,
@@ -493,9 +494,8 @@ class DSpaceService {
                 }
             }
 
-            if (metadataUpdates.length === 0) return true;
-
             const FIELD_SECTION_MAP = {
+                "dc.title": "darisCommonPageOne",
                 "dars.document.number": "darisCommonPageOne",
                 "dars.document.date": "darisCommonPageOne",
                 "dars.branch.location": "darisCommonPageOne",
@@ -812,9 +812,9 @@ class DSpaceService {
 
     async searchItems(query, limit = 20) {
         try {
-            // Remove embed=owningCollection because it causes DSpace 9 backend to hang under load
             const params = new URLSearchParams({
                 query: query || "*",
+                dsoType: "item",
                 page: "0",
                 size: String(limit)
             });
@@ -848,9 +848,9 @@ class DSpaceService {
 
     async getSearchTotal(query = "*", options = {}) {
         try {
-            // Fetch with size 1 and no embedding just to get the totalElements from the page metadata
             const params = new URLSearchParams({
-                query: query,
+                query: query || "*",
+                dsoType: "item",
                 page: "0",
                 size: "1",
             });
