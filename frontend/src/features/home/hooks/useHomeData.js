@@ -104,8 +104,8 @@ export const useHomeData = () => {
                     }
                     else if (indexableObject?._links?.owningCollection?.href) {
                         const href = indexableObject._links.owningCollection.href;
-                        const uuidMatch = href.match(/collections\/([a-f0-9\-]+)/i) ||
-                            href.match(/items\/([a-f0-9\-]+)\/owningCollection/i);
+                        const uuidMatch = href.match(/collections\/([a-f0-9-]+)/i) ||
+                            href.match(/items\/([a-f0-9-]+)\/owningCollection/i);
                         if (uuidMatch) {
                             collectionName = uuidMatch[1];
                         }
@@ -310,8 +310,8 @@ export const useHomeData = () => {
                             }
                             else if (indexableObject?._links?.owningCollection?.href) {
                                 const href = indexableObject._links.owningCollection.href;
-                                const uuidMatch = href.match(/collections\/([a-f0-9\-]+)/i) ||
-                                    href.match(/items\/([a-f0-9\-]+)\/owningCollection/i);
+                                const uuidMatch = href.match(/collections\/([a-f0-9-]+)/i) ||
+                                    href.match(/items\/([a-f0-9-]+)\/owningCollection/i);
                                 if (uuidMatch) {
                                     collectionName = uuidMatch[1];
                                 }
@@ -348,7 +348,7 @@ export const useHomeData = () => {
 
             const processedItems = allItems.map(resource => {
                 if (resource.collection_name && collections.length > 0) {
-                    const isUuid = /^[a-f0-9\-]{36}$/i.test(resource.collection_name);
+                    const isUuid = /^[a-f0-9-]{36}$/i.test(resource.collection_name);
                     if (isUuid) {
                         const matchingCollection = collections.find(
                             col => col.uuid === resource.collection_name || col.id === resource.collection_name

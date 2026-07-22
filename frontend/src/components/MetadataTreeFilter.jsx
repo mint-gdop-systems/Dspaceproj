@@ -162,13 +162,13 @@ const MetadataTreeFilter = ({ resources, onFilterChange, selectedFilters = {}, o
             <div className="p-3 max-h-[calc(100vh-300px)] overflow-y-auto custom-scrollbar">
                 <TreeNode label="የጉዳዩ ዓይነት (Case Type)" category="case_type" items={filterOptions.case_type} {...sharedProps} />
                 <div className="border-b border-dashed border-gray-200 my-2 mx-2"></div>
-                
+
                 <TreeNode label="የመዝገቡ ደረጃ (Case Status)" category="case_status" items={filterOptions.case_status} {...sharedProps} />
                 <div className="border-b border-dashed border-gray-200 my-2 mx-2"></div>
-                
+
                 <TreeNode label="የፍርድ ቤት ቦታ (Location)" category="location" items={filterOptions.location} {...sharedProps} />
                 <div className="border-b border-dashed border-gray-200 my-2 mx-2"></div>
-                
+
                 <TreeNode label="የምዝገባ ቀን (Registration Date)" category="registration_date" items={filterOptions.registration_date} {...sharedProps} />
             </div>
         </div>

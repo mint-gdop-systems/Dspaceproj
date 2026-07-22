@@ -29,7 +29,7 @@ const HeroSection = ({ searchQuery, setSearchQuery, handleSearch }) => {
                     </form>
                 </div>
             </div>
-            
+
             {/* Decorative bottom curve/angle */}
             <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-none">
                 <svg className="relative block w-full h-[40px]" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">

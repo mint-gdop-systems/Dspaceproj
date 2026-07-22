@@ -16,9 +16,9 @@ const Footer = () => {
                             <p>አዲስ አበባ፣ ኢትዮጵያ</p>
                         </div>
                     </div>
-                <div className="flex flex-col items-center md:items-end">
-                    <p className="text-sm text-white/90">Powered By Ministry of Innovation and Technology</p>
-                </div>
+                    <div className="flex flex-col items-center md:items-end">
+                        <p className="text-sm text-white/90">Powered By Ministry of Innovation and Technology</p>
+                    </div>
                 </div>
 
                 <div className="border-t border-white/20 mt-8 pt-4 text-center text-sm text-white/80">
