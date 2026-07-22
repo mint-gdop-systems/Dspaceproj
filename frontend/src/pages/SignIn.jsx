@@ -37,8 +37,8 @@ const SignIn = () => {
         <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md border border-gray-200">
                 <div>
-                    <div className="mx-auto h-12 w-12 bg-[#0C2B4E] rounded-full flex items-center justify-center">
-                        <LogIn className="h-6 w-6 text-white" />
+                    <div className="mx-auto h-16 w-16 bg-gradient-to-br from-[#265A91] to-[#4FA3D1] rounded-full flex items-center justify-center shadow-md border-2 border-[#F9F871]">
+                        <LogIn className="h-8 w-8 text-white" />
                     </div>
                     <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
                         Sign in to your account
@@ -83,8 +83,8 @@ const SignIn = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${loading ? 'bg-blue-400' : 'bg-[#0C2B4E] hover:bg-blue-900'
-                                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer`}
+                            className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white shadow-md transition-colors ${loading ? 'bg-[#4FA3D1]' : 'bg-[#265A91] hover:bg-[#1a4066] border-[#F9F871] hover:border-transparent'
+                                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#265A91] cursor-pointer`}
                         >
                             {loading ? 'Signing in...' : 'Sign in'}
                         </button>

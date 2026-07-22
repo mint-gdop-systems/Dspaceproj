@@ -123,33 +123,33 @@ const ResourceTable = ({ resources, loading, onCirculationClick }) => {
 
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-gray-50 border-b-2 border-[#265A91]">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                                 ርዕስ
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                የቅሬታ ቁጥር
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                የሰነድ ቁጥር
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                የፋይል ቁጥር
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                የውል ቀን
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                ከሳሽ
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                ውል ሰጪ
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                ተከሳሽ
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                ውል ተቀባይ
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                የችሎት አይነት
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                የሰነድ አይነት
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                ቦታ
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                ቅርንጫፍ
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                ደረጃ
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                ሁኔታ
                             </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
                                 ተግባራት
                             </th>
                         </tr>
@@ -158,38 +158,37 @@ const ResourceTable = ({ resources, loading, onCirculationClick }) => {
                         {resources.map((resource) => (
                             <tr
                                 key={resource.id}
-                                className="hover:bg-gray-50 cursor-pointer"
+                                className="hover:bg-blue-50/50 cursor-pointer transition-colors"
                                 onClick={() => handleRowClick(resource)}
                             >
                                 <td className="px-6 py-4 max-w-xs">
-                                    <div className="text-sm font-medium text-blue-600 hover:underline">
+                                    <div className="text-sm font-semibold text-[#265A91] hover:underline truncate" title={resource.title}>
                                         {resource.title || "—"}
                                     </div>
-
-
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-700 font-medium">
+                                    {resource.file_number || resource.complaint_number || "—"}
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-700">
-                                    {resource.complaint_number || "—"}
+                                    {resource.contract_date || resource.registration_date || "—"}
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-700">
-                                    {resource.file_number || "—"}
+                                    {resource.giver_name || resource.plaintiff || "—"}
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-700">
-                                    {resource.plaintiff || "—"}
+                                    {resource.receiver_name || resource.defendant || "—"}
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-700">
-                                    {resource.defendant || "—"}
+                                    {resource.document_type || resource.bench_session || "—"}
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-700">
-                                    {resource.bench_session || "—"}
+                                    {resource.branch || resource.location || "—"}
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-700">
-                                    {resource.location || "—"}
+                                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
+                                        {resource.case_status || "የተመዘገበ"}
+                                    </span>
                                 </td>
-                                <td className="px-6 py-4 text-sm text-gray-700">
-                                    {resource.case_status || "—"}
-                                </td>
-
                                 <td className="px-6 py-4 text-center">
                                     <div className="flex items-center justify-center space-x-2">
                                         {resource.source === "dspace" && (

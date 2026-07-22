@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ChevronDown, ChevronRight, Filter, X } from 'lucide-react';
 
 // 1. Move TreeNode outside of the main component
