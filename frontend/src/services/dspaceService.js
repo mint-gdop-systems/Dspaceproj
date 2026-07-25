@@ -423,7 +423,7 @@ class DSpaceService {
 
             const metadataUpdates = [];
             const dcFields = {
-                "dc.title": metadata.title,
+                // "dc.title": metadata.title,
                 "dars.document.number": metadata.documentNumber,
                 "dars.document.date": metadata.contractDate,
                 "dars.branch.location": metadata.branchLocation,
@@ -495,7 +495,7 @@ class DSpaceService {
             }
 
             const FIELD_SECTION_MAP = {
-                "dc.title": "darisCommonPageOne",
+                // "dc.title": "darisCommonPageOne",
                 "dars.document.number": "darisCommonPageOne",
                 "dars.document.date": "darisCommonPageOne",
                 "dars.branch.location": "darisCommonPageOne",
