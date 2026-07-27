@@ -432,7 +432,7 @@ const MetadataEditor = () => {
 
       // 2. Update metadata
       const metadata = {
-        title: title || fileNumber, // Fallback if no specific title
+        // title: title || fileNumber, // Fallback if no specific title
         description: description,
         documentNumber: fileNumber,
         contractDate: extraFields.registrationDate || extraFields.registrationAmDate,
