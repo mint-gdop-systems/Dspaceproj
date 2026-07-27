@@ -566,37 +566,23 @@ const MetadataEditor = () => {
         return 0;
       });
 
-      // Track UUIDs already in the workspace item so uploadFile can identify
-      // each newly added bitstream by set-difference (not by position guessing).
-      const knownUuids = new Set();
-
       for (const fileItem of filesToUpload) {
-        const result = await dspaceService.uploadFile(
+        const bitstream = await dspaceService.uploadFile(
           workspaceItemId,
           fileItem.fileObject,
-          knownUuids,
         );
-        if (result && result.fileData && result.fileData.uuid) {
-          const { fileData, fileIndex } = result;
-
-          // Register this UUID so the next upload call knows it already exists
-          knownUuids.add(fileData.uuid);
-
+        if (bitstream && bitstream.uuid) {
           if (
             fileItem.id === primaryFileId ||
             (!primaryFileId && files[0].id === fileItem.id)
           ) {
             await dspaceService.setWorkspaceItemPrimaryBitstream(
               workspaceItemId,
-              fileData.uuid,
+              bitstream.uuid,
             );
           }
-
-          // Patch bitstream metadata via the Core API using the exact, correctly
-          // identified UUID. The set-difference tracking in uploadFile guarantees
-          // this UUID belongs to the file we just uploaded, not a previous one.
           await dspaceService.updateBitstreamMetadata(
-            fileData.uuid,
+            bitstream.uuid,
             fileItem.metadata,
           );
         } else {

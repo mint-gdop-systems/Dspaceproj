@@ -531,7 +531,7 @@ class DSpaceService {
         }
     }
 
-    async uploadFile(workspaceItemId, file, knownUuids = new Set()) {
+    async uploadFile(workspaceItemId, file) {
         try {
             const formData = new FormData();
             formData.append("file", file);
@@ -557,20 +557,16 @@ class DSpaceService {
                 const data = await response.json();
                 console.log("DSpace 9 Upload Response (WorkspaceItem):", data);
 
-                // In DSpace 9, the response is the full WorkspaceItem.
-                // sections.upload.files is the ordered list of all uploaded bitstreams.
-                // We identify the newly uploaded file as the one whose UUID was not
-                // present before this upload call (passed in via knownUuids).
-                const uploadedFiles = data.sections?.upload?.files;
-                if (uploadedFiles && uploadedFiles.length > 0) {
-                    const newIndex = uploadedFiles.findIndex(f => !knownUuids.has(f.uuid));
-                    const fileIndex = newIndex !== -1 ? newIndex : uploadedFiles.length - 1;
-                    const fileData = uploadedFiles[fileIndex];
-                    console.log(`Uploaded bitstream UUID: ${fileData.uuid} at index ${fileIndex}`);
-                    // Return both the file data and its deterministic index in the upload section
-                    return { fileData, fileIndex };
+                // In DSpace 9, the response is the WorkspaceItem. 
+                // The bitstream info is inside sections.upload.files
+                const files = data.sections?.upload?.files;
+                if (files && files.length > 0) {
+                    // The most recently uploaded file is usually the last one
+                    const latestFile = files[files.length - 1];
+                    console.log("Extracted Bitstream UUID:", latestFile.uuid);
+                    return latestFile;
                 }
-                return null;
+                return data;
             } else {
                 const errorText = await response.text().catch(() => "No error body");
                 console.error(`Upload failed with status ${response.status}:`, errorText);
@@ -582,22 +578,6 @@ class DSpaceService {
         }
     }
 
-    /**
-     * Patches bitstream metadata via the Core Bitstreams API.
-     *
-     * We use /core/bitstreams/{uuid} rather than the Submission API
-     * /sections/upload/files/{index}/metadata/... path because the Submission
-     * API's BitstreamMetadataValueReplacePatchOperation requires a value-index
-     * suffix on every path (e.g. /dc.title/0/value) that differs between
-     * 'add' and 'replace' ops — making it fragile and hard to use correctly.
-     *
-     * The Core API accepts a simple, stable JSON-Patch format and the bitstream
-     * UUID is now always correct thanks to the set-difference tracking in
-     * uploadFile, so there is no longer a risk of patching the wrong bitstream.
-     *
-     * @param {string} bitstreamUuid - Exact UUID of the uploaded bitstream
-     * @param {object} metadata      - { title, type, pageCount, description }
-     */
     async updateBitstreamMetadata(bitstreamUuid, metadata) {
         try {
             const token = this.getStoredToken();
@@ -609,29 +589,28 @@ class DSpaceService {
                 headers["Authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
             }
 
-            const val = (v) => [{ value: String(v), language: null, authority: null, confidence: -1 }];
             const patch = [];
-
+            
             if (metadata.title) {
-                patch.push({ op: "replace", path: "/metadata/dc.title", value: val(metadata.title) });
+                patch.push({ op: "replace", path: "/metadata/dc.title", value: [{ value: metadata.title, language: null, authority: null, confidence: -1 }] });
             }
             if (metadata.type) {
-                patch.push({ op: "add", path: "/metadata/legal.document.type", value: val(metadata.type) });
+                patch.push({ op: "add", path: "/metadata/legal.document.type", value: [{ value: metadata.type, language: null, authority: null, confidence: -1 }] });
             }
             if (metadata.pageCount) {
-                patch.push({ op: "add", path: "/metadata/legal.document.pageCount", value: val(metadata.pageCount) });
+                patch.push({ op: "add", path: "/metadata/legal.document.pageCount", value: [{ value: metadata.pageCount, language: null, authority: null, confidence: -1 }] });
             }
             // if (metadata.status) {
-            //     patch.push({ op: "add", path: "/metadata/legal.document.status", value: val(metadata.status) });
+            //     patch.push({ op: "add", path: "/metadata/legal.document.status", value: [{ value: metadata.status, language: null, authority: null, confidence: -1 }] });
             // }
             if (metadata.description) {
-                patch.push({ op: "add", path: "/metadata/dc.description", value: val(metadata.description) });
+                patch.push({ op: "add", path: "/metadata/dc.description", value: [{ value: metadata.description, language: null, authority: null, confidence: -1 }] });
             }
 
             if (patch.length === 0) return true;
 
             const url = `${DSPACE_API_URL}/core/bitstreams/${bitstreamUuid}`;
-            console.log(`Patching bitstream metadata: ${bitstreamUuid}`);
+            console.log(`DSpace 9: Patching bitstream metadata at ${url}`);
 
             const response = await this._fetch(url, {
                 method: "PATCH",
@@ -641,8 +620,7 @@ class DSpaceService {
             });
 
             if (!response.ok) {
-                const errText = await response.text().catch(() => "");
-                console.error(`Failed to update bitstream metadata (${response.status}):`, errText);
+                console.error(`Failed to update bitstream metadata: ${response.status}`);
             }
             return response.ok;
         } catch (error) {
