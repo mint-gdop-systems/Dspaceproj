@@ -569,7 +569,8 @@ const MetadataEditor = () => {
       // Track UUIDs already in the workspace item so uploadFile can identify
       // each newly added bitstream by set-difference (not by position guessing).
       const knownUuids = new Set();
-
+      const failedFiles = [];
+      let primaryUuid = null; // resolved after upload – set AFTER loop so DSpace can't override it
       for (const fileItem of filesToUpload) {
         const result = await dspaceService.uploadFile(
           workspaceItemId,
@@ -577,20 +578,19 @@ const MetadataEditor = () => {
           knownUuids,
         );
         if (result && result.fileData && result.fileData.uuid) {
-          const { fileData, fileIndex } = result;
+          const { fileData } = result;
 
           // Register this UUID so the next upload call knows it already exists
           knownUuids.add(fileData.uuid);
 
-          if (
+          // Record the primary UUID but do NOT call the API yet.
+          // DSpace automatically makes the last-added bitstream the primary,
+          // so calling setWorkspaceItemPrimaryBitstream mid-loop (after file 1)
+          // gets silently overwritten when file 2 is uploaded.
+          const isThisPrimary =
             fileItem.id === primaryFileId ||
-            (!primaryFileId && files[0].id === fileItem.id)
-          ) {
-            await dspaceService.setWorkspaceItemPrimaryBitstream(
-              workspaceItemId,
-              fileData.uuid,
-            );
-          }
+            (!primaryFileId && filesToUpload[0].id === fileItem.id);
+          if (isThisPrimary) primaryUuid = fileData.uuid;
 
           // Patch bitstream metadata via the Core API using the exact, correctly
           // identified UUID. The set-difference tracking in uploadFile guarantees
@@ -600,8 +600,24 @@ const MetadataEditor = () => {
             fileItem.metadata,
           );
         } else {
-          console.error(`Failed to upload file: ${fileItem.name}`);
+          console.error(`Failed to upload file: ${fileItem.fileObject?.name ?? fileItem.id}`);
+          failedFiles.push(fileItem.fileObject?.name ?? fileItem.id);
         }
+      }
+
+      // Guard: abort before submit if any file failed to upload.
+      if (failedFiles.length > 0) {
+        throw new Error(
+          `${failedFiles.length} file(s) failed to upload:\n` +
+          failedFiles.map(f => `  • ${f}`).join("\n") +
+          `\n\nThe workspace item was NOT submitted. Please try again.`
+        );
+      }
+
+      // Set primary bitstream AFTER all uploads are done so DSpace cannot
+      // override our selection when the second file is added to the bundle.
+      if (primaryUuid) {
+        await dspaceService.setWorkspaceItemPrimaryBitstream(workspaceItemId, primaryUuid);
       }
 
       // 4. Submit to workflow
