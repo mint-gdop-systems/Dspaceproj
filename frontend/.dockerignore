@@ -1,0 +1,26 @@
+# Dependencies & local builds
+node_modules
+dist
+build
+.next
+
+# Environment & Config
+.env*.local
+.env.local
+
+# Version Control & IDEs
+.git
+.gitignore
+.vscode
+.idea
+
+# Logs & OS junk
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+
+# Docker specific
+Dockerfile
+.dockerignore

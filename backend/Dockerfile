@@ -4,13 +4,13 @@ FROM python:3.13.11
 ENV PYTHONUNBUFFERED=1
 
 # Install Tesseract and necessary dependencies
-RUN apt-get update && apt-get install -y \
-    tesseract-ocr \
-    tesseract-ocr-amh \
-    tesseract-ocr-eng \
-    libgl1 \
-    libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
+# RUN apt-get update && apt-get install -y \
+#     tesseract-ocr \
+#     tesseract-ocr-amh \
+#     tesseract-ocr-eng \
+#     libgl1 \
+#     libglib2.0-0 \
+#     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/app/backend
 

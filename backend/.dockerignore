@@ -1,0 +1,44 @@
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+
+# Local databases & media (unless specifically seeded)
+*.sqlite3
+*.db
+media/
+staticfiles/
+
+# Version control & OS junk
+.git
+.gitignore
+.dockerignore
+.DS_Store
+Thumbs.db
+
+# IDE & Editor files
+.vscode
+.idea
+*.sw?
+
+# Logs & coverage reports
+*.log
+htmlcov/
+.coverage
+.coverage.*
