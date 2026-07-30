@@ -427,6 +427,7 @@ class DSpaceService {
                 "dars.document.number": metadata.documentNumber,
                 "dars.document.date": metadata.contractDate,
                 "dars.branch.location": metadata.branchLocation,
+                "dars.document.attachments": metadata.attachments,
                 "dars.spatial.region": metadata.region,
                 "dars.spatial.city": metadata.city,
                 "dars.spatial.subcity": metadata.subcity,
@@ -441,7 +442,7 @@ class DSpaceService {
                 "dars.demographics.maleCount": metadata.maleCount,
 
                 "dars.service.type": metadata.serviceType,
-                "dars.case.type": metadata.caseType,
+                "dars.document.type": metadata.caseType,
 
                 "dars.vehicle.libre": metadata.vehicleLibre,
                 "dars.vehicle.plate": metadata.vehiclePlate,
@@ -529,7 +530,7 @@ class DSpaceService {
                      return metadata.activeEntityType === "HouseGift" ? "propertyGiftForm" : "propertySaleForm";
                 }
                 
-                if (field === "dars.case.type") {
+                if (field === "dars.document.type") {
                     if (metadata.activeEntityType === "VehicleGift") return "vehicleGiftForm";
                     if (metadata.activeEntityType === "VehicleSale") return "vehicleSaleForm";
                     if (metadata.activeEntityType === "HouseGift") return "propertyGiftForm";

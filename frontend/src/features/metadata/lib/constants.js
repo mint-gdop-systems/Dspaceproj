@@ -38,10 +38,31 @@ export const VALUE_PAIRS = {
   case_types_gifts: [
     { label: "ተሽከርካሪ ስጦታ (Vehicle Gift)", value: "vehicle_gift" },
     { label: "የማይንቀሳቀስ ንብረት ስጦታ (Property Gift)", value: "property_gift" },
+    { label: "መኖሪያ ቤት ስጦታ ውል (Residential House Gift)", value: "residential_gift" },
+    { label: "ልዩ ልዩ የንብረት ስጦታ ውል (Misc. Property Gift)", value: "misc_property_gift" },
+    { label: "የልጅ ልጅ የንብረት ስጦታ ውል (Grandchild Prop. Gift)", value: "grandchild_gift" },
+    { label: "የማይንቀሳቀስ ንብረት ስጦታ ጋብቻ (Property Gift Marriage)", value: "marriage_gift" },
+    { label: "ድርጅት ስጦታ ውል (Org. Gift)", value: "org_gift" },
   ],
   case_types_loans: [
     { label: "ብድር ያለመያዣ (Unsecured Loan)", value: "unsecured_loan" },
     { label: "ብድር በመያዣ (Secured Loan)", value: "secured_loan" },
+  ],
+  case_types_poa: [
+    { label: "ጠቅላላ ውክልና (General PoA)", value: "general_poa" },
+    { label: "የማረሚያ ቤት ውክልና (Prison PoA)", value: "prison_poa" },
+    { label: "የቤተሰብ ውክልና (Family PoA)", value: "family_poa" },
+    { label: "የጠበቃ ውክልና (Lawyer PoA)", value: "lawyer_poa" },
+    { label: "የውክልና መሻሪያ (PoA Revocation)", value: "poa_revocation" },
+  ],
+  case_types_auth: [
+    { label: "ቃለ ጉባኤ (ማናቸውም)", value: "minutes_any" },
+    { label: "መተዳደሪያ ደንብ (Bylaws)", value: "bylaws" },
+    { label: "ትርጉም ማረጋገጫ (Translation Auth)", value: "translation_auth" },
+    { label: "ከሰነድ አረጋጋጭ ተቋማት የሚመነጩ ሰነዶች (Auth. Institution Docs)", value: "auth_institution_docs" },
+    { label: "የመመስረቻ ፅሁፍ (Memorandum of Assoc)", value: "memorandum_of_assoc" },
+    { label: "የሰዎች ስም (People Names)", value: "people_names" },
+    { label: "የኑዛዜ ውሎች (Wills)", value: "wills" },
   ],
 };
 

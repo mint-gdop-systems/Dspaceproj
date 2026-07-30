@@ -39,11 +39,24 @@ export const MetadataForm = ({ onNext, collections, collectionId, setCollectionI
                     የአባሪ ብዛት <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type="text"
+                    type="number"
                     value={extraFields.attachments || ""}
                     onChange={(e) => updateExtraField("attachments", e.target.value)}
                     className="w-full p-2 text-sm border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
                   />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    የሰነዱ መገኛ ቅርንጫፍ (Branch Location) <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={extraFields.branchLocation || ""}
+                    onChange={(e) => updateExtraField("branchLocation", e.target.value)}
+                    className="w-full p-2 text-sm border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors bg-white"
+                  >
+                    <option value="">Select Branch</option>
+                    {(VALUE_PAIRS.dars_branch_locations || []).map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">
@@ -109,7 +122,7 @@ export const MetadataForm = ({ onNext, collections, collectionId, setCollectionI
                       <div className="w-full">
                         <label className="block text-xs font-bold text-gray-700 mb-1">የደንበኛ አይነት <span className="text-red-500">*</span></label>
                         <select value={extraFields.giverType || ""} onChange={(e) => updateExtraField("giverType", e.target.value)} className="w-full p-2 text-sm border border-gray-300 rounded bg-white">
-                          <option value="">ግለሰብ</option>
+                          <option value="">Select Customer Type</option>
                           {(VALUE_PAIRS.dars_customer_types || []).map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                         </select>
                       </div>
@@ -128,7 +141,7 @@ export const MetadataForm = ({ onNext, collections, collectionId, setCollectionI
                       <div className="w-full">
                         <label className="block text-xs font-bold text-gray-700 mb-1">የደንበኛ አይነት <span className="text-red-500">*</span></label>
                         <select value={extraFields.receiverType || ""} onChange={(e) => updateExtraField("receiverType", e.target.value)} className="w-full p-2 text-sm border border-gray-300 rounded bg-white">
-                          <option value="">ግለሰብ</option>
+                          <option value="">Select Customer Type</option>
                           {(VALUE_PAIRS.dars_customer_types || []).map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                         </select>
                       </div>

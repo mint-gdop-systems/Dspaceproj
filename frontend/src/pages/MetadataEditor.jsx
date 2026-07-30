@@ -58,6 +58,7 @@ const MetadataEditor = () => {
 
   // DARIS Dynamic Fields
   const [extraFields, setExtraFields] = useState({
+    attachments: "",
     branchLocation: "",
     region: "",
     registrationDate: "",
@@ -501,6 +502,7 @@ const MetadataEditor = () => {
       setCaseRepresentatives([""]);
       setManualEthioDate("");
       setExtraFields({
+        attachments: "",
         branchLocation: "",
         region: "",
         registrationDate: "",
