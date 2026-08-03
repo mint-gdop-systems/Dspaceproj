@@ -33,6 +33,8 @@ export const MetadataForm = ({ onNext, collections, collectionId, setCollectionI
                     className="w-full p-2 text-sm border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
                   />
                   {fileNumberStatus === "valid" && <p className="text-[10px] text-green-600 mt-1">✓ Valid</p>}
+                  {fileNumberStatus === "duplicate" && <p className="text-[10px] text-red-600 mt-1">✗ Document already exists</p>}
+                  {fileNumberStatus === "checking" && <p className="text-[10px] text-gray-500 mt-1">Checking...</p>}
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">
