@@ -78,6 +78,7 @@ const VALUE_PAIRS = {
     { label: "ፍርድ አፈፃፀም ጽ/ቤት ልደታ", value: "ፍርድ አፈፃፀም" },
   ],
   court_adjured_locations: [
+    { label: "ሰበር ችሎት", value: "ሰበር ችሎት" },
     { label: "የውዝፍ መዛግብት ሰበር ችሎት", value: "የውዝፍ መዛግብት ሰበር ችሎት" },
     { label: "1ኛ ሰበር ችሎት", value: "1ኛ ሰበር ችሎት" },
     { label: "2ኛ ሰበር ችሎት", value: "2ኛ ሰበር ችሎት" },
