@@ -1,4 +1,5 @@
 const DSPACE_API_URL = "/api/dspace";
+const DEFAULT_UPLOAD_CONCURRENCY = 5;
 
 const extractBearerToken = (token) => {
 	if (!token) return null;
@@ -71,14 +72,58 @@ export const deleteCookie = (name) => {
 	}
 };
 
+const getUploadSectionFiles = (data) =>
+	Array.isArray(data?.sections?.upload?.files)
+		? data.sections.upload.files
+		: [];
+
+const findUploadedFileEntry = (file, sectionFiles) => {
+	const size = Number(file.size);
+
+	// 1. Exact name + size match (robust when concurrent uploads race)
+	let match = sectionFiles.find(
+		(entry) =>
+			entry.name === file.name &&
+			(!Number.isFinite(size) || entry.sizeBytes === size),
+	);
+	if (match) return match;
+
+	// 2. Name only
+	match = sectionFiles.find((entry) => entry.name === file.name);
+	if (match) return match;
+
+	// 3. Title metadata
+	match = sectionFiles.find((entry) =>
+		entry.metadata?.["dc.title"]?.some?.((t) => t.value === file.name),
+	);
+	if (match) return match;
+
+	// 4. Single uploaded file fallback (preserves legacy behavior)
+	return sectionFiles.length === 1 ? sectionFiles[0] : null;
+};
+
 class DSpaceService {
 	constructor() {
 		this.isAuthenticated = false;
 		this.authToken = null;
 		this.csrfToken = null;
+		this.csrfTokenPromise = null;
 	}
 
 	async getCsrfToken() {
+		// Memoize the in-flight fetch so concurrent callers share a single
+		// GET /security/csrf round-trip instead of racing to set csrfToken.
+		if (this.csrfTokenPromise) {
+			return this.csrfTokenPromise;
+		}
+
+		this.csrfTokenPromise = this._fetchCsrfToken().finally(() => {
+			this.csrfTokenPromise = null;
+		});
+		return this.csrfTokenPromise;
+	}
+
+	async _fetchCsrfToken() {
 		try {
 			const response = await fetch(`${DSPACE_API_URL}/security/csrf`, {
 				method: "GET",
@@ -698,7 +743,7 @@ class DSpaceService {
 				return { ...p, path: `/sections/${section}/${actualField}` };
 			});
 
-			const res = await this.fetchWithCsrf(
+			await this.fetchWithCsrf(
 				`${DSPACE_API_URL}/submission/workspaceitems/${workspaceItemId}`,
 				{
 					method: "PATCH",
@@ -709,7 +754,6 @@ class DSpaceService {
 					body: JSON.stringify(batch),
 				},
 			).catch(() => {});
-			console.log("🚀 ~ DSpaceService ~ updateMetadata ~ res:", res);
 
 			return true;
 		} catch {
@@ -717,7 +761,10 @@ class DSpaceService {
 		}
 	}
 
-	async uploadFile(workspaceItemId, file) {
+	// Upload a single file to an existing workspace item. The DSpace 9
+	// single-workspaceitem endpoint only accepts ONE "file" part per request,
+	// so this is the per-file primitive used by uploadFiles().
+	async _uploadSingleFile(workspaceItemId, file, signal) {
 		try {
 			const formData = new FormData();
 			formData.append("file", file);
@@ -729,6 +776,7 @@ class DSpaceService {
 					method: "POST",
 					headers: { Accept: "application/json" },
 					body: formData,
+					signal,
 				},
 			);
 
@@ -736,25 +784,83 @@ class DSpaceService {
 				const data = await response.json();
 
 				// In DSpace 9, the response is the WorkspaceItem.
-				// The bitstream info is inside sections.upload.files
-				const files = data.sections?.upload?.files;
-				if (files && files.length > 0) {
-					// The most recently uploaded file is usually the last one
-					const latestFile = files[files.length - 1];
-					return latestFile;
-				}
-				return data;
-			} else {
-				const errorText = await response.text().catch(() => "No error body");
-				console.error(
-					`Upload failed with status ${response.status}:`,
-					errorText,
+				// Each file is inside sections.upload.files. When uploads run
+				// concurrently, the response may already contain entries from
+				// other in-flight requests, so match the entry that belongs to
+				// this file instead of taking the last one.
+				const sectionFiles = getUploadSectionFiles(data);
+				const bitstream = sectionFiles.length
+					? findUploadedFileEntry(file, sectionFiles)
+					: data;
+
+				return { ok: true, file, bitstream };
+			}
+
+			const errorText = await response.text().catch(() => "No error body");
+			console.error(`Upload failed with status ${response.status}:`, errorText);
+			return {
+				ok: false,
+				file,
+				error: new Error(`Upload failed: ${response.status}`),
+			};
+		} catch (error) {
+			console.error(`Upload failed for ${file.name}:`, error);
+			return { ok: false, file, error };
+		}
+	}
+
+	// Upload multiple files with bounded concurrency. DSpace's single-item
+	// upload endpoint does not accept multiple "file" parts in one request,
+	// so we parallelize independent requests instead, capping in-flight
+	// uploads to avoid overwhelming the backend.
+	async uploadFiles(workspaceItemId, files, options = {}) {
+		const fileList = Array.isArray(files) ? files : [files];
+		if (fileList.length === 0) return [];
+
+		const concurrency = Math.max(
+			1,
+			Math.min(
+				options.concurrency || DEFAULT_UPLOAD_CONCURRENCY,
+				fileList.length,
+			),
+		);
+		const results = new Array(fileList.length);
+
+		// Prime the ORIGINAL bundle with the first file before parallelizing so
+		// concurrent requests don't race to create the bundle.
+		results[0] = await this._uploadSingleFile(
+			workspaceItemId,
+			fileList[0],
+			options.signal,
+		);
+
+		let nextIndex = 1;
+		const worker = async () => {
+			while (nextIndex < fileList.length) {
+				const index = nextIndex;
+				nextIndex += 1;
+				results[index] = await this._uploadSingleFile(
+					workspaceItemId,
+					fileList[index],
+					options.signal,
 				);
 			}
-			return null;
-		} catch {
-			return false;
+		};
+
+		if (nextIndex < fileList.length) {
+			const workerCount = Math.min(concurrency, fileList.length - 1);
+			await Promise.allSettled(
+				Array.from({ length: workerCount }, () => worker()),
+			);
 		}
+
+		return results;
+	}
+
+	// Thin single-file wrapper around uploadFiles().
+	async uploadFile(workspaceItemId, file) {
+		const [result] = await this.uploadFiles(workspaceItemId, [file]);
+		return result?.ok ? result.bitstream : null;
 	}
 
 	async updateBitstreamMetadata(bitstreamUuid, metadata) {

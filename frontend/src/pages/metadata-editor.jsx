@@ -1295,21 +1295,29 @@ const MetadataEditor = () => {
 				);
 			}
 
-			for (const file of files) {
-				const bitstream = await dspaceService.uploadFile(
-					workspaceItemId,
-					file.fileObject,
-				);
+			// 3. Upload all files in parallel (bounded concurrency on the service)
+			const uploadResults = await dspaceService.uploadFiles(
+				workspaceItemId,
+				files.map((file) => file.fileObject),
+			);
 
-				if (bitstream?.uuid) {
-					await dspaceService.updateBitstreamMetadata(bitstream.uuid, {
-						documentType: file.documentType,
-						documentStatus: file.documentStatus,
-					});
+			const bitstreamMetadataUpdates = [];
+			uploadResults.forEach((result, index) => {
+				const file = files[index];
+				if (result.ok && result.bitstream?.uuid) {
+					bitstreamMetadataUpdates.push(
+						dspaceService.updateBitstreamMetadata(result.bitstream.uuid, {
+							documentType: file.documentType,
+							documentStatus: file.documentStatus,
+						}),
+					);
 				} else {
-					console.error(`Failed to upload file: ${file.name}`);
+					console.error(`Failed to upload file: ${file.name}`, result.error);
 				}
-			}
+			});
+
+			// 3b. Apply per-file bitstream metadata (independent PATCHes)
+			await Promise.allSettled(bitstreamMetadataUpdates);
 
 			// 4. Accept license
 			await dspaceService.acceptWorkspaceLicense(workspaceItemId);
