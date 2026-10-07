@@ -5,16 +5,12 @@ import {
 	XIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { pdfjs } from "react-pdf";
 import { useAuth } from "@/contexts/auth-context";
 import { houseTypeOptions } from "../utils/constants";
-
-// Configure pdfjs worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
+import PdfPreview from "@/components/pdf-preview";
 import { houseColumns, vitalEventColumns } from "@/components/resource/columns";
 import FilterLabel from "@/components/resource/filter-label";
 import { FilterOperatorSelect } from "@/components/resource/filter-operator-select";
@@ -515,15 +511,7 @@ export default function ResourceTable() {
 		}
 
 		if (isPdf(bitstream)) {
-			return (
-				<iframe
-					src={contentUrl}
-					frameborder="0"
-					title="PDF preview"
-					className="w-full h-full border-none"
-				></iframe>
-			);
-			// return <PdfPreview fileUrl={contentUrl} />;
+			return <PdfPreview fileUrl={contentUrl} />;
 		}
 
 		return (
