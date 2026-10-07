@@ -211,11 +211,19 @@ export default function ResourceTable() {
 	const [showPreviewModal, setShowPreviewModal] = useState(false);
 	const [bitstreams, setBitstreams] = useState([]);
 	const [selectedBitstream, setSelectedBitstream] = useState(null);
+	const [previewVersions, setPreviewVersions] = useState([]);
+	const [selectedPreviewVersionUuid, setSelectedPreviewVersionUuid] =
+		useState("");
+	const [loadingPreviewVersions, setLoadingPreviewVersions] = useState(false);
+	const [loadingVersionBitstreams, setLoadingVersionBitstreams] =
+		useState(false);
+	const [previewVersionError, setPreviewVersionError] = useState("");
 	const [activePreviewBitstream, setActivePreviewBitstream] = useState(null);
 	const [bitstreamContentUrls, setBitstreamContentUrls] = useState({});
 	const [loadingBitstreamContent, setLoadingBitstreamContent] = useState({});
 	const bitstreamContentUrlsRef = useRef({});
 	const loadingBitstreamContentRef = useRef({});
+	const previewRequestRef = useRef(0);
 
 	const releaseBitstreamContentUrls = useCallback(() => {
 		Object.values(bitstreamContentUrlsRef.current).forEach((url) => {
@@ -228,9 +236,15 @@ export default function ResourceTable() {
 	}, []);
 
 	const closePreview = useCallback(() => {
+		previewRequestRef.current += 1;
 		setShowPreviewModal(false);
 		setBitstreams(null);
 		setSelectedBitstream(null);
+		setPreviewVersions([]);
+		setSelectedPreviewVersionUuid("");
+		setLoadingPreviewVersions(false);
+		setLoadingVersionBitstreams(false);
+		setPreviewVersionError("");
 		setActivePreviewBitstream(null);
 		releaseBitstreamContentUrls();
 	}, [releaseBitstreamContentUrls]);
@@ -313,14 +327,126 @@ export default function ResourceTable() {
 	const handlePreview = async (resource, e) => {
 		e.stopPropagation();
 
-		if (!resource.originalBundleId) {
-			console.warn("No bitstream links found on resource");
+		if (!resource.id) {
+			console.warn("Cannot load item versions without an item UUID");
 			return;
 		}
 
-		const res = await dspaceService.getBitstreams(resource.originalBundleId);
-		setBitstreams(res);
+		const requestId = ++previewRequestRef.current;
+		setBitstreams([]);
+		setSelectedBitstream(null);
+		setPreviewVersions([]);
+		setSelectedPreviewVersionUuid("");
+		setLoadingPreviewVersions(true);
+		setLoadingVersionBitstreams(false);
+		setPreviewVersionError("");
 		setShowPreviewModal(true);
+
+		const loadCurrentItemBitstreams = async () => {
+			if (!resource.originalBundleId) {
+				setBitstreams([]);
+				return;
+			}
+			try {
+				const currentBitstreams = await dspaceService.getBitstreams(
+					resource.originalBundleId,
+				);
+				if (previewRequestRef.current === requestId) {
+					setBitstreams(currentBitstreams || []);
+				}
+			} catch (error) {
+				if (previewRequestRef.current === requestId) {
+					console.error("Error loading current item files:", error);
+					setPreviewVersionError("Could not load files for this item.");
+				}
+			}
+		};
+
+		let versions;
+		try {
+			versions = await dspaceService.getItemVersions(resource.id);
+		} catch (error) {
+			if (previewRequestRef.current !== requestId) return;
+			console.error("Error loading item version history:", error);
+			setPreviewVersionError(
+				"Version history could not be loaded. Showing current item files.",
+			);
+			setLoadingPreviewVersions(false);
+			await loadCurrentItemBitstreams();
+			return;
+		}
+
+		if (previewRequestRef.current !== requestId) return;
+
+		if (versions.length > 0) {
+			const latestVersion = versions[0];
+			const latestItem = latestVersion._embedded?.item;
+			const latestItemUuid = latestItem?.uuid || latestItem?.id;
+
+			setPreviewVersions(versions);
+			setLoadingPreviewVersions(false);
+
+			if (!latestItemUuid) {
+				setPreviewVersionError(
+					"The latest version did not include its item UUID.",
+				);
+				return;
+			}
+
+			setSelectedPreviewVersionUuid(latestItemUuid);
+			setLoadingVersionBitstreams(true);
+			try {
+				const latestBitstreams =
+					await dspaceService.getItemOriginalBundleBitstreams(latestItemUuid);
+				if (previewRequestRef.current === requestId) {
+					setBitstreams(latestBitstreams);
+				}
+			} catch (error) {
+				if (previewRequestRef.current === requestId) {
+					console.error("Error loading latest version files:", error);
+					setPreviewVersionError(
+						"Could not load files for the latest version.",
+					);
+				}
+			} finally {
+				if (previewRequestRef.current === requestId) {
+					setLoadingVersionBitstreams(false);
+				}
+			}
+			return;
+		}
+
+		setLoadingPreviewVersions(false);
+		await loadCurrentItemBitstreams();
+	};
+
+	const handlePreviewVersionChange = async (event) => {
+		const itemUuid = event.target.value;
+		if (!itemUuid) return;
+
+		const requestId = ++previewRequestRef.current;
+		setSelectedPreviewVersionUuid(itemUuid);
+		setBitstreams([]);
+		setSelectedBitstream(null);
+		setLoadingVersionBitstreams(true);
+		setPreviewVersionError("");
+
+		try {
+			const versionBitstreams =
+				await dspaceService.getItemOriginalBundleBitstreams(itemUuid);
+			if (previewRequestRef.current === requestId) {
+				setBitstreams(versionBitstreams);
+			}
+		} catch (error) {
+			if (previewRequestRef.current === requestId) {
+				console.error("Error loading selected item version files:", error);
+				setPreviewVersionError("Could not load files for this version.");
+			}
+		} finally {
+			if (previewRequestRef.current === requestId) {
+				setLoadingVersionBitstreams(false);
+			}
+		}
 	};
 
 	const operators = [
@@ -356,6 +482,11 @@ export default function ResourceTable() {
 	const selectedBitstreamUrl = selectedBitstream?.uuid
 		? bitstreamContentUrls[selectedBitstream.uuid]
 		: null;
+	const selectedPreviewVersion = previewVersions.find((version) => {
+		const itemUuid =
+			version._embedded?.item?.uuid || version._embedded?.item?.id;
+		return itemUuid === selectedPreviewVersionUuid;
+	});
 
 	const renderBitstreamPreview = (bitstream, contentUrl, emptyMessage) => {
 		if (!bitstream) {
@@ -980,9 +1111,62 @@ export default function ResourceTable() {
 								onClick={(e) => e.stopPropagation()}
 							>
 								<div className="flex flex-col w-full h-full overflow-hidden">
-									<div className="h-18 flex flex-col min-w-0 bg-primary text-primary-foreground px-4 py-3 border-b">
-										<div className="flex items-start">
-											<div className="relative inline-block">
+									<div className="min-h-18 flex flex-col min-w-0 bg-primary text-primary-foreground px-4 py-3 border-b">
+										<div className="flex items-start gap-3">
+											{previewVersions.length > 0 && (
+												<div className="relative inline-block w-64 max-w-[40vw] min-w-0 shrink-0">
+													<button
+														type="button"
+														className="w-full flex items-center justify-between px-3 py-0.5 text-left bg-primary/10 hover:bg-primary/20 text-primary-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+													>
+														<span className="flex min-w-0 items-center gap-4">
+															<ChevronDownIcon />
+															<span className="min-w-0">
+																<span className="block truncate text-lg font-semibold">
+																	Version {selectedPreviewVersion?.version}
+																</span>
+																<span className="block truncate text-sm opacity-90">
+																	{selectedPreviewVersion?.summary ||
+																		"No version summary"}
+																</span>
+															</span>
+														</span>
+													</button>
+													<select
+														value={selectedPreviewVersionUuid}
+														onChange={handlePreviewVersionChange}
+														aria-label="Select item version"
+														className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+													>
+														{previewVersions.map((version) => {
+															const itemUuid =
+																version._embedded?.item?.uuid ||
+																version._embedded?.item?.id;
+															return itemUuid ? (
+																<option
+																	key={version.id || itemUuid}
+																	value={itemUuid}
+																	className="text-black"
+																>
+																	Version {version.version}
+																</option>
+															) : null;
+														})}
+													</select>
+												</div>
+											)}
+											{loadingPreviewVersions && (
+												<span className="shrink-0 py-1 text-sm">
+													Loading versions...
+												</span>
+											)}
+											{previewVersions.length > 0 && (
+												<div
+													aria-hidden="true"
+													className="h-10 shrink-0 self-center border-l border-primary-foreground/30"
+												/>
+											)}
+											<div className="relative inline-block min-w-0 flex-1">
 												<button
 													type="button"
 													className="w-full flex items-center justify-between px-3 py-0.5 text-left bg-primary/10 hover:bg-primary/20 text-primary-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/30"
@@ -1080,7 +1264,11 @@ export default function ResourceTable() {
 									</div>
 									<div className="flex-1 overflow-auto bg-white flex flex-col">
 										<div className="flex-1 overflow-auto flex items-center justify-center">
-											{bitstreams?.length > 0 ? (
+											{loadingVersionBitstreams ? (
+												<div className="text-muted-foreground">
+													Loading files...
+												</div>
+											) : bitstreams?.length > 0 ? (
 												renderBitstreamPreview(
 													selectedBitstream,
 													selectedBitstreamUrl,
@@ -1088,7 +1276,7 @@ export default function ResourceTable() {
 												)
 											) : (
 												<div className="text-muted-foreground">
-													No additional files
+													{previewVersionError || "No additional files"}
 												</div>
 											)}
 										</div>

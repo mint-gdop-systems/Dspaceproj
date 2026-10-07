@@ -1065,6 +1065,93 @@ class DSpaceService {
 		}
 	}
 
+	async getItemVersions(itemId) {
+		const versionResponse = await this.fetchWithCsrf(
+			`${DSPACE_API_URL}/core/items/${encodeURIComponent(itemId)}/version?embed=versionhistory`,
+			{
+				headers: { Accept: "application/json" },
+			},
+		);
+		if (!versionResponse.ok) {
+			throw new Error(
+				`Failed to fetch current item version: ${versionResponse.status}`,
+			);
+		}
+
+		const currentVersion = await versionResponse.json();
+		const versionHistory =
+			currentVersion._embedded?.versionhistory ||
+			currentVersion._embedded?.versionHistory;
+		let versionHistoryId = versionHistory?.id;
+
+		if (!versionHistoryId) {
+			const historyHref = currentVersion._links?.versionhistory?.href;
+			versionHistoryId = historyHref?.match(/versionhistories\/([^/?]+)/)?.[1];
+		}
+		if (!versionHistoryId) {
+			throw new Error("The item response did not include a version history.");
+		}
+
+		const versions = [];
+		let page = 0;
+		let totalPages = 1;
+
+		while (page < totalPages) {
+			const url = new URL(
+				`${window.location.origin}${DSPACE_API_URL}/versioning/versionhistories/${encodeURIComponent(versionHistoryId)}/versions`,
+			);
+			url.searchParams.set("embed", "item");
+			url.searchParams.set("page", String(page));
+			url.searchParams.set("size", "100");
+
+			const response = await this.fetchWithCsrf(url.toString(), {
+				headers: { Accept: "application/json" },
+			});
+			if (!response.ok) {
+				throw new Error(
+					`Failed to fetch item versions (page ${page + 1}): ${response.status}`,
+				);
+			}
+
+			const versionList = await response.json();
+			versions.push(...(versionList._embedded?.versions || []));
+			totalPages = Math.max(1, Number(versionList.page?.totalPages) || 1);
+			page += 1;
+		}
+
+		return versions.sort(
+			(a, b) => Number(b.version || 0) - Number(a.version || 0),
+		);
+	}
+
+	async getItemOriginalBundleBitstreams(itemId) {
+		const response = await this.fetchWithCsrf(
+			`${DSPACE_API_URL}/core/items/${encodeURIComponent(itemId)}/bundles`,
+			{
+				headers: { Accept: "application/json" },
+			},
+		);
+		if (!response.ok) {
+			throw new Error(
+				`Failed to fetch bundles for item ${itemId}: ${response.status}`,
+			);
+		}
+
+		const bundleList = await response.json();
+		const originalBundle = bundleList._embedded?.bundles?.find(
+			(bundle) => bundle.name === "ORIGINAL",
+		);
+		if (!originalBundle?.uuid) {
+			return [];
+		}
+
+		const bitstreams = await this.getBitstreams(originalBundle.uuid);
+		if (!Array.isArray(bitstreams)) {
+			throw new Error(`Failed to fetch bitstreams for item ${itemId}.`);
+		}
+		return bitstreams;
+	}
+
 	async logout() {
 		try {
 			await this.fetchWithCsrf(`${DSPACE_API_URL}/authn/logout`, {
