@@ -1,10 +1,9 @@
 import { HomeIcon, LogInIcon, LogOutIcon, UploadIcon } from "lucide-react";
-import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
+import { useSubmitAuthorization } from "@/hooks/use-submit-authorization";
 import { cn } from "@/lib/utils";
-import dspaceService from "@/services/dspaceService";
 
 const navLinks = [
 	{ to: "/", label: "Home", icon: HomeIcon },
@@ -15,25 +14,7 @@ const Navbar = () => {
 	const location = useLocation();
 	const { user, logout } = useAuth();
 	const navigate = useNavigate();
-	const [canUpload, setCanUpload] = useState(false);
-
-	useEffect(() => {
-		if (!user) {
-			setCanUpload(false);
-			return;
-		}
-
-		let cancelled = false;
-
-		dspaceService.getSubmitAuthorizedCollections(0, 1).then((result) => {
-			if (cancelled) return;
-			setCanUpload(result.collections.length > 0);
-		});
-
-		return () => {
-			cancelled = true;
-		};
-	}, [user]);
+	const canUpload = useSubmitAuthorization();
 	const displayName = user?.name || user?.username || user?.email || "User";
 	const displayEmail =
 		user?.email && user.email !== displayName ? user.email : null;
