@@ -10,6 +10,7 @@ export default function PdfPreview({ fileUrl }) {
 	const [numPages, setNumPages] = useState(0);
 	const [currentPage, setCurrentPage] = useState(1);
 	const [scale, setScale] = useState(1);
+	const [rotation, setRotation] = useState(0); // user rotation: 0 | 90 | 180 | 270
 	const [error, setError] = useState(null);
 	const [pageSizes, setPageSizes] = useState({});
 
@@ -27,25 +28,32 @@ export default function PdfPreview({ fileUrl }) {
 	const onDocumentLoadSuccess = useCallback(({ numPages }) => {
 		setNumPages(numPages);
 		setCurrentPage(1);
+		setRotation(0);
 		setPageSizes({});
 		setError(null);
 	}, []);
 
 	const onPageLoadSuccess = useCallback((page) => {
+		// width/height are measured at the page's own (intrinsic) rotation;
+		// `rotate` is that intrinsic rotation, which scanned PDFs often have set.
 		const { width, height } = page.getViewport({ scale: 1 });
 		const pageNumber = page.pageNumber;
+		const rotate = page.rotate ?? 0;
 
 		setPageSizes((previousSizes) => {
+			const previous = previousSizes[pageNumber];
+
 			if (
-				previousSizes[pageNumber]?.width === width &&
-				previousSizes[pageNumber]?.height === height
+				previous?.width === width &&
+				previous?.height === height &&
+				previous?.rotate === rotate
 			) {
 				return previousSizes;
 			}
 
 			return {
 				...previousSizes,
-				[pageNumber]: { width, height },
+				[pageNumber]: { width, height, rotate },
 			};
 		});
 	}, []);
@@ -85,6 +93,22 @@ export default function PdfPreview({ fileUrl }) {
 		setScale((prev) => Math.max(prev - 0.25, 0.5));
 	}, []);
 
+	const rotate = useCallback(
+		(delta) => {
+			setRotation((prev) => (prev + delta + 360) % 360);
+
+			// Page heights change when rotating, which would otherwise shift the
+			// scroll position onto a different page. Re-anchor on the current one.
+			requestAnimationFrame(() => {
+				pageRefs.current[currentPage]?.scrollIntoView({ block: "start" });
+			});
+		},
+		[currentPage],
+	);
+
+	const rotateClockwise = useCallback(() => rotate(90), [rotate]);
+	const rotateCounterClockwise = useCallback(() => rotate(-90), [rotate]);
+
 	useEffect(() => {
 		if (!numPages || !containerRef.current) {
 			return;
@@ -115,7 +139,9 @@ export default function PdfPreview({ fileUrl }) {
 		});
 
 		return () => observer.disconnect();
-	}, [fileUrl, numPages, scale]);
+	}, [numPages]);
+
+	const isSideways = rotation % 180 !== 0;
 
 	return (
 		<div className="flex h-full w-full flex-col bg-background">
@@ -144,26 +170,52 @@ export default function PdfPreview({ fileUrl }) {
 					</button>
 				</div>
 
-				<div className="flex items-center gap-2">
-					<button
-						type="button"
-						onClick={zoomOut}
-						className="rounded border px-2 py-1"
-					>
-						−
-					</button>
+				<div className="flex items-center gap-4">
+					<div className="flex items-center gap-2">
+						<button
+							type="button"
+							onClick={rotateCounterClockwise}
+							disabled={!numPages}
+							aria-label="Rotate counterclockwise"
+							title="Rotate counterclockwise"
+							className="rounded border px-2 py-1 disabled:opacity-50"
+						>
+							↺
+						</button>
 
-					<span className="w-12 text-center text-sm">
-						{Math.round(scale * 100)}%
-					</span>
+						<button
+							type="button"
+							onClick={rotateClockwise}
+							disabled={!numPages}
+							aria-label="Rotate clockwise"
+							title="Rotate clockwise"
+							className="rounded border px-2 py-1 disabled:opacity-50"
+						>
+							↻
+						</button>
+					</div>
 
-					<button
-						type="button"
-						onClick={zoomIn}
-						className="rounded border px-2 py-1"
-					>
-						+
-					</button>
+					<div className="flex items-center gap-2">
+						<button
+							type="button"
+							onClick={zoomOut}
+							className="rounded border px-2 py-1"
+						>
+							−
+						</button>
+
+						<span className="w-12 text-center text-sm">
+							{Math.round(scale * 100)}%
+						</span>
+
+						<button
+							type="button"
+							onClick={zoomIn}
+							className="rounded border px-2 py-1"
+						>
+							+
+						</button>
+					</div>
 				</div>
 			</div>
 
@@ -187,11 +239,22 @@ export default function PdfPreview({ fileUrl }) {
 						<div className="flex flex-col items-center gap-6">
 							{Array.from({ length: numPages }, (_, index) => {
 								const pageNumber = index + 1;
-								const pageSize =
-									pageSizes[pageNumber] ||
+								const pageSize = pageSizes[pageNumber] ||
 									pageSizes[1] || { width: 612, height: 792 };
 								const shouldRenderPage =
 									Math.abs(pageNumber - currentPage) <= 1;
+
+								// Swap dimensions for the placeholder when rotated sideways.
+								const boxWidth = isSideways ? pageSize.height : pageSize.width;
+								const boxHeight = isSideways ? pageSize.width : pageSize.height;
+
+								// `rotate` on <Page> replaces the page's intrinsic rotation, so add
+								// the user's rotation on top of it. Leave it undefined at 0 so the
+								// default (intrinsic) rotation applies untouched.
+								const pageRotate =
+									rotation === 0
+										? undefined
+										: ((pageSizes[pageNumber]?.rotate ?? 0) + rotation) % 360;
 
 								return (
 									<div
@@ -200,14 +263,15 @@ export default function PdfPreview({ fileUrl }) {
 										data-page-number={pageNumber}
 										className="bg-white shadow"
 										style={{
-											minWidth: pageSize.width * scale,
-											minHeight: pageSize.height * scale,
+											minWidth: boxWidth * scale,
+											minHeight: boxHeight * scale,
 										}}
 									>
 										{shouldRenderPage && (
 											<Page
 												pageNumber={pageNumber}
 												scale={scale}
+												rotate={pageRotate}
 												onLoadSuccess={onPageLoadSuccess}
 												renderAnnotationLayer
 												renderTextLayer
