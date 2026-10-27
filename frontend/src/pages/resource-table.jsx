@@ -478,11 +478,22 @@ export default function ResourceTable() {
 	const selectedBitstreamUrl = selectedBitstream?.uuid
 		? bitstreamContentUrls[selectedBitstream.uuid]
 		: null;
+	const loadingPreviewFiles =
+		loadingPreviewVersions || loadingVersionBitstreams;
 	const selectedPreviewVersion = previewVersions.find((version) => {
 		const itemUuid =
 			version._embedded?.item?.uuid || version._embedded?.item?.id;
 		return itemUuid === selectedPreviewVersionUuid;
 	});
+	const selectedPreviewVersionIndex = previewVersions.indexOf(
+		selectedPreviewVersion,
+	);
+	const selectedPreviewVersionStatus =
+		selectedPreviewVersion?._embedded?.item?.inArchive === false
+			? selectedPreviewVersionIndex === 0
+				? "Not approved"
+				: "Old version"
+			: null;
 
 	const renderBitstreamPreview = (bitstream, contentUrl, emptyMessage) => {
 		if (!bitstream) {
@@ -1113,9 +1124,16 @@ export default function ResourceTable() {
 																<span className="block truncate text-lg font-semibold">
 																	Version {selectedPreviewVersion?.version}
 																</span>
-																<span className="block truncate text-sm opacity-90">
-																	{selectedPreviewVersion?.summary ||
-																		"No version summary"}
+																<span className="flex min-w-0 items-center gap-2 text-sm opacity-90">
+																	<span className="truncate">
+																		{selectedPreviewVersion?.summary ||
+																			"No version summary"}
+																	</span>
+																	{selectedPreviewVersionStatus && (
+																		<span className="shrink-0 rounded bg-primary-foreground/15 px-1.5 py-0.5 text-xs font-medium">
+																			{selectedPreviewVersionStatus}
+																		</span>
+																	)}
 																</span>
 															</span>
 														</span>
@@ -1163,9 +1181,11 @@ export default function ResourceTable() {
 														<ChevronDownIcon />
 														<div>
 															<h2 className="text-lg font-semibold truncate text-ellipsis line-clamp-1">
-																{bitstreams?.length > 0
-																	? selectedBitstream?.name
-																	: "No Additional Files"}
+																{loadingPreviewFiles
+																	? "Loading files..."
+																	: bitstreams?.length > 0
+																		? selectedBitstream?.name
+																		: "No Additional Files"}
 															</h2>
 															{bitstreams?.length > 0 && (
 																<div className="flex flex-wrap gap-x-4 gap-y-1 text-sm opacity-90 text-ellipsis line-clamp-1">
@@ -1252,9 +1272,13 @@ export default function ResourceTable() {
 									</div>
 									<div className="flex-1 overflow-auto bg-white flex flex-col">
 										<div className="flex-1 overflow-auto flex items-center justify-center">
-											{loadingVersionBitstreams ? (
-												<div className="text-muted-foreground">
-													Loading files...
+											{loadingPreviewFiles ? (
+												<div
+													className="flex flex-col items-center gap-3 text-muted-foreground"
+													role="status"
+												>
+													<div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+													<span>Loading files...</span>
 												</div>
 											) : bitstreams?.length > 0 ? (
 												renderBitstreamPreview(
